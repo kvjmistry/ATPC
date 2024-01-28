@@ -61,9 +61,13 @@ def generate_random(row):
 
     return pd.Series([xy_smear[0, 0], xy_smear[0, 1], z_smear], index=['x_smear', 'y_smear', 'z_smear'])
 
+# Print the number of events:
+print("Number of events to process: ", hits.event_id.unique())
+min_event_id = min( hits.event_id.unique())
+
 # Main event Loop
 for index, e in enumerate(hits.event_id.unique()):
-    print("On Event:", e)
+    print("On Event:", e - min_event_id)
 
     # Record the end time
     end_time = time.time()

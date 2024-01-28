@@ -36,7 +36,7 @@ cat ${CONFIG}
 # NEXUS
 echo "Running NEXUS" 
 nexus -n $N_EVENTS ${INIT}
-python DiffuseData.py
+python3 DiffuseData.py
 
 # Remove the large file
 rm ATPC_gamma.h5
