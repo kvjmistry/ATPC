@@ -30,7 +30,7 @@ ybw=10
 
 zmin=0
 zmax=6000
-zbw=0.118 # 100 ns timing with vd = 1.18 mm/us
+zbw=10 # 100 ns timing with vd = 1.18 mm/us KM: changed to see if it helps
 
 # bins for x, y, z
 xbins = np.arange(xmin, xmax+xbw, xbw)
