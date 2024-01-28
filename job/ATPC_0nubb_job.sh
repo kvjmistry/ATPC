@@ -39,7 +39,7 @@ nexus -n $N_EVENTS ${INIT}
 python3 DiffuseData.py ${JOBNAME}
 
 # Remove the large file
-rm ATPC_gamma.h5
+rm ATPC_0nubb.h5
 
 ls -ltrh
 

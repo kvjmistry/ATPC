@@ -1,4 +1,5 @@
 # Script to read in the nexus files and diffuse them 1 electron at a time
+import sys
 import numpy  as np
 import pandas as pd
 from collections import Counter
@@ -9,7 +10,8 @@ start_time = time.time()
 
 # Load in the hits
 print("Loading hits")
-hits = pd.read_hdf("ATPC_gamma.h5", 'MC/hits')
+print("Filename: ", sys.argv[1]+".h5")
+hits = pd.read_hdf(sys.argv[1]+".h5", 'MC/hits')
 print("Finished loading hits")
 
 # init the RNG
@@ -141,8 +143,8 @@ for index, e in enumerate(hits.event_id.unique()):
 
 df_smear_merge = pd.concat(df_smear, ignore_index=True)
 
-print("Saving events to file...")
-with pd.HDFStore(f"ATPC_gamma_smear.h5", mode='w', complevel=5, complib='zlib') as store:
+print("Saving events to file: ", sys.argv[1]+"_smear.h5")
+with pd.HDFStore(sys.argv[1]+"_smear.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
     store.put('hits', df_smear_merge, format='table')
 

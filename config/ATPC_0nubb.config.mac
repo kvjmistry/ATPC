@@ -11,6 +11,10 @@
 /Generator/Decay0Interface/Xe136DecayMode 1
 /Generator/Decay0Interface/Ba136FinalState 0
 
+##### ACTIONS #####
+/Actions/DefaultEventAction/min_energy 2.44 MeV
+/Actions/DefaultEventAction/max_energy 2.6 MeV
+
 ## Nexus Physics List
 /PhysicsList/Nexus/clustering           false
 /PhysicsList/Nexus/drift                false
@@ -24,5 +28,5 @@
 # PERSISTENCY
 #/nexus/persistency/eventType background
 /nexus/random_seed            9800
-/nexus/persistency/start_id   9800
+/nexus/persistency/start_id   0
 /nexus/persistency/output_file ATPC_0nuBB
