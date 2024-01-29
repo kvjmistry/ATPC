@@ -16,7 +16,7 @@ echo "Setting Up NEXUS"
 source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
-N_EVENTS=100000
+N_EVENTS=300
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 
