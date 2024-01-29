@@ -1,7 +1,9 @@
 # nexus.sub
 
 # The job title here.
+# jobname=ATPC_0nubb
 jobname=ATPC_gamma
+
 CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
 
