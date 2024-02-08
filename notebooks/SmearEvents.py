@@ -21,15 +21,15 @@ rng = np.random.default_rng()
 # Create the bins ---- 
 xmin=-3000
 xmax=3000
-xbw=0.25
+xbw=5
 
 ymin=-3000
 ymax=3000
-ybw=0.25
+ybw=5
 
 zmin=0
 zmax=6000
-zbw=0.25 
+zbw=5 
 
 # bins for x, y, z
 xbins = np.arange(xmin, xmax+xbw, xbw)
@@ -161,29 +161,89 @@ for index, e in enumerate(hits.event_id.unique()):
     electrons_smear['y_smear'] = pd.cut(x=electrons_smear['y_smear'], bins=ybins,labels=ybin_c, include_lowest=True)
     electrons_smear['z_smear'] = pd.cut(x=electrons_smear['z_smear'], bins=zbins,labels=zbin_c, include_lowest=True)
 
-    # Merge any duplicate rows and sum their energy
-    # also rename everything back to normal x,y,z
-    electrons_smear = electrons_smear.drop(columns=['x', 'y', 'z'])
-    electrons_smear = electrons_smear.rename(columns={'x_smear': 'x'})
-    electrons_smear = electrons_smear.rename(columns={'y_smear': 'y'})
-    electrons_smear = electrons_smear.rename(columns={'z_smear': 'z'})
 
-    # Create a list of tuples representing each row in the DataFrame
-    rows_as_tuples = [tuple(row) for row in electrons_smear.values]
+    #Loop over the rows in the dataframe and merge the energies. Also change the bin center to use the mean x,y,z position
+    x_mean_arr = []
+    y_mean_arr = []
+    z_mean_arr = []
+    energy_mean_arr = []
+    x_mean_arr_temp = np.array([])
+    y_mean_arr_temp = np.array([])
+    z_mean_arr_temp = np.array([])
+    summed_energy = 0
+    event_id = 0
 
-    # Use Counter to count the occurrences of each row
-    row_counts = Counter(rows_as_tuples)
+    counter = 0
 
-    # Map the counts back to the DataFrame
-    electrons_smear['duplicates'] = [row_counts[tuple(row)] for row in electrons_smear.values]
+    # test_df = test_df.reset_index()
+    electrons_smear = electrons_smear.sort_values(by=['x_smear', 'y_smear', 'z_smear'])
 
-    # Multiply 'energy' and 'duplicates' columns
-    electrons_smear['energy'] = electrons_smear['energy'] * electrons_smear['duplicates']
+    for index, row in electrons_smear.iterrows():
 
-    # Drop the 'duplicates' column
-    electrons_smear.drop(columns=['duplicates'], inplace=True)
+        # First row
+        if (counter == 0):
+            temp_x = row["x_smear"]
+            temp_y = row["y_smear"]
+            temp_z = row["z_smear"]
+            summed_energy +=row["energy"]
+            event_id = row["event_id"]
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            counter+=1
+            continue
 
-    electrons_smear = electrons_smear.drop_duplicates()
+        # Final row
+        if index == electrons_smear.index[-1]:
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            summed_energy +=row["energy"]
+
+            if (summed_energy != 0): 
+                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                energy_mean_arr.append(summed_energy)
+
+
+        # Same bin
+        if (row["x_smear"] == temp_x and row["y_smear"] == temp_y and row["z_smear"] == temp_z):
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            summed_energy +=row["energy"]
+
+        # Aggregate and store for next 
+        else:
+            if (summed_energy != 0): 
+                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                energy_mean_arr.append(summed_energy)
+            
+            temp_x = row["x_smear"]
+            temp_y = row["y_smear"]
+            temp_z = row["z_smear"]
+            summed_energy = 0
+            x_mean_arr_temp = np.array([])
+            y_mean_arr_temp = np.array([])
+            z_mean_arr_temp = np.array([])
+            
+            
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            summed_energy +=row["energy"]
+            
+
+        counter+=1
+
+    events = np.ones_like(energy_mean_arr)*event_id
+
+    # Make the dataframe again
+    electrons_smear = pd.DataFrame({  "event_id" : events, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
+
 
     # File writing
     electrons_smear = electrons_smear.sort_values(by=['event_id', 'z', 'x', 'y'])
