@@ -11,6 +11,10 @@ echo "The JOBNAME number is: ${JOBNAME}"
 echo "JOBID $1 running on `whoami`@`hostname`"
 start=`date +%s`
 
+SCRIPT=$3
+echo "Script name is: ${SCRIPT}"
+start=`date +%s`
+
 # Setup nexus
 echo "Setting Up NEXUS" 
 source /software/nexus/setup_nexus.sh
@@ -36,7 +40,7 @@ cat ${CONFIG}
 # NEXUS
 echo "Running NEXUS" 
 nexus -n $N_EVENTS ${INIT}
-python3 DiffuseData.py ${JOBNAME}
+python3 ${SCRIPT} ${JOBNAME}
 
 # Remove the large file
 rm ATPC_0nubb.h5
