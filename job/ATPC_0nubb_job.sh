@@ -24,7 +24,6 @@ source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
 N_EVENTS=300
-SF=0
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 
