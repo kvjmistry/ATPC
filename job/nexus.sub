@@ -5,7 +5,7 @@
 jobname=ATPC_gamma
 
 # Amount of diffusion to apply
-ScaleFactor=0
+ScaleFactor=2
 
 CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
