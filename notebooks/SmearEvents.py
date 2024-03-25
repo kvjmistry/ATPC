@@ -18,18 +18,25 @@ print("Finished loading hits")
 # init the RNG
 rng = np.random.default_rng()
 
+DL = 0.278 # mm / sqrt(cm)
+DT = 0.272 # mm / sqrt(cm)
+
+# This is the scaling amount of diffusion
+# scaling factor is in number of sigma
+diff_scaling = 0.5
+
 # Create the bins ---- 
 xmin=-3000
 xmax=3000
-xbw=5
+xbw=10
 
 ymin=-3000
 ymax=3000
-ybw=5
+ybw=10
 
 zmin=0
 zmax=6000
-zbw=5 
+zbw=10
 
 # bins for x, y, z
 xbins = np.arange(xmin, xmax+xbw, xbw)
@@ -44,8 +51,7 @@ zbin_c = zbins[:-1] + zbw / 2
 
 df_smear = []
 
-# Define a function to generate random numbers from Gaussian distribution
-# Define a function to smear the geant4 hits uniformly between the steps
+# Define a function to smear the geant4 electrons uniformly between the steps
 def generate_random(row):
     r0 = np.array([row['x'], row['y'], row['z']])
     r1 = np.array([row['x'] - row['dx1']/2.0, row['y'] - row['dy1']/2.0, row['z'] - row['dz1']/2.0])
@@ -62,6 +68,23 @@ def generate_random(row):
         new_r = r0+random_number*(r2 - r0)
 
     x_smear, y_smear, z_smear = new_r[0], new_r[1], new_r[2]
+
+    # Apply some diffusion to the electron too
+    if (diff_scaling != 0):
+        x = row['x'] # mm
+        y = row['y'] # mm
+        z = row['z'] # mm
+        sigma_DL = diff_scaling*DL*np.sqrt(z/10.) # mm  
+        sigma_DT = diff_scaling*DT*np.sqrt(z/10.) # mm 
+    
+        xy = np.array([x, y])
+        cov_xy = np.array([[sigma_DT, 0], [0, sigma_DT]])
+        
+        xy_smear = rng.multivariate_normal(xy, cov_xy, 1)
+        x_smear = xy_smear[0, 0]
+        y_smear = xy_smear[0, 1]
+        z_smear = rng.normal(z, sigma_DL)
+
     return pd.Series([x_smear, y_smear, z_smear], index=['x_smear', 'y_smear', 'z_smear'])
 
 # Print the number of events:
@@ -156,11 +179,15 @@ for index, e in enumerate(hits.event_id.unique()):
     electrons_smear = pd.concat([electrons, new_columns], axis=1)
     electrons_smear["energy"] = 25e-6 # MeV
 
+    # We need to set this to make sure we use the unbinned positions in the weighting
+    electrons_smear['x'] = electrons_smear['x_smear']
+    electrons_smear['y'] = electrons_smear['y_smear']
+    electrons_smear['z'] = electrons_smear['z_smear']
+
     # Now lets bin the data
     electrons_smear['x_smear'] = pd.cut(x=electrons_smear['x_smear'], bins=xbins,labels=xbin_c, include_lowest=True)
     electrons_smear['y_smear'] = pd.cut(x=electrons_smear['y_smear'], bins=ybins,labels=ybin_c, include_lowest=True)
     electrons_smear['z_smear'] = pd.cut(x=electrons_smear['z_smear'], bins=zbins,labels=zbin_c, include_lowest=True)
-
 
     #Loop over the rows in the dataframe and merge the energies. Also change the bin center to use the mean x,y,z position
     x_mean_arr = []

@@ -18,8 +18,9 @@ print("Finished loading hits")
 rng = np.random.default_rng()
 
 # Diffusion parameters
-DL = 0.415 # mm / sqrt(cm)
-DT = 0.316 # mm / sqrt(cm)
+# 6% C02
+DL = 0.278 # mm / sqrt(cm)
+DT = 0.272 # mm / sqrt(cm)
 
 # Create the bins ---- 
 xmin=-3000
