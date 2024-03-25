@@ -24,7 +24,7 @@ DT = 0.272 # mm / sqrt(cm)
 
 # This is the scaling amount of diffusion
 # scaling factor is in number of sigma
-diff_scaling = sys.argv[2]
+diff_scaling = float(sys.argv[2])
 
 # Create the bins ---- 
 xmin=-3000
