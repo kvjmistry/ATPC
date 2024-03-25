@@ -9,10 +9,13 @@ JOBNAME=$2
 echo "The JOBNAME number is: ${JOBNAME}" 
 
 echo "JOBID $1 running on `whoami`@`hostname`"
-start=`date +%s`
 
 SCRIPT=$3
 echo "Script name is: ${SCRIPT}"
+
+SF=$4
+echo "Scale Factor is: ${SF}"
+
 start=`date +%s`
 
 # Setup nexus
@@ -21,6 +24,7 @@ source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
 N_EVENTS=300
+SF=0
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 
@@ -40,7 +44,7 @@ cat ${CONFIG}
 # NEXUS
 echo "Running NEXUS" 
 nexus -n $N_EVENTS ${INIT}
-python3 ${SCRIPT} ${JOBNAME}
+python3 ${SCRIPT} ${JOBNAME} ${SF}
 
 # Remove the large file
 rm ATPC_0nubb.h5

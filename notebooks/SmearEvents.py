@@ -13,6 +13,7 @@ start_time = time.time()
 print("Loading hits")
 print("Filename: ", sys.argv[1]+".h5")
 hits = pd.read_hdf(sys.argv[1]+".h5", 'MC/hits')
+parts = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
 print("Finished loading hits")
 
 # init the RNG
@@ -23,7 +24,7 @@ DT = 0.272 # mm / sqrt(cm)
 
 # This is the scaling amount of diffusion
 # scaling factor is in number of sigma
-diff_scaling = 0.5
+diff_scaling = sys.argv[2]
 
 # Create the bins ---- 
 xmin=-3000
@@ -290,6 +291,7 @@ df_smear_merge = pd.concat(df_smear, ignore_index=True)
 print("Saving events to file: ", sys.argv[1]+"_smear.h5")
 with pd.HDFStore(sys.argv[1]+"_smear.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
+    store.put('parts', parts, format='table')
     store.put('hits', df_smear_merge, format='table')
 
 # Record the end time

@@ -4,6 +4,9 @@
 # jobname=ATPC_0nubb
 jobname=ATPC_gamma
 
+# Amount of diffusion to apply
+ScaleFactor=0
+
 CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
 
@@ -18,7 +21,7 @@ HOME_LOCATION=/home/krishan.mistry/code/ATPC/
 NewProcess = $(Process)
 
 executable = $(jobname)_job.sh
-arguments = $(NewProcess) $(jobname) $(script)
+arguments = $(NewProcess) $(jobname) $(script) $(ScaleFactor)
 
 # Specify the name of the log, standard error, and standard output (or "screen output") files. Wherever you see $(Cluster), HTCondor will insert the 
 #  queue number assigned to this set of jobs at the time of submission.
@@ -30,7 +33,7 @@ output = jobs/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/notebooks/$(script)
 
 # Transfer output files
-transfer_output_remaps = "$(jobname)_smear.h5 = /protected/krishan.mistry/job/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).h5"
+transfer_output_remaps = "$(jobname)_smear.h5 = /protected/krishan.mistry/job/$(jobname)/$(ScaleFactor)/$(jobname)_SF$(ScaleFactor)_$(Cluster)_$(NewProcess).h5"
 
 # Specify Job duration category as "Medium" (expected runtime <10 hr) or "Long" (expected runtime <20 hr). 
 +JobDurationCategory = "Medium"
