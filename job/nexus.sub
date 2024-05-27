@@ -5,13 +5,14 @@
 jobname=ATPC_gamma
 
 # Amount of diffusion to apply
-ScaleFactor=2
+ScaleFactor=g0
 
 CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
 
 # script=DiffuseData.py
-script=SmearEvents.py
+# script=SmearEvents.py
+script=CompressEvents.py
 
 OSDF_LOCATION=osdf:///ospool/PROTECTED/krishan.mistry/
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
