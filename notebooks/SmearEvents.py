@@ -105,6 +105,7 @@ for index, e in enumerate(hits.event_id.unique()):
 
     # Select the event
     event = hits[hits.event_id == e]
+    event_part = parts[parts.event_id == e]
     
     # Shift z-values so 0 is at the anode
     event.z = event.z+3000
@@ -119,6 +120,7 @@ for index, e in enumerate(hits.event_id.unique()):
 
     for idx, p in enumerate(particles):
         temp_part = event[event.particle_id == p]
+        particle_name = event_part[event_part.particle_id == p].particle_name.iloc[0]
 
         nrows = len(temp_part)
 
@@ -128,6 +130,12 @@ for index, e in enumerate(hits.event_id.unique()):
         extra_row = pd.DataFrame({'x': [0], 'y': [0], 'z': [0]})
         diff_df = pd.concat([diff_df, extra_row])
         diff_df = diff_df.rename(columns={'x': 'dx', 'y': 'dy', 'z': 'dz'})
+
+        # Gammas scatter so dont get the deltas
+        if (particle_name == "gamma"):
+            diff_df["dx"] = 0*diff_df["dx"]
+            diff_df["dy"] = 0*diff_df["dy"]
+            diff_df["dz"] = 0*diff_df["dz"]
         
         dx1= []
         dy1 = []
