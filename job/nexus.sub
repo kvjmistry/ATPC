@@ -11,8 +11,8 @@ CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
 
 # script=DiffuseData.py
-# script=SmearEvents.py
-script=CompressEvents.py
+script=SmearEvents.py
+# script=CompressEvents.py
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry/
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
