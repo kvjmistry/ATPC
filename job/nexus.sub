@@ -34,7 +34,7 @@ output = jobs/$(jobname)/$(ScaleFactor)/jobid$(NewProcess)/$(Cluster)_$(NewProce
 transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/notebooks/$(script)
 
 # Transfer output files
-transfer_output_remaps = "$(jobname)_smear.h5 = /protected/krishan.mistry/job/$(jobname)/$(ScaleFactor)/$(jobname)_SF$(ScaleFactor)_$(Cluster)_$(NewProcess).h5"
+transfer_output_remaps = "$(jobname)_smear.h5 = $(OSDF_LOCATION)/job/$(jobname)/$(ScaleFactor)/$(jobname)_SF$(ScaleFactor)_$(Cluster)_$(NewProcess).h5"
 
 # Specify Job duration category as "Medium" (expected runtime <10 hr) or "Long" (expected runtime <20 hr). 
 +JobDurationCategory = "Medium"
