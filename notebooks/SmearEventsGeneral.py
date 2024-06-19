@@ -8,7 +8,7 @@ from collections import Counter
 import time
 
 # USAGE:
-# python3 SmearEventsGeneral.py <name of nexus input file name (remove .h5 extension)> <DL> <DT>
+# python3 SmearEventsGeneral.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <DL> <DT>
 
 # Record the start time
 start_time = time.time()
