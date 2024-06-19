@@ -9,6 +9,7 @@ import time
 
 # USAGE:
 # python3 SmearEventsGeneral.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <DL> <DT>
+# e.g. python3 SmearEventsGeneral.py /Users/mistryk2/Packages/nexus/ATPC_0nuBB 1 0.408 1.440
 
 # Record the start time
 start_time = time.time()
@@ -53,6 +54,10 @@ z_shift = (zmax-zmin)/2.0
 
 # Mean energy per e-. This splits up each G4 into E_hit/E_mean electrons
 E_mean = 25e-6 # [eV]
+
+print("Scaling Factor: ", diff_scaling)
+print("DL: ", DL, "mm/sqrt(cm)")
+print("DT: ", DT, "mm/sqrt(cm)")
 
 # ----------- ----------- ----------- ----------- ----------- ----------- -----
 
