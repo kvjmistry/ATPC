@@ -29,15 +29,15 @@ diff_scaling = float(sys.argv[2])
 # Create the bins ---- 
 xmin=-3000
 xmax=3000
-xbw=10
+xbw=3
 
 ymin=-3000
 ymax=3000
-ybw=10
+ybw=3
 
 zmin=0
 zmax=6000
-zbw=10
+zbw=3
 
 # bins for x, y, z
 xbins = np.arange(xmin, xmax+xbw, xbw)
