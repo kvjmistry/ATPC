@@ -144,31 +144,34 @@ def Testcycle(curr_node, conn_node ,connected_nodes_, connections_, connection_c
     return cycle
 
 
-# Function to walk along a track segment till we get to an end
-def GetNodePath(graph, start_node, forward_node):
-    path = [start_node]
+# # Function to walk along a track segment till we get to an end
+# def GetNodePath(graph, start_node, forward_node):
+#     path = [start_node]
     
-    query = forward_node
-    prev_node = start_node 
+#     query = forward_node
+#     prev_node = start_node 
 
-    for index,n in enumerate(range(len(graph))):
+#     for index,n in enumerate(range(len(graph))):
 
-        path.append(query)
+#         path.append(query)
         
-        # Get the connected nodes
-        con_nodes = graph[query]
+#         # Get the connected nodes
+#         con_nodes = graph[query]
 
-        # We hit a end-point and it didnt loop
-        if (len(con_nodes) == 1):
-            return path
+#         # We hit a end-point and it didnt loop
+#         if (len(con_nodes) == 1):
+#             return path
+        
+#         if (len(con_nodes >2)):
+#             print("help!!")
 
-        # Get the node that went in the query before
-        if con_nodes[1] == prev_node:
-            prev_node = query
-            query = con_nodes[0]
-        else:
-            prev_node = query
-            query = con_nodes[1]
+#         # Get the node that went in the query before
+#         if con_nodes[1] == prev_node:
+#             prev_node = query
+#             query = con_nodes[0]
+#         else:
+#             prev_node = query
+#             query = con_nodes[1]
 
 
     print("Error in pathing...")
@@ -267,32 +270,36 @@ def join_tracks(array1, array2):
     return joined_array
 
 # This is
-def AddConnectedTracks(curr_track,conn_track, delta_path, seg1_path, seg2_path, UpdatedTracks, data):
+# def AddConnectedTracks(curr_track,conn_track, delta_path, seg1_path, seg2_path, UpdatedTracks, data):
 
-    # Remove the old tracks from the array
-    for index, t in enumerate(UpdatedTracks):
+#     # Get the ids before popping
+#     delta_id = GetUniqueTrackID(UpdatedTracks)
+#     primary_id =  GetUniqueTrackID(UpdatedTracks)+1
+
+#     # Remove the old tracks from the array
+#     for index, t in enumerate(UpdatedTracks):
         
-        # remove the old tracks
-        if (t["id"] == curr_track):
-            UpdatedTracks.pop(index)
+#         # remove the old tracks
+#         if (t["id"] == curr_track):
+#             UpdatedTracks.pop(index)
 
-    # Remove the old tracks from the array
-    for index, t in enumerate(UpdatedTracks):
-        # remove the old tracks
-        if (t["id"] == conn_track):
-            UpdatedTracks.pop(index)
+#     # Remove the old tracks from the array
+#     for index, t in enumerate(UpdatedTracks):
+#         # remove the old tracks
+#         if (t["id"] == conn_track):
+#             UpdatedTracks.pop(index)
 
 
-    delta_len, delta_e = GetTrackLengthEnergy(delta_path, data)
-    Delta = {"id":GetUniqueTrackID(UpdatedTracks), "start":delta_path[0], "end":delta_path[-1], "nodes":delta_path, "length":delta_len, "energy":delta_e,"label":"delta","c":"darkred"}
-    UpdatedTracks.append(Delta)
+#     delta_len, delta_e = GetTrackLengthEnergy(delta_path, data)
+#     Delta = {"id":delta_id, "start":delta_path[0], "end":delta_path[-1], "nodes":delta_path, "length":delta_len, "energy":delta_e,"label":"delta","c":"darkred"}
+#     UpdatedTracks.append(Delta)
     
-    joined_track_path = join_tracks(seg1_path, seg2_path)
-    total_length_joined, total_energy_joined = GetTrackLengthEnergy(joined_track_path, data)
-    color = next(color_cycle)
+#     joined_track_path = join_tracks(seg1_path, seg2_path)
+#     total_length_joined, total_energy_joined = GetTrackLengthEnergy(joined_track_path, data)
+#     color = next(color_cycle)
     
-    Primary = {"id":GetUniqueTrackID(UpdatedTracks), "start":joined_track_path[0], "end":joined_track_path[-1], "nodes":joined_track_path, "length":total_length_joined, "energy":total_energy_joined,"label":"track","c":color}
-    UpdatedTracks.append(Primary)
+#     Primary = {"id":primary_id, "start":joined_track_path[0], "end":joined_track_path[-1], "nodes":joined_track_path, "length":total_length_joined, "energy":total_energy_joined,"label":"track","c":color}
+#     UpdatedTracks.append(Primary)
 
 # This adds the same track ID for the delta and the joining track
 def AddConnectedTracksnoDelta(curr_track, conn_track, UpdatedTracks):
@@ -351,6 +358,7 @@ def CreateVertexandSplit(vertexid, trackid, track1_path, track2_path, Tracks, da
 def UpdateAndMergeTrack(curr_track,conn_track, newpath, UpdatedTracks_, data):
 
     name=""
+    primary_id = GetUniqueTrackID(UpdatedTracks_)
     
     for index, t in enumerate(UpdatedTracks_):
         
@@ -372,7 +380,7 @@ def UpdateAndMergeTrack(curr_track,conn_track, newpath, UpdatedTracks_, data):
     length, energy = GetTrackLengthEnergy(newpath, data)
     print(newpath[0], newpath[-1], newpath)
     color = next(color_cycle)
-    Primary = {"id":GetUniqueTrackID(UpdatedTracks_), "start":newpath[0], "end":newpath[-1], "nodes":newpath, "length":length, "energy":energy,"label":name,"c":color}
+    Primary = {"id":primary_id, "start":newpath[0], "end":newpath[-1], "nodes":newpath, "length":length, "energy":energy,"label":name,"c":color}
     UpdatedTracks_.append(Primary)
 
 
