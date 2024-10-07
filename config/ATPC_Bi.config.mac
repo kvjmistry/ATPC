@@ -7,8 +7,8 @@
 # GENERATION
 /Generator/SingleParticle/region ACTIVE
 /Generator/SingleParticle/particle gamma
-/Generator/SingleParticle/min_energy 2.6 MeV
-/Generator/SingleParticle/max_energy 2.6 MeV
+/Generator/SingleParticle/min_energy 2.447 MeV
+/Generator/SingleParticle/max_energy 2.447 MeV
 
 ##### ACTIONS #####
 /Actions/DefaultEventAction/min_energy 2.3 MeV
@@ -23,9 +23,10 @@
 /Geometry/ATPC/gas_pressure 1. bar
 /Geometry/ATPC/cube_size  6 m
 /Geometry/ATPC/chamber_thickn 5 cm
+/Geometry/ATPC/max_step_size 1 mm
 
 # PERSISTENCY
 #/nexus/persistency/eventType background
 /nexus/random_seed            9800
 /nexus/persistency/start_id   9800
-/nexus/persistency/output_file ATPC_gamma
+/nexus/persistency/output_file ATPC_Bi

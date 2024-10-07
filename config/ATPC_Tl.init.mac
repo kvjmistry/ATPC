@@ -23,4 +23,4 @@
 /nexus/RegisterEventAction DefaultEventAction
 /nexus/RegisterTrackingAction DefaultTrackingAction
 
-/nexus/RegisterMacro ATPC_gamma.config.mac
+/nexus/RegisterMacro ATPC_Tl.config.mac
