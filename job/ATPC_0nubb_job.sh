@@ -13,8 +13,8 @@ echo "JOBID $1 running on `whoami`@`hostname`"
 SCRIPT=$3
 echo "Script name is: ${SCRIPT}"
 
-SF=$4
-echo "Scale Factor is: ${SF}"
+BINSIZE=$4
+echo "BINSIZE is: ${BINSIZE}"
 
 start=`date +%s`
 
@@ -23,9 +23,11 @@ echo "Setting Up NEXUS"
 source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
-N_EVENTS=300
+# ~ 1000 events generated made 500 events, so 50% need about 4k jobs
+N_EVENTS=50
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
+
 
 echo "N_EVENTS: ${N_EVENTS}"
 
@@ -43,12 +45,26 @@ cat ${CONFIG}
 # NEXUS
 echo "Running NEXUS" 
 nexus -n $N_EVENTS ${INIT}
-python3 ${SCRIPT} ${JOBNAME} ${SF}
+python3 ${SCRIPT} ${JOBNAME} 0 0.05 ${BINSIZE} # Just smearing
+python3 ${SCRIPT} ${JOBNAME} 1 0.1  ${BINSIZE} # 0.1 % CO2
+python3 ${SCRIPT} ${JOBNAME} 1 0.25 ${BINSIZE} # 0.25 % CO2
+python3 ${SCRIPT} ${JOBNAME} 1 0.5  ${BINSIZE} # 0.5 % CO2
+python3 ${SCRIPT} ${JOBNAME} 1 5    ${BINSIZE} # 5.0 % CO2
+python3 ${SCRIPT} ${JOBNAME} 1 0.05 ${BINSIZE} # close to zero diffusion
+
+ls -ltrh
 
 # Remove the large file
 rm ATPC_0nubb.h5
 
-ls -ltrh
+echo "Taring the h5 files"
+tar -cvf ATPC_0nubb.tar *.h5
+
+# Cleanup
+rm *.h5
+rm *.mac
+# rm *.txt
+rm *.py
 
 echo "FINISHED....EXITING" 
 

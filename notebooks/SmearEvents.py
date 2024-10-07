@@ -6,6 +6,10 @@ import pandas as pd
 from collections import Counter
 import time
 
+# USAGE:
+# python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <binsize>
+# e.g. python3 SmearEvents.py /Users/mistryk2/Packages/nexus/ATPC_0nuBB 1 1 10
+
 # Record the start time
 start_time = time.time()
 
@@ -19,25 +23,61 @@ print("Finished loading hits")
 # init the RNG
 rng = np.random.default_rng()
 
-DL = 0.278 # mm / sqrt(cm)
-DT = 0.272 # mm / sqrt(cm)
+percentage =  float(sys.argv[3])
+
+# Diffusion values desired
+
+# The percentage 0 is actually a small amount
+if (percentage == 0.05):
+    DL = 0.05 # mm / sqrt(cm)
+    DT = 0.05 # mm / sqrt(cm)
+elif (percentage == 0.1):
+    DL = 0.940 # mm / sqrt(cm)
+    DT = 0.974 # mm / sqrt(cm)
+elif (percentage == 0.25):
+    DL = 0.703 # mm / sqrt(cm)
+    DT = 0.517 # mm / sqrt(cm)
+elif (percentage == 0.5):
+    DL = 0.507 # mm / sqrt(cm)
+    DT = 0.373 # mm / sqrt(cm)
+elif (percentage == 5):
+    DL = 0.290 # mm / sqrt(cm)
+    DT = 0.279 # mm / sqrt(cm)
+else:
+    print("Error CO2 percentage not defined at 75 V/cm field")
+
 
 # This is the scaling amount of diffusion
 # scaling factor is in number of sigma
 diff_scaling = float(sys.argv[2])
 
+print("Scaling Factor: ", diff_scaling)
+print("CO2 Percentage: ", percentage)
+print("DL: ", DL, "mm/sqrt(cm)")
+print("DT: ", DT, "mm/sqrt(cm)")
+
+binsize = int(sys.argv[4])
+
 # Create the bins ---- 
-xmin=-3000
-xmax=3000
-xbw=3
+xbw=binsize
+xmin=-3000 - binsize/2 
+xmax=3000 + binsize/2
 
-ymin=-3000
-ymax=3000
-ybw=3
+ybw=binsize
+ymin=-3000 - binsize/2 
+ymax=3000 + binsize/2
 
-zmin=0
-zmax=6000
-zbw=3
+
+# This shifts the z pos of the events so 0 is at anode
+# can set this to zero
+z_shift = 3000
+print("z_shift is:", z_shift)
+# z_shift = 0
+
+zbw=binsize
+zmin=-3000 + z_shift - binsize/2 
+zmax=3000 + z_shift + binsize/2
+
 
 # bins for x, y, z
 xbins = np.arange(xmin, xmax+xbw, xbw)
@@ -50,28 +90,26 @@ ybin_c = ybins[:-1] + ybw / 2
 zbin_c = zbins[:-1] + zbw / 2
 
 
+# Mean energy per e-. This splits up each G4 into E_hit/E_mean electrons
+E_mean = 25e-6 # [eV]
+
 df_smear = []
 
 # Define a function to smear the geant4 electrons uniformly between the steps
+# Each electron is sampled uniformly towards the previous hit
+# The ends of the track are sampled in the backward direction only 
 def generate_random(row):
     r0 = np.array([row['x'], row['y'], row['z']])
-    r1 = np.array([row['x'] - row['dx1']/2.0, row['y'] - row['dy1']/2.0, row['z'] - row['dz1']/2.0])
-    r2 = np.array([row['x'] + row['dx2']/2.0, row['y'] + row['dy2']/2.0, row['z'] + row['dz2']/2.0])
+    r1 = np.array([row['x'] - row['dx'], row['y'] - row['dy'], row['z'] - row['dz']]) # backward delta
     
-    # This helps us to either move to the step forward or backward from the hit
-    sampled_direction = np.random.choice([1, 2], p=[0.5, 0.5])
-
-    if (sampled_direction == 1):
-        random_number = rng.uniform(0, 1)
-        new_r = r0+random_number*(r1 - r0)
-    else:
-        random_number = rng.uniform(0, 1)
-        new_r = r0+random_number*(r2 - r0)
+    # Uniformly move the backward from the hit by its step size
+    random_number = rng.uniform(0, 1)
+    new_r = r0+random_number*(r1 - r0)
 
     x_smear, y_smear, z_smear = new_r[0], new_r[1], new_r[2]
 
-    # Apply some diffusion to the electron too
-    if (diff_scaling != 0):
+    # Apply some diffusion to the electron too if the scaling is non-zero
+    if (diff_scaling != 0.0):
         x = row['x'] # mm
         y = row['y'] # mm
         z = row['z'] # mm
@@ -81,10 +119,10 @@ def generate_random(row):
         xy = np.array([x, y])
         cov_xy = np.array([[sigma_DT, 0], [0, sigma_DT]])
         
-        xy_smear = rng.multivariate_normal(xy, cov_xy, 1)
-        x_smear = xy_smear[0, 0]
-        y_smear = xy_smear[0, 1]
-        z_smear = rng.normal(z, sigma_DL)
+        xy_smear_diff = rng.multivariate_normal(xy, cov_xy, 1)
+        x_smear = xy_smear_diff[0, 0]+x_smear
+        y_smear = xy_smear_diff[0, 1]+y_smear
+        z_smear = rng.normal(z, sigma_DL)+z_smear
 
     return pd.Series([x_smear, y_smear, z_smear], index=['x_smear', 'y_smear', 'z_smear'])
 
@@ -92,7 +130,9 @@ def generate_random(row):
 print("Number of events to process: ", len(hits.event_id.unique()))
 min_event_id = min( hits.event_id.unique())
 
+# ---------------
 # Main event Loop
+# ---------------
 for index, e in enumerate(hits.event_id.unique()):
     print("On Event:", e - min_event_id)
 
@@ -108,10 +148,10 @@ for index, e in enumerate(hits.event_id.unique()):
     event_part = parts[parts.event_id == e]
     
     # Shift z-values so 0 is at the anode
-    event.z = event.z+3000
+    event.z = event.z+z_shift
 
     # Calc number of electrons in a hit
-    event["n"] = round(event["energy"]/25e-6)
+    event["n"] = round(event["energy"]/E_mean)
 
     # Loop over the particles and get the differences between steps ------
     particles = event.particle_id.unique()
@@ -119,56 +159,33 @@ for index, e in enumerate(hits.event_id.unique()):
     smear_df = []
 
     for idx, p in enumerate(particles):
-        temp_part = event[event.particle_id == p]
-        particle_name = event_part[event_part.particle_id == p].particle_name.iloc[0]
 
-        nrows = len(temp_part)
+        # Get hits for particle i in the event
+        temp_part_hits = event[event.particle_id == p]
+        temp_part = event_part[event_part.particle_id == p]
+        particle_name = temp_part.particle_name.iloc[0]
 
-        # This dataframe contains the difference between hits
-        diff_df = temp_part[['x', 'y', 'z']].diff()
-        diff_df.iloc[0] = 0
-        extra_row = pd.DataFrame({'x': [0], 'y': [0], 'z': [0]})
-        diff_df = pd.concat([diff_df, extra_row])
+        nrows = len(temp_part_hits)
+
+        # This dataframe contains the difference in distance between hits
+        diff_df = temp_part_hits[['x', 'y', 'z']].diff()
+
+        # Set the dist for the first hit as the difference to the inital position
+        diff_df.iloc[0, diff_df.columns.get_loc('x')] = temp_part_hits.iloc[0].x - temp_part.initial_x.iloc[0]
+        diff_df.iloc[0, diff_df.columns.get_loc('y')] = temp_part_hits.iloc[0].y - temp_part.initial_y.iloc[0]
+        diff_df.iloc[0, diff_df.columns.get_loc('z')] = temp_part_hits.iloc[0].z - (temp_part.initial_z.iloc[0]+z_shift)
+
+        # Name the columns by their deltas
         diff_df = diff_df.rename(columns={'x': 'dx', 'y': 'dy', 'z': 'dz'})
 
-        # Gammas scatter so dont get the deltas
+        # We dont want to smear over the gamma steps
+        # Only their daughter electrons
         if (particle_name == "gamma"):
             diff_df["dx"] = 0*diff_df["dx"]
             diff_df["dy"] = 0*diff_df["dy"]
             diff_df["dz"] = 0*diff_df["dz"]
         
-        dx1= []
-        dy1 = []
-        dz1 = []
-        dx2= []
-        dy2 = []
-        dz2 = []
-        index_arr = []
-
-        # convert the difference dataframe to 
-        for index in range(len(diff_df)-1):
-            dx1.append(diff_df.iloc[index].dx)
-            dy1.append(diff_df.iloc[index].dy)
-            dz1.append(diff_df.iloc[index].dz)
-            dx2.append(diff_df.iloc[index+1].dx)
-            dy2.append(diff_df.iloc[index+1].dy)
-            dz2.append(diff_df.iloc[index+1].dz)
-
-
-        index_arr = diff_df.index.to_numpy()
-        index_arr = index_arr[:-1]
-
-        data = {
-            'dx1': dx1,
-            'dx2': dx2,
-            'dy1': dy1,
-            'dy2': dy2,
-            'dz1': dz1,
-            'dz2': dz2,
-        }
-
-        new_df = pd.DataFrame(data, index=index_arr)
-        smear_df.append(new_df)
+        smear_df.append(diff_df)
 
     # Concatenate DataFrames along rows (axis=0)
     smear_df = pd.concat(smear_df)
@@ -177,18 +194,18 @@ for index, e in enumerate(hits.event_id.unique()):
     event = pd.merge(event, smear_df, left_index=True, right_index=True, how='inner')
 
     # Create a new DataFrame with duplicated rows, so we can smear each electron by diffusion
-    electrons = pd.DataFrame(np.repeat(event[["event_id",'x', 'y', 'z', 'dx1', 'dx2', 'dy1', 'dy2', 'dz1','dz2']].values, event['n'], axis=0), columns=["event_id",'x', 'y', 'z', 'dx1', 'dx2', 'dy1', 'dy2', 'dz1','dz2'])
+    electrons = pd.DataFrame(np.repeat(event[["event_id",'x', 'y', 'z', 'dx', 'dy', 'dz']].values, event['n'], axis=0), columns=["event_id",'x', 'y', 'z', 'dx', 'dy', 'dz'])
 
     # Reset the index of the new DataFrame if needed
     electrons = electrons.reset_index(drop=True)
 
     # Now apply some smearing to each of the electrons
     # Apply the function to create new columns
-    new_columns = electrons.apply(generate_random, axis=1)
+    new_columns     = electrons.apply(generate_random, axis=1)
     electrons_smear = pd.concat([electrons, new_columns], axis=1)
-    electrons_smear["energy"] = 25e-6 # MeV
+    electrons_smear["energy"] = E_mean # MeV
 
-    # We need to set this to make sure we use the unbinned positions in the weighting
+    # We need to set this to make sure we keep the information about the unbinned positions in the weighting
     electrons_smear['x'] = electrons_smear['x_smear']
     electrons_smear['y'] = electrons_smear['y_smear']
     electrons_smear['z'] = electrons_smear['z_smear']
@@ -198,7 +215,8 @@ for index, e in enumerate(hits.event_id.unique()):
     electrons_smear['y_smear'] = pd.cut(x=electrons_smear['y_smear'], bins=ybins,labels=ybin_c, include_lowest=True)
     electrons_smear['z_smear'] = pd.cut(x=electrons_smear['z_smear'], bins=zbins,labels=zbin_c, include_lowest=True)
 
-    #Loop over the rows in the dataframe and merge the energies. Also change the bin center to use the mean x,y,z position
+    # Loop over the rows in the dataframe and sum the energies of all electrons in a bin. 
+    # Also change the bin center to use the mean x,y,z position
     x_mean_arr = []
     y_mean_arr = []
     z_mean_arr = []
@@ -211,12 +229,14 @@ for index, e in enumerate(hits.event_id.unique()):
 
     counter = 0
 
-    # test_df = test_df.reset_index()
+    # Sort so all the bin labels are next to one another
     electrons_smear = electrons_smear.sort_values(by=['x_smear', 'y_smear', 'z_smear'])
 
+    # Loop over all bins and aggregate to get total energy in each bin and their
+    # mean x,y,z position
     for index, row in electrons_smear.iterrows():
 
-        # First row
+        # First row 
         if (counter == 0):
             temp_x = row["x_smear"]
             temp_y = row["y_smear"]
@@ -296,11 +316,16 @@ for index, e in enumerate(hits.event_id.unique()):
 
 df_smear_merge = pd.concat(df_smear, ignore_index=True)
 
-print("Saving events to file: ", sys.argv[1]+"_smear.h5")
-with pd.HDFStore(sys.argv[1]+"_smear.h5", mode='w', complevel=5, complib='zlib') as store:
+outfile = sys.argv[1] + "_" + str(percentage) + "percent_smear.h5"
+
+if (diff_scaling == 0.0):
+    outfile = sys.argv[1] + "_smear.h5"
+
+print("Saving events to file: ", outfile)
+with pd.HDFStore(outfile, mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
-    store.put('parts', parts, format='table')
-    store.put('hits', df_smear_merge, format='table')
+    store.put('MC/particles', parts, format='table')
+    store.put('MC/hits', df_smear_merge, format='table')
 
 # Record the end time
 end_time = time.time()

@@ -24,6 +24,7 @@
 /Geometry/ATPC/gas_pressure 1. bar
 /Geometry/ATPC/cube_size  6 m
 /Geometry/ATPC/chamber_thickn 5 cm
+/Geometry/ATPC/max_step_size 1 mm
 
 # PERSISTENCY
 #/nexus/persistency/eventType background

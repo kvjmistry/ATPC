@@ -1,11 +1,11 @@
 # nexus.sub
 
 # The job title here.
-# jobname=ATPC_0nubb
-jobname=ATPC_gamma
+jobname=ATPC_0nubb
+# jobname=ATPC_Tl
+# jobname=ATPC_Bi
 
-# Amount of diffusion to apply
-ScaleFactor=0
+BINSIZE=10
 
 CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
@@ -14,7 +14,7 @@ INIT=$(jobname).init.mac
 script=SmearEvents.py
 # script=CompressEvents.py
 
-OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry/
+OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
 
 # newjobid = $(Process) + 100
@@ -22,19 +22,19 @@ HOME_LOCATION=/home/krishan.mistry/code/ATPC/
 NewProcess = $(Process)
 
 executable = $(jobname)_job.sh
-arguments = $(NewProcess) $(jobname) $(script) $(ScaleFactor)
+arguments = $(NewProcess) $(jobname) $(script) $(BINSIZE)
 
 # Specify the name of the log, standard error, and standard output (or "screen output") files. Wherever you see $(Cluster), HTCondor will insert the 
 #  queue number assigned to this set of jobs at the time of submission.
-log    = jobs/$(jobname)/$(ScaleFactor)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).log
-error  = jobs/$(jobname)/$(ScaleFactor)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).err
-output = jobs/$(jobname)/$(ScaleFactor)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
+log    = jobs/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).log
+error  = jobs/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).err
+output = jobs/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 
 # Transfer input files
 transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/notebooks/$(script)
 
 # Transfer output files
-transfer_output_remaps = "$(jobname)_smear.h5 = $(OSDF_LOCATION)/job/$(jobname)/$(ScaleFactor)/$(jobname)_SF$(ScaleFactor)_$(Cluster)_$(NewProcess).h5"
+transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).tar"
 
 # Specify Job duration category as "Medium" (expected runtime <10 hr) or "Long" (expected runtime <20 hr). 
 +JobDurationCategory = "Medium"
@@ -45,13 +45,13 @@ transfer_output_remaps = "$(jobname)_smear.h5 = $(OSDF_LOCATION)/job/$(jobname)/
 
 # Tell HTCondor requirements (e.g., operating system) your job needs, 
 # what amount of compute resources each job will need on the computer where it runs.
-requirements = (OSGVO_OS_STRING == "RHEL 7")
+requirements = (Arch == "X86_64")
 request_cpus = 1
 request_memory = 4GB
 request_disk = 5GB
 
 # If submitting more than 10k jobs use this statement
-# max_idle = 2000
+max_idle = 2000
 
 # Tell HTCondor the number of instances to run:
-queue 1000
+queue 5000
