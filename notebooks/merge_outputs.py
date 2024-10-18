@@ -17,7 +17,7 @@ for f in files:
 
 dfs = pd.concat(dfs)
 
-display(dfs)
+print(dfs)
 
 Tracks_ = []
 connections_ = []
