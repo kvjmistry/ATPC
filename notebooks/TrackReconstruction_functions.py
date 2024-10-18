@@ -10,56 +10,6 @@ colormap = plt.cm.get_cmap('Dark2')
 color_cycle = itertools.cycle(colormap.colors)
 
 
-# Function to calculate the angle between two vectors
-def calculate_angle(v1, v2):
-    dot_product = np.dot(v1, v2)
-    norm_v1 = np.linalg.norm(v1)
-    norm_v2 = np.linalg.norm(v2)
-    angle = np.arccos(dot_product / (norm_v1 * norm_v2))
-    return angle
-
-# Calculate the angle between momentum vectors with merged mc particle input
-def calculate_angle_parts(row):
-    # Extract momentum components for particle 1
-    p1 = np.array([row['initial_momentum_x_1'], row['initial_momentum_y_1'], row['initial_momentum_z_1']])
-    # Extract momentum components for particle 2
-    p2 = np.array([row['initial_momentum_x_2'], row['initial_momentum_y_2'], row['initial_momentum_z_2']])
-    
-    # Calculate dot product and magnitudes
-    dot_product = np.dot(p1, p2)
-    magnitude_p1 = np.linalg.norm(p1)
-    magnitude_p2 = np.linalg.norm(p2)
-    
-    # Calculate the cosine of the angle
-    cos_theta = dot_product / (magnitude_p1 * magnitude_p2)
-    
-    # Ensure the value is within the valid range for arccos (to avoid numerical errors)
-    cos_theta = np.clip(cos_theta, -1, 1)
-    
-    # Calculate the angle in radians
-    # angle = np.arccos(cos_theta)
-    
-    return cos_theta
-
-def cosine_angle(vector_a, vector_b):
-    # Compute the dot product of the two vectors
-    dot_product = np.dot(vector_a, vector_b)
-    
-    # Compute the magnitudes (norms) of the vectors
-    norm_a = np.linalg.norm(vector_a)
-    norm_b = np.linalg.norm(vector_b)
-    
-    # Compute the cosine of the angle
-    cos_theta = dot_product / (norm_a * norm_b)
-    
-    return cos_theta
-
-
-def ReturnLargest(T1,T2):
-    if T1 > T2:
-        return T1
-    else:
-        return T2
 
 # Function to add connections made
 # current and current node index is input
@@ -124,7 +74,7 @@ def forms_cycle(node, target, connections_dict):
     
 
 # Helper function for testing for closed loops
-def Testcycle(curr_node, conn_node ,connected_nodes_, connections_, connection_count_):
+def Testcycle(curr_node, conn_node,connected_nodes_, connections_, connection_count_):
 
     # Temporarily add the connection to check for cycles
     temp_connections_dict = copy.deepcopy(connected_nodes_)
@@ -143,39 +93,6 @@ def Testcycle(curr_node, conn_node ,connected_nodes_, connections_, connection_c
 
     return cycle
 
-
-# # Function to walk along a track segment till we get to an end
-# def GetNodePath(graph, start_node, forward_node):
-#     path = [start_node]
-    
-#     query = forward_node
-#     prev_node = start_node 
-
-#     for index,n in enumerate(range(len(graph))):
-
-#         path.append(query)
-        
-#         # Get the connected nodes
-#         con_nodes = graph[query]
-
-#         # We hit a end-point and it didnt loop
-#         if (len(con_nodes) == 1):
-#             return path
-        
-#         if (len(con_nodes >2)):
-#             print("help!!")
-
-#         # Get the node that went in the query before
-#         if con_nodes[1] == prev_node:
-#             prev_node = query
-#             query = con_nodes[0]
-#         else:
-#             prev_node = query
-#             query = con_nodes[1]
-
-
-    print("Error in pathing...")
-    return path
 
 def check_start_end_exists(number,Tracks):
     check_start = any(path["start"] == number for path in Tracks)
@@ -269,95 +186,43 @@ def join_tracks(array1, array2):
 
     return joined_array
 
-# This is
-# def AddConnectedTracks(curr_track,conn_track, delta_path, seg1_path, seg2_path, UpdatedTracks, data):
+def AddConnectedTracks(curr_track,conn_track, delta_path, seg1_path, seg2_path, UpdatedTracks_, data):
 
-#     # Get the ids before popping
-#     delta_id = GetUniqueTrackID(UpdatedTracks)
-#     primary_id =  GetUniqueTrackID(UpdatedTracks)+1
+    # Get the ids before popping
+    delta_id   = GetUniqueTrackID(UpdatedTracks_)
+    primary_id =  GetUniqueTrackID(UpdatedTracks_)+1
 
-#     # Remove the old tracks from the array
-#     for index, t in enumerate(UpdatedTracks):
-        
-#         # remove the old tracks
-#         if (t["id"] == curr_track):
-#             UpdatedTracks.pop(index)
-
-#     # Remove the old tracks from the array
-#     for index, t in enumerate(UpdatedTracks):
-#         # remove the old tracks
-#         if (t["id"] == conn_track):
-#             UpdatedTracks.pop(index)
-
-
-#     delta_len, delta_e = GetTrackLengthEnergy(delta_path, data)
-#     Delta = {"id":delta_id, "start":delta_path[0], "end":delta_path[-1], "nodes":delta_path, "length":delta_len, "energy":delta_e,"label":"delta","c":"darkred"}
-#     UpdatedTracks.append(Delta)
-    
-#     joined_track_path = join_tracks(seg1_path, seg2_path)
-#     total_length_joined, total_energy_joined = GetTrackLengthEnergy(joined_track_path, data)
-#     color = next(color_cycle)
-    
-#     Primary = {"id":primary_id, "start":joined_track_path[0], "end":joined_track_path[-1], "nodes":joined_track_path, "length":total_length_joined, "energy":total_energy_joined,"label":"track","c":color}
-#     UpdatedTracks.append(Primary)
-
-# This adds the same track ID for the delta and the joining track
-def AddConnectedTracksnoDelta(curr_track, conn_track, UpdatedTracks):
-
-    print("Joining tracks ",curr_track,", ",conn_track)
-    name = "track"
-    color = "red"
-    track_i_update = -1
-
-    for index, t in enumerate(UpdatedTracks):
+    # Remove the old tracks from the array
+    for index, t in enumerate(UpdatedTracks_):
         
         # remove the old tracks
         if (t["id"] == curr_track):
-            name = t["label"]
-            color = t["c"]
-            track_i_update = index
-
-    # If the connecting track is a main track, then use the colour and label here
-    for index, t in enumerate(UpdatedTracks):
-        if (t["id"] == conn_track):
-            if (t["label"] == "Track1" or t["label"] == "Track2"):
-                name = t["label"]
-                color = t["c"]
-
-    UpdatedTracks[track_i_update]["label"] = name
-    UpdatedTracks[track_i_update]["c"] = color
-
-
-# From the track containing the vertex, split the track and add a single node for the vertex
-def CreateVertexandSplit(vertexid, trackid, track1_path, track2_path, Tracks, data):
+            UpdatedTracks_.pop(index)
 
     # Remove the old tracks from the array
-    for index, t in enumerate(Tracks):
-        # remove the old track
-        if (t["id"] == trackid):
-            # print("Killing Track: ",t["id"])
-            Tracks.pop(index)
+    for index, t in enumerate(UpdatedTracks_):
+        # remove the old tracks
+        if (t["id"] == conn_track):
+            UpdatedTracks_.pop(index)
 
-    track1_len, track1_e = GetTrackLengthEnergy(track1_path, data)
-    track2_len, track2_e = GetTrackLengthEnergy(track2_path, data)
-    vertex_len, vertex_e = GetTrackLengthEnergy([vertexid], data)
 
+    delta_len, delta_e = GetTrackLengthEnergy(delta_path, data)
+    Delta = {"id":delta_id, "start":delta_path[0], "end":delta_path[-1], "nodes":delta_path, "length":delta_len, "energy":delta_e,"label":"track","c":"black"}
+    UpdatedTracks_.append(Delta)
+    
+    joined_track_path = join_tracks(seg1_path, seg2_path)
+    total_length_joined, total_energy_joined = GetTrackLengthEnergy(joined_track_path, data)
     color = next(color_cycle)
-    Track1 = {"id":GetUniqueTrackID(Tracks), "start":track1_path[0], "end":track1_path[-1], "nodes":track1_path, "length":track1_len, "energy":track1_e,"label":"Track1","c":color}
-    Tracks.append(Track1)
+    
+    Primary = {"id":primary_id, "start":joined_track_path[0], "end":joined_track_path[-1], "nodes":joined_track_path, "length":total_length_joined, "energy":total_energy_joined,"label":"track","c":"black"}
+    UpdatedTracks_.append(Primary)
 
-    color = next(color_cycle)
-    Track2 = {"id":GetUniqueTrackID(Tracks), "start":track2_path[0], "end":track2_path[-1], "nodes":track2_path, "length":track2_len, "energy":track2_e,"label":"Track2","c":color}
-    Tracks.append(Track2)
-
-    Vertex = {"id":GetUniqueTrackID(Tracks), "start":vertexid, "end":vertexid, "nodes":[vertexid], "length":vertex_len, "energy":vertex_e,"label":"vertex","c":"r"}
-    Tracks.append(Vertex)
-   
 
 # Update an existing track in the updated tracks array from the merging of two tracks
 def UpdateAndMergeTrack(curr_track,conn_track, newpath, UpdatedTracks_, data):
 
     name=""
+    color = "black"
     primary_id = GetUniqueTrackID(UpdatedTracks_)
     
     for index, t in enumerate(UpdatedTracks_):
@@ -373,29 +238,14 @@ def UpdateAndMergeTrack(curr_track,conn_track, newpath, UpdatedTracks_, data):
         for index, t in enumerate(UpdatedTracks_):
             # remove the old tracks
             if (t["id"] == conn_track):
-                name=t["label"]
+                # name=t["label"]
+                # color = t["c"]
                 UpdatedTracks_.pop(index)
 
     # Add the new merged track
     length, energy = GetTrackLengthEnergy(newpath, data)
-    print(newpath[0], newpath[-1], newpath)
-    color = next(color_cycle)
-    Primary = {"id":primary_id, "start":newpath[0], "end":newpath[-1], "nodes":newpath, "length":length, "energy":energy,"label":name,"c":color}
+    Primary = {"id":primary_id, "start":newpath[0], "end":newpath[-1], "nodes":newpath, "length":length, "energy":energy,"label":"track","c":"black"}
     UpdatedTracks_.append(Primary)
-
-
-def SearchDelta(Track_, UpdatedTracks_):
-    start = Track_["start"]
-    end   = Track_["end"]
-
-    for index, t in enumerate(UpdatedTracks_):
-        
-        # Check to see if the current track ends matches with any tracks in the updated and it is flagged as a delta
-        if (t["start"] == start or t["start"] == end or t["end"] == start or t["end"] == end):
-            if (t["label"] == "delta"):
-                return True
-        
-    return False
 
 
 def GetUniqueTrackID(Tracks_):
@@ -420,89 +270,534 @@ def AddConnectionlessNodes(connection_count, UpdatedTracks, data):
             Gamma = {"id":GetUniqueTrackID(UpdatedTracks), "start":index, "end":index, "nodes":[index], "length":0, "energy":hit_energy,"label":"gamma","c":"y"}
             UpdatedTracks.append(Gamma)
 
-# First function doesnt account for duplicate nodes. We fix that here
-# also distribute the vertex energy equally among track 1 and track 2
-def FixTrackEnergies(UpdatedTracks, vertex_index, data):
 
-    counted_nodes = []
+def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, dist_matrix, dist_threshold, data):
 
-    vertex_half_energy = 0
-    for t in UpdatedTracks:
-        if (t["label"] == "vertex"):
-            vertex_half_energy = data.iloc[t["start"]].energy/2.0
-            counted_nodes.append(t["start"])
 
-    # Get the total energy
-    for t in UpdatedTracks:
-        e_sum = 0
+    # Dont run this if we only got one track!
+    if (len(Tracks_) == 1):
+        return True, Tracks_
 
-        for node in t["nodes"]:
-            if (node in counted_nodes):
+    for idx, Track in enumerate(Tracks_):
+
+        # Current track
+        curr_track = Track["id"]
+        
+        start_node = Track["start"]
+        end_node   = Track["end"]
+
+        # Get the indexes of closest nodes to start and end
+        dist_ind_start = np.argsort(dist_matrix[start_node])[1:]
+        dist_ind_end   = np.argsort(dist_matrix[end_node])[1:]
+
+        # Filter nodes that are in the current track
+        dist_ind_start = [x for x in dist_ind_start if x not in Track["nodes"]]
+        dist_ind_end   = [x for x in dist_ind_end if x not in Track["nodes"]]
+
+        # Distances of the end point to the closest track
+        dist_start = dist_matrix[start_node][dist_ind_start[0]]
+        dist_end   = dist_matrix[end_node][dist_ind_end[0]]
+
+        # Apply threshold. If both nodes fail here then no need to continue
+        if (dist_start > dist_threshold and dist_end > dist_threshold):
+            # print("Failed distance requirements")
+            continue
+
+        # First find the node with the closest track
+        closest_idx = 0
+        end_conn_node = 0
+        con_point = "start"
+        curr_track_path = Track["nodes"]
+
+        # Choose the smallest index
+        if dist_start < dist_end:
+            closest_idx = dist_ind_start[0]
+            end_conn_node = start_node
+
+            if (dist_start > dist_threshold):
+                # print(" Start Failed distance requirements")
                 continue
-                
-            counted_nodes.append(node)
-
-            e_node = data.iloc[node].energy
-            e_sum = e_sum + e_node
-        
-        # Split the energy equally
-        if (t["label"] == "Track1" or t["label"] == "Track2"):
             
-            # only do it for the track next to the vertex as there can be merged deltas
-            if (vertex_index in t["nodes"]):
-                e_sum = e_sum + vertex_half_energy
+        else:
+            closest_idx = dist_ind_end[0]
+            end_conn_node = end_node
+            con_point = "end"
+
+            # Apply threshold
+            if (dist_end > dist_threshold):
+                # print(" End Failed distance requirements")
+                continue
+
+        # Get the track ID where the connecting node is located
+        con_track      = GetTrackwithNode(closest_idx, Tracks_)
+        if (con_track == -1):
+            # print("Error could not find track, continuing,..., ", closest_idx)
+            continue
+
+        # Check if that index has changed, use that track
+        con_track_dict = GetTrackDictwithNode(closest_idx, Tracks_)
+
+        # The current node should not have more than 2 connections as its an end
+        # The connecting node should not have more than 3 connections
+        if (connection_count_[closest_idx] >= 3 or connection_count_[end_conn_node] >= 2):
+
+            # Remove the old tracks from the array
+            for j, t in enumerate(Tracks_):
+                
+                # Change the color to black
+                if (t["id"] == curr_track):
+                    Tracks_[j]["c"] = "black"
+            # print("node already has three connecitons,skipping...")
+            continue
+
+        # Check if the current track is connected to the proposed track already
+        if (set(Track["nodes"]) & set(con_track_dict["nodes"])):
+            
+            # Remove the old tracks from the array
+            for j, t in enumerate(Tracks_):
+                
+                # Change the color to black
+                if (t["id"] == curr_track):
+                    Tracks_[j]["c"] = "black"
+                    
+            # print("the trying to connect both ends of track to the same track")
+            continue
+
+
+
+        # if node-node then merge nodes and update track in Tracks
+        if (closest_idx == con_track_dict["start"] or closest_idx == con_track_dict["end"]):
+            # print(curr_track, con_track, closest_idx, con_track_dict["start"], con_track_dict["end"])
+            
+            if (con_point == "start"):
+                curr_track_path.insert(0,closest_idx)
+                newpath = join_tracks(curr_track_path, con_track_dict["nodes"])
+            else:
+                curr_track_path.append(closest_idx)
+                newpath = join_tracks(curr_track_path, con_track_dict["nodes"])
         
-        # remove energy from the vertex
-        if (t["label"] == "vertex"):
-            e_sum=0
+            UpdateAndMergeTrack(curr_track, con_track, newpath, Tracks_, data)
+            UpdateConnections(closest_idx, end_conn_node, connected_nodes_, connections_, connection_count_)
+            return False, Tracks_
 
-        t["energy"] = e_sum
+        # Check if the proposed connection will form a cycle
+        cycle  = Testcycle(end_conn_node, closest_idx ,connected_nodes_, connections_, connection_count_)
 
+        if not cycle:
 
+            if (con_point =="start"):
+                curr_track_path.insert(0,closest_idx)
+            else:
+                curr_track_path.append(closest_idx)
 
-def FitTrack(Track, vertex):
+            Track["nodes"] = curr_track_path
+            UpdateConnections(closest_idx, end_conn_node, connected_nodes_, connections_, connection_count_)
+        else:
+            continue
 
-    # Convert values to an array
-    track_arr = Track[['x', 'y', 'z']].to_numpy()
+        # Get all connected tracks to the closest index and current track, keep track ids
+        # Get node paths from all the start and end positions of the tracks find the largest one
+        # Walk along 
 
-    # if (len(track_arr) == 1):
-    return track_arr[0] - vertex
+        # Get the length either side of track
+        seg1_path = GetNodePath(connected_nodes_, closest_idx, connected_nodes_[closest_idx][0])
+        seg2_path = GetNodePath(connected_nodes_, closest_idx, connected_nodes_[closest_idx][1])
 
-    # # Try fitting
-    # x_array = Track['x'].to_numpy()
-    # y_array = Track['y'].to_numpy()
-    # z_array = Track['z'].to_numpy()
+        # Now get the lengths and energies of the track segments
+        total_length_seg1, total_energy_seg1 = GetTrackLengthEnergy(seg1_path, data)
+        total_length_seg2, total_energy_seg2 = GetTrackLengthEnergy(seg2_path, data) 
+        total_length_seg3, total_energy_seg3 = GetTrackLengthEnergy(curr_track_path, data) 
 
-    # data_comb = np.vstack((x_array, y_array, z_array)).T
-    # centered_data = data_comb - vertex
+        # Find the delta and the primary track and add them to the new track list
+        if (total_length_seg1 < total_length_seg2 and total_length_seg1 < total_length_seg3):
+            AddConnectedTracks(curr_track, con_track, seg1_path, seg2_path, curr_track_path, Tracks_, data)
+            return False, Tracks_
+        
+        elif ((total_length_seg2 < total_length_seg1 and total_length_seg2 < total_length_seg3)):
+            AddConnectedTracks(curr_track, con_track, seg2_path, seg1_path, curr_track_path, Tracks_, data)
+            return False, Tracks_
+        
+        else:
 
-    # _, _, vv = np.linalg.svd(centered_data)
-    # direction_vector = vv[0]
+            for j, t in enumerate(Tracks_):
+                
+                # Change the color to black
+                if (t["id"] == curr_track):
+                    Tracks_[j]["c"] = "black"
+
+            continue
+
+    return True, Tracks_
+
+# Function to walk along a track segment till we get to an end
+def GetNodePath(graph, start_node, forward_node):
+    path = [start_node]
     
+    query = forward_node
+    prev_node = start_node 
 
-    # # Ensure the direction vector points away from the starting point
-    # if np.dot(data_comb[1] - vertex, direction_vector) < 0:
-    #     direction_vector = -direction_vector
+    for index,n in enumerate(range(len(graph))):
 
-    # return direction_vector
-
-def CalcTrackAngle(Track1, Track2, vertex):
-
-    dir_track1 = FitTrack(Track1, vertex)
-    dir_track2 = FitTrack(Track2, vertex)
-    cosine = cosine_angle(dir_track1, dir_track2)
-
-    # Just check that first hit was not reco in the wrong direction
-    if (np.abs(cosine) > 0.97 and len(Track1) > 1):
-        dir_track1 = FitTrack(Track1.iloc[1:2], vertex)
-        dir_track2 = FitTrack(Track2, vertex)
-        cosine = cosine_angle(dir_track1, dir_track2)
+        path.append(query)
         
+        # Get the connected nodes
+        con_nodes = graph[query]
 
-    if (np.abs(cosine) > 0.97  and len(Track2) > 1):
-        dir_track1 = FitTrack(Track1, vertex)
-        dir_track2 = FitTrack(Track2.iloc[1:2], vertex)
-        cosine = cosine_angle(dir_track1, dir_track2)
+        # We hit a end-point and it didnt loop
+        if (len(con_nodes) == 1):
+            return path
+        
+        if (len(con_nodes) == 3 ):
+            con_nodes.remove(prev_node)
+            len1 = len(GetNodePath(graph, query, con_nodes[0]))
+            len2 = len(GetNodePath(graph, query, con_nodes[1]))
+
+            if (len1 > len2):
+                prev_node = query
+                query = con_nodes[0]
+            else:
+                prev_node = query
+                query = con_nodes[1]
+            
+            continue
+
+            print("help!!")
+
+        if (len(con_nodes) > 3 ):
+            print("Error too many nodes in pathing that I was anticipating...")
+
+        # Get the node that went in the query before
+        if con_nodes[1] == prev_node:
+            prev_node = query
+            query = con_nodes[0]
+        else:
+            prev_node = query
+            query = con_nodes[1]
 
 
-    return cosine, dir_track1, dir_track2
+# Function to calculate the Euclidean distance between two points
+def euclidean_distance(p1, p2):
+    return np.sqrt(np.sum((p1 - p2) ** 2))
+
+# Function to calculate the angle between two vectors
+def angle_between_vectors(v1, v2):
+    cos_theta = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+    # Ensure the value is within [-1, 1] due to floating-point precision
+    cos_theta = np.clip(cos_theta, -1, 1)
+    angle = np.arccos(cos_theta)
+    return np.degrees(angle)
+
+
+def CategorizeTracks(Tracks_):
+
+    temp_length = 0
+    primary_track_id = -1
+    primary_nodes = []
+
+    # Get the primary track 
+    for t in Tracks_:
+
+        if (len(t["nodes"]) > temp_length):
+            temp_length = len(t["nodes"]) 
+            primary_track_id = t["id"]
+            primary_nodes = t["nodes"]
+
+    # Now find tracks connected to the primary
+    # if connected, label with dark-red, else give it a different colour
+
+    for t in Tracks_:
+
+        if (t["id"] == primary_track_id):
+            t["label"] = "primary"
+            t["c"] = "Teal"
+            continue
+        
+        # Color for Brems
+        if (len(t["nodes"]) == 1):
+            t["c"] = "Orange"
+            t["label"] = "track"
+            continue
+
+        # Check for common elements to the primary track
+        # if true then it is a delta
+        common_elements = set(t["nodes"]) & set(primary_nodes)
+
+        if common_elements:
+            t["c"] = "DarkRed"
+            t["label"] = "track"
+        else:
+            t["c"] = next(color_cycle)
+            t["label"] = "track"
+
+    return Tracks_
+
+
+def GetAnglesDF(df, all_visited, primary, trkid):
+
+    # Take the mean every ten rows
+    # df = Primary_Track.groupby(np.arange(len(Primary_Track)) // 10).mean()
+
+    df['id'] = df.index
+    df['primary'] = primary
+    df["trkID"] = trkid
+    df["event_id"] = df.event_id.iloc[0]
+
+    # Get the diff between each row
+    distances = [0]
+    for i in range(1, len(df)):
+        
+        prev_point = df.iloc[i - 1][['x', 'y', 'z']].to_numpy()
+        curr_point = df.iloc[i][['x', 'y', 'z']].to_numpy()
+        distances.append(euclidean_distance(curr_point,prev_point))
+
+
+    cum_distance = []
+    sum_ = 0
+    for d in distances:
+        sum_ = sum_+d
+        cum_distance.append(sum_)
+
+    cum_distance = np.array(cum_distance)
+
+
+    angles = [0]  # First point has no preceding point for angle calculation
+
+    # Iterate through the points
+    for i in range(1, len(df)):
+        # Current and previous points
+        prev_point = df.iloc[i - 1][['x', 'y', 'z']].to_numpy()
+        curr_point = df.iloc[i][['x', 'y', 'z']].to_numpy()
+        
+        
+        # Calculate angle between the vectors
+        if i > 0:  # Skip the first vector, as there's no previous vector
+            prev_vector = prev_point - df.iloc[i - 2][['x', 'y', 'z']].to_numpy()
+            curr_vector = curr_point - prev_point
+
+            angle = angle_between_vectors(prev_vector, curr_vector)
+            angles.append(angle)
+        else:
+            angles.append(0)  # No angle for the first vector
+
+    # Add the cumulative distances and angles as new columns
+    df['cumulative_distance'] = cum_distance
+    df['angle'] = angles
+
+    # Remove nodes that have already been counted
+    df = df[~df['id'].isin(all_visited)]
+
+    return df
+
+
+def GetMinima(index, all_visited_, input_data, temp_dist_matrix, R):
+
+
+    distances_from_index = temp_dist_matrix[index] # distances for node to others
+    sorted_indices = np.argsort(distances_from_index) # indexes sorted by smallest distance
+
+    closest_nodes = sorted_indices[distances_from_index[sorted_indices] < R]
+    
+    closest_nodes = list(set(closest_nodes) - set(all_visited_))
+
+    selected_rows = input_data.iloc[closest_nodes] # Df containing the nodes within distance
+
+    # Compute the mean of x, y, and z columns
+    mean_x = selected_rows['x'].median()
+    mean_y = selected_rows['y'].median()
+    mean_z = selected_rows['z'].median()
+    energy_sum = selected_rows['energy'].sum()
+    mean_point = np.array([mean_x, mean_y, mean_z, energy_sum])
+
+    all_visited = all_visited_ + list(closest_nodes)
+
+    return mean_point, all_visited
+
+
+def Cluster(input_data, R):
+
+    node_centers = []
+    all_visited = []
+    indexes = input_data.index.values
+    indexes_set = set(indexes)
+
+    temp_dist_matrix = distance_matrix(input_data[['x', 'y', 'z']], input_data[['x', 'y', 'z']])
+
+    for i in range(1000):
+
+        all_visited_set = set(all_visited)
+
+        # Convert arrays to sets and perform the difference
+        filtered_indexes = list(indexes_set - all_visited_set)
+
+        if not filtered_indexes:
+            break
+
+        random_index = np.random.choice(filtered_indexes)
+        median, all_visited = GetMinima(random_index, all_visited, input_data, temp_dist_matrix, R)
+
+        node_centers.append(median)
+
+    return pd.DataFrame(node_centers, columns=['x', 'y', 'z', 'energy'])
+
+
+
+def RunClustering(node_centers_df, cluster_radii, binsize):
+
+    event_id = node_centers_df.event_id.iloc[0]
+
+
+    for R in cluster_radii:
+        node_centers_df = Cluster(node_centers_df, R)
+
+    node_centers_df["event_id"] = event_id
+
+    # Create the bins ---- 
+    xmin=-3000
+    xmax=3000
+    xbw=binsize
+
+    ymin=-3000
+    ymax=3000
+    ybw=binsize
+
+    zmin=0
+    zmax=6000
+    zbw=binsize
+
+    # bw = 10 works well for co2 mix with 2 sigma diffusion
+
+    # bins for x, y, z
+    xbins = np.arange(xmin, xmax+xbw, xbw)
+    ybins = np.arange(ymin, ymax+ybw, ybw)
+    zbins = np.arange(zmin, zmax+zbw, zbw)
+
+    # center bins for x, y, z
+    xbin_c = xbins[:-1] + xbw / 2
+    ybin_c = ybins[:-1] + ybw / 2
+    zbin_c = zbins[:-1] + zbw / 2
+
+
+    databin = node_centers_df.copy()
+
+    # Now lets bin the data
+    databin['x_smear'] = pd.cut(x=databin['x'], bins=xbins,labels=xbin_c, include_lowest=True)
+    databin['y_smear'] = pd.cut(x=databin['y'], bins=ybins,labels=ybin_c, include_lowest=True)
+    databin['z_smear'] = pd.cut(x=databin['z'], bins=zbins,labels=zbin_c, include_lowest=True)
+
+    #Loop over the rows in the dataframe and merge the energies. Also change the bin center to use the mean x,y,z position
+    x_mean_arr = []
+    y_mean_arr = []
+    z_mean_arr = []
+    energy_mean_arr = []
+    x_mean_arr_temp = np.array([])
+    y_mean_arr_temp = np.array([])
+    z_mean_arr_temp = np.array([])
+    summed_energy = 0
+
+    counter = 0
+
+    # test_df = test_df.reset_index()
+    databin = databin.sort_values(by=['x_smear', 'y_smear', 'z_smear'])
+
+
+    for index, row in databin.iterrows():
+
+        # First row
+        if (counter == 0):
+            temp_x = row["x_smear"]
+            temp_y = row["y_smear"]
+            temp_z = row["z_smear"]
+            summed_energy +=row["energy"]
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            counter+=1
+            continue
+
+        # Final row
+        if index == databin.index[-1]:
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            summed_energy +=row["energy"]
+
+            if (summed_energy != 0): 
+                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                energy_mean_arr.append(summed_energy)
+
+
+        # Same bin
+        if (row["x_smear"] == temp_x and row["y_smear"] == temp_y and row["z_smear"] == temp_z):
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            summed_energy +=row["energy"]
+
+        # Aggregate and store for next 
+        else:
+            if (summed_energy != 0): 
+                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                energy_mean_arr.append(summed_energy)
+            
+            temp_x = row["x_smear"]
+            temp_y = row["y_smear"]
+            temp_z = row["z_smear"]
+            summed_energy = 0
+            x_mean_arr_temp = np.array([])
+            y_mean_arr_temp = np.array([])
+            z_mean_arr_temp = np.array([])
+            
+            
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            summed_energy +=row["energy"]
+
+        counter+=1
+
+    # Make the dataframe again
+    databin = pd.DataFrame({  "event_id" : event_id, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
+
+    return databin
+
+
+# Function to plot connections
+def plot_tracks(ax, x, y, connection_count, x_label, y_label, Tracks_):
+    # Filter data for markers with count 1 or 0
+    filtered_indices = [i for i, count in enumerate(connection_count) if count == 1 or count == 0 or count == 3]
+    filtered_x = [x[i] for i in filtered_indices]
+    filtered_y = [y[i] for i in filtered_indices]
+    
+    # # Define colors for filtered data
+    colors = [None] * len(filtered_indices)
+    for index, i in enumerate(filtered_indices):
+        if connection_count[i] == 1:
+            colors[index] = "r"
+        elif (connection_count[i] == 0):
+            colors[index] = "Orange"
+        else:
+            colors[index] = "DarkGreen"
+
+    
+    ax.scatter(filtered_x, filtered_y, c=colors, marker='o')
+
+    # Plot connections
+    for Track in Tracks_:
+        for i, connection in enumerate(Track["nodes"]):
+            if i == len(Track["nodes"]) - 1:
+                break
+
+            start_node = Track["nodes"][i]
+            end_node = Track["nodes"][i + 1]
+
+            ax.plot([x[start_node], x[end_node]],
+                    [y[start_node], y[end_node]], color=Track["c"], linestyle="-")
+            
+    
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(f'{x_label}-{y_label} Projection')
