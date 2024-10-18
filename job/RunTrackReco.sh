@@ -23,7 +23,7 @@ input_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" /home/argon/Projects/Krishan/ATPC/
 echo "Input File: $input_file"
 
 
-python /home/argon/Projects/Krishan/ATPC/notebooks/StudyRawWaveforms.py $input_file 0 ${SLURM_ARRAY_TASK_ID}
+python /home/argon/Projects/Krishan/ATPC/notebooks/TrackReconstruction.py $input_file 0 ${SLURM_ARRAY_TASK_ID}
 
 
 echo "FINISHED....EXITING"

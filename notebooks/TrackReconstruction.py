@@ -191,7 +191,7 @@ def RunReco(data, cluster):
 infile     = sys.argv[1]
 cluster = int(sys.argv[2])
 jobid   = int(sys.argv[3])
-file_out_seg = base_filename = os.path.basename(infile.rsplit('.', 1)[0])
+file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
 plot=False
 
 hits = pd.read_hdf(infile,"MC/hits")
