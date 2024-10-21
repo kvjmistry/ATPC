@@ -5,8 +5,6 @@ jobname=ATPC_0nubb
 # jobname=ATPC_Tl
 # jobname=ATPC_Bi
 
-BINSIZE=10
-
 CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
 
@@ -22,7 +20,7 @@ HOME_LOCATION=/home/krishan.mistry/code/ATPC/
 NewProcess = $(Process)
 
 executable = $(jobname)_job.sh
-arguments = $(NewProcess) $(jobname) $(script) $(BINSIZE)
+arguments = $(NewProcess) $(jobname) $(script)
 
 # Specify the name of the log, standard error, and standard output (or "screen output") files. Wherever you see $(Cluster), HTCondor will insert the 
 #  queue number assigned to this set of jobs at the time of submission.
@@ -54,4 +52,4 @@ request_disk = 5GB
 max_idle = 2000
 
 # Tell HTCondor the number of instances to run:
-queue 5000
+queue 1000

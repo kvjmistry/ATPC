@@ -7,7 +7,7 @@ from collections import Counter
 import time
 
 # USAGE:
-# python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <binsize>
+# python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <binsize> <JOBID>
 # e.g. python3 SmearEvents.py /Users/mistryk2/Packages/nexus/ATPC_0nuBB 1 1 10
 
 # Record the start time
@@ -50,13 +50,14 @@ else:
 # This is the scaling amount of diffusion
 # scaling factor is in number of sigma
 diff_scaling = float(sys.argv[2])
+binsize = int(sys.argv[4])
+jobid = int(sys.argv[5])
 
 print("Scaling Factor: ", diff_scaling)
 print("CO2 Percentage: ", percentage)
 print("DL: ", DL, "mm/sqrt(cm)")
 print("DT: ", DT, "mm/sqrt(cm)")
-
-binsize = int(sys.argv[4])
+print("binsize is: ", binsize, "mm")
 
 # Create the bins ---- 
 xbw=binsize
@@ -110,9 +111,9 @@ def generate_random(row):
 
     # Apply some diffusion to the electron too if the scaling is non-zero
     if (diff_scaling != 0.0):
-        x = row['x'] # mm
-        y = row['y'] # mm
-        z = row['z'] # mm
+        x = x_smear # mm
+        y = y_smear # mm
+        z = z_smear # mm
         sigma_DL = diff_scaling*DL*np.sqrt(z/10.) # mm  
         sigma_DT = diff_scaling*DT*np.sqrt(z/10.) # mm 
     
@@ -120,9 +121,9 @@ def generate_random(row):
         cov_xy = np.array([[sigma_DT, 0], [0, sigma_DT]])
         
         xy_smear_diff = rng.multivariate_normal(xy, cov_xy, 1)
-        x_smear = xy_smear_diff[0, 0]+x_smear
-        y_smear = xy_smear_diff[0, 1]+y_smear
-        z_smear = rng.normal(z, sigma_DL)+z_smear
+        x_smear = xy_smear_diff[0, 0]
+        y_smear = xy_smear_diff[0, 1]
+        z_smear = rng.normal(z, sigma_DL)
 
     return pd.Series([x_smear, y_smear, z_smear], index=['x_smear', 'y_smear', 'z_smear'])
 
@@ -316,10 +317,10 @@ for index, e in enumerate(hits.event_id.unique()):
 
 df_smear_merge = pd.concat(df_smear, ignore_index=True)
 
-outfile = sys.argv[1] + "_" + str(percentage) + "percent_smear.h5"
+outfile = sys.argv[1] + "_" + str(percentage) + "percent_smear_" + jobid + ".h5"
 
 if (diff_scaling == 0.0):
-    outfile = sys.argv[1] + "_smear.h5"
+    outfile = sys.argv[1] + "_smear_" + jobid + ".h5"
 
 print("Saving events to file: ", outfile)
 with pd.HDFStore(outfile, mode='w', complevel=5, complib='zlib') as store:

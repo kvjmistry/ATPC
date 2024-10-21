@@ -13,9 +13,6 @@ echo "JOBID $1 running on `whoami`@`hostname`"
 SCRIPT=$3
 echo "Script name is: ${SCRIPT}"
 
-BINSIZE=$4
-echo "BINSIZE is: ${BINSIZE}"
-
 start=`date +%s`
 
 # Setup nexus
@@ -29,7 +26,7 @@ INIT=${JOBNAME}.init.mac
 
 echo "N_EVENTS: ${N_EVENTS}"
 
-SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
+SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 100000))
 echo "The seed number is: ${SEED}" 
 
 # Change the config in the files
@@ -43,12 +40,12 @@ cat ${CONFIG}
 # NEXUS
 echo "Running NEXUS" 
 nexus -n $N_EVENTS ${INIT}
-python3 ${SCRIPT} ${JOBNAME} 0 0.05 ${BINSIZE} # Just smearing
-python3 ${SCRIPT} ${JOBNAME} 1 0.1  ${BINSIZE} # 0.1 % CO2
-python3 ${SCRIPT} ${JOBNAME} 1 0.25 ${BINSIZE} # 0.25 % CO2
-python3 ${SCRIPT} ${JOBNAME} 1 0.5  ${BINSIZE} # 0.5 % CO2
-python3 ${SCRIPT} ${JOBNAME} 1 5    ${BINSIZE} # 5.0 % CO2
-python3 ${SCRIPT} ${JOBNAME} 1 0.05 ${BINSIZE} # close to zero diffusion
+python3 ${SCRIPT} ${JOBNAME} 0 0.05 5 ${JOBID} # Just smearing
+python3 ${SCRIPT} ${JOBNAME} 1 0.05 5 ${JOBID} # close to zero diffusion
+python3 ${SCRIPT} ${JOBNAME} 1 0.1  18 ${JOBID} # 0.1 % CO2
+python3 ${SCRIPT} ${JOBNAME} 1 0.25 15 ${JOBID} # 0.25 % CO2
+python3 ${SCRIPT} ${JOBNAME} 1 0.5  12 ${JOBID} # 0.5 % CO2
+python3 ${SCRIPT} ${JOBNAME} 1 5    10 ${JOBID} # 5.0 % CO2
 
 ls -ltrh
 
