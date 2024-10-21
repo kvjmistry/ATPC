@@ -317,10 +317,10 @@ for index, e in enumerate(hits.event_id.unique()):
 
 df_smear_merge = pd.concat(df_smear, ignore_index=True)
 
-outfile = sys.argv[1] + "_" + str(percentage) + "percent_smear_" + jobid + ".h5"
+outfile = sys.argv[1] + "_" + str(percentage) + "percent_smear_" + str(jobid) + ".h5"
 
 if (diff_scaling == 0.0):
-    outfile = sys.argv[1] + "_smear_" + jobid + ".h5"
+    outfile = sys.argv[1] + "_smear_" + str(jobid) + ".h5"
 
 print("Saving events to file: ", outfile)
 with pd.HDFStore(outfile, mode='w', complevel=5, complib='zlib') as store:
