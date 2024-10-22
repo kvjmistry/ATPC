@@ -250,26 +250,20 @@ for index, e in enumerate(hits.event_id.unique()):
             counter+=1
             continue
 
-        # Final row
-        if index == electrons_smear.index[-1]:
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            summed_energy +=row["energy"]
-
-            if (summed_energy != 0): 
-                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                energy_mean_arr.append(summed_energy)
-
-
         # Same bin
         if (row["x_smear"] == temp_x and row["y_smear"] == temp_y and row["z_smear"] == temp_z):
             x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
             y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
             z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
             summed_energy +=row["energy"]
+
+            # Final row
+            if index == electrons_smear.index[-1]:
+                if (summed_energy != 0): 
+                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                    energy_mean_arr.append(summed_energy)
 
         # Aggregate and store for next 
         else:
@@ -287,12 +281,18 @@ for index, e in enumerate(hits.event_id.unique()):
             y_mean_arr_temp = np.array([])
             z_mean_arr_temp = np.array([])
             
-            
             x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
             y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
             z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
             summed_energy +=row["energy"]
-            
+
+            # Final row
+            if index == electrons_smear.index[-1]:
+                if (summed_energy != 0): 
+                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                    energy_mean_arr.append(summed_energy)
 
         counter+=1
 

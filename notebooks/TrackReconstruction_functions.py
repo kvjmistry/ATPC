@@ -622,7 +622,7 @@ def Cluster(input_data, R):
 
     temp_dist_matrix = distance_matrix(input_data[['x', 'y', 'z']], input_data[['x', 'y', 'z']])
 
-    for i in range(1000):
+    for i in range(len(input_data)):
 
         all_visited_set = set(all_visited)
 
@@ -632,7 +632,8 @@ def Cluster(input_data, R):
         if not filtered_indexes:
             break
 
-        random_index = np.random.choice(filtered_indexes)
+        # random_index = np.random.choice(filtered_indexes)
+        random_index = filtered_indexes[0]
         median, all_visited = GetMinima(random_index, all_visited, input_data, temp_dist_matrix, R)
 
         node_centers.append(median)
@@ -708,25 +709,12 @@ def RunClustering(node_centers_df, cluster_radii, binsize):
             temp_y = row["y_smear"]
             temp_z = row["z_smear"]
             summed_energy +=row["energy"]
+            event_id = row["event_id"]
             x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
             y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
             z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
             counter+=1
             continue
-
-        # Final row
-        if index == databin.index[-1]:
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            summed_energy +=row["energy"]
-
-            if (summed_energy != 0): 
-                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                energy_mean_arr.append(summed_energy)
-
 
         # Same bin
         if (row["x_smear"] == temp_x and row["y_smear"] == temp_y and row["z_smear"] == temp_z):
@@ -734,6 +722,14 @@ def RunClustering(node_centers_df, cluster_radii, binsize):
             y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
             z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
             summed_energy +=row["energy"]
+
+            # Final row
+            if index == databin.index[-1]:
+                if (summed_energy != 0): 
+                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                    energy_mean_arr.append(summed_energy)
 
         # Aggregate and store for next 
         else:
@@ -756,6 +752,14 @@ def RunClustering(node_centers_df, cluster_radii, binsize):
             y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
             z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
             summed_energy +=row["energy"]
+
+            # Final row
+            if index == databin.index[-1]:
+                if (summed_energy != 0): 
+                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                    energy_mean_arr.append(summed_energy)
 
         counter+=1
 
