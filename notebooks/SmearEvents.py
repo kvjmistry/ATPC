@@ -302,7 +302,7 @@ for index, e in enumerate(hits.event_id.unique()):
     # Make the dataframe again
     electrons_smear = pd.DataFrame({  "event_id" : events, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
 
-    if (energy_temp != energy_mean_arr):
+    if (energy_temp != sum(energy_mean_arr)):
         print("Error! Mis match in the summed energy: ", energy_temp, sum(energy_mean_arr))
 
     # File writing
