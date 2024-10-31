@@ -22,15 +22,15 @@ def RunReco(data, cluster):
     # shuffle the data to ensure we dont use g4 ordering
     data = data.sample(frac=1).reset_index(drop=True)
 
+    # Cluster the data if required
+    if (cluster):
+       data =  RunClustering(data, [10,20,30], 30)
+
     # then sort it based on the x,y,z
     data = data.sort_values(by=['x', "y", "z"]).reset_index(drop=True)
 
     # Calculate the distance matrix
     dist_matrix = distance_matrix(data[['x', 'y', 'z']], data[['x', 'y', 'z']])
-
-    # Cluster the data if required
-    if (cluster):
-       data =  RunClustering(data, [10,20,30], 50)
 
     # Initialize connections counter, keeps track of number of connections to each index
     connection_count = np.zeros(len(data), dtype=int)
@@ -41,8 +41,11 @@ def RunReco(data, cluster):
     connections = []
 
     # Tunable parameters
-    init_dist_thresh = 15 # max distance for initial connections [mm]
-    incr_dist_thresh = [2,4,6,8,10,12,14,16,18,20] # Second stage, look for closest nodes, then slowly increase threshold [mm]
+    # init_dist_thresh = 15 # max distance for initial connections [mm]
+    # incr_dist_thresh = [2,4,6,8,10,12,14,16,18,20] # Second stage, look for closest nodes, then slowly increase threshold [mm]
+
+    init_dist_thresh = 35 # max distance for initial connections [mm]
+    incr_dist_thresh = [2,4,6,8,10,12,14,16,18,20,25,30,35,40,45,50] # Second stage, look for closest nodes, then slowly increase threshold [mm]
 
 
     for i in range(len(data)):
@@ -192,7 +195,7 @@ infile     = sys.argv[1]
 cluster = int(sys.argv[2])
 jobid   = int(sys.argv[3])
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
-plot=False
+plot=True
 
 hits = pd.read_hdf(infile,"MC/hits")
 # parts = pd.read_hdf(infile,"MC/particles")
@@ -217,13 +220,13 @@ for event_num in hits.event_id.unique():
 
 df = pd.concat(df_list)
 
-df.to_hdf(f"{file_out_seg}_{jobid}_reco.h5", key='data', mode='w')
+# df.to_hdf(f"{file_out_seg}_{jobid}_reco.h5", key='data', mode='w')
 
 
-with open(f"{file_out_seg}_{jobid}_trackinfo.pkl", 'wb') as pickle_file:
-    pickle.dump(Track_dict, pickle_file)
-    pickle.dump(connected_nodes_dict, pickle_file)
-    pickle.dump(connections_count_dict, pickle_file)
+# with open(f"{file_out_seg}_{jobid}_trackinfo.pkl", 'wb') as pickle_file:
+#     pickle.dump(Track_dict, pickle_file)
+#     pickle.dump(connected_nodes_dict, pickle_file)
+#     pickle.dump(connections_count_dict, pickle_file)
 
 if plot:
     for evt in df.event_id.unique():
