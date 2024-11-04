@@ -35,6 +35,9 @@ def UpdateConnections(curr_node_idx, conn_node_idx, connected_nodes_, connection
     else:
         connected_nodes_[conn_node_idx] = [curr_node_idx]
 
+    return connected_nodes_, connections_, connection_count_
+
+
 # Function to check if a new connection would form a closed loop
 def forms_cycle(node, target, connections_dict):
 
@@ -82,7 +85,7 @@ def Testcycle(curr_node, conn_node,connected_nodes_, connections_, connection_co
     temp_connection_count = copy.deepcopy(connection_count_)
 
     # print(i,closest_idx,connection_count[i], connection_count[closest_idx], temp_connections_dict[i], temp_connections_dict[closest_idx])
-    UpdateConnections(curr_node, conn_node, temp_connections_dict, temp_connections, temp_connection_count)
+    temp_connections_dict, temp_connections, temp_connection_count = UpdateConnections(curr_node, conn_node, temp_connections_dict, temp_connections, temp_connection_count)
 
     # Check for cycles
     cycle = forms_cycle(curr_node, conn_node, temp_connections_dict)
@@ -276,7 +279,7 @@ def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, di
 
     # Dont run this if we only got one track!
     if (len(Tracks_) == 1):
-        return True, Tracks_
+        return True, Tracks_, connected_nodes_, connections_, connection_count_
 
     for idx, Track in enumerate(Tracks_):
 
@@ -377,8 +380,8 @@ def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, di
                 newpath = join_tracks(curr_track_path, con_track_dict["nodes"])
         
             UpdateAndMergeTrack(curr_track, con_track, newpath, Tracks_, data)
-            UpdateConnections(closest_idx, end_conn_node, connected_nodes_, connections_, connection_count_)
-            return False, Tracks_
+            connected_nodes_, connections_, connection_count_ = UpdateConnections(closest_idx, end_conn_node, connected_nodes_, connections_, connection_count_)
+            return False, Tracks_, connected_nodes_, connections_, connection_count_
 
         # Check if the proposed connection will form a cycle
         cycle  = Testcycle(end_conn_node, closest_idx ,connected_nodes_, connections_, connection_count_)
@@ -391,7 +394,7 @@ def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, di
                 curr_track_path.append(closest_idx)
 
             Track["nodes"] = curr_track_path
-            UpdateConnections(closest_idx, end_conn_node, connected_nodes_, connections_, connection_count_)
+            connected_nodes_, connections_, connection_count_ = UpdateConnections(closest_idx, end_conn_node, connected_nodes_, connections_, connection_count_)
         else:
             continue
 
@@ -411,11 +414,11 @@ def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, di
         # Find the delta and the primary track and add them to the new track list
         if (total_length_seg1 < total_length_seg2 and total_length_seg1 < total_length_seg3):
             AddConnectedTracks(curr_track, con_track, seg1_path, seg2_path, curr_track_path, Tracks_, data)
-            return False, Tracks_
+            return False, Tracks_, connected_nodes_, connections_, connection_count_
         
         elif ((total_length_seg2 < total_length_seg1 and total_length_seg2 < total_length_seg3)):
             AddConnectedTracks(curr_track, con_track, seg2_path, seg1_path, curr_track_path, Tracks_, data)
-            return False, Tracks_
+            return False, Tracks_, connected_nodes_, connections_, connection_count_
         
         else:
 
@@ -427,10 +430,13 @@ def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, di
 
             continue
 
-    return True, Tracks_
+    return True, Tracks_, connected_nodes_, connections_, connection_count_
 
 # Function to walk along a track segment till we get to an end
-def GetNodePath(graph, start_node, forward_node):
+def GetNodePath(graph_, start_node, forward_node):
+    
+    graph = copy.deepcopy(graph_)
+    
     path = [start_node]
     
     query = forward_node
@@ -805,3 +811,220 @@ def plot_tracks(ax, x, y, connection_count, x_label, y_label, Tracks_):
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     ax.set_title(f'{x_label}-{y_label} Projection')
+
+
+def RebuildTracks(connected_nodes_, connection_count_, data):
+
+    RebuiltTrack_ = []
+    Track_arrays = []
+    Daughter_Flag = []
+
+    # Get all nodes with single connections
+    end_points = np.where(connection_count_ == 1)[0]
+
+    prim_track_id = -1
+    prim_len = 0
+    prim_track_arr = []
+    prim_energy = 0
+
+    for index, end_point in enumerate(end_points):
+        trkpath = GetLongestPath(connected_nodes_, end_point)
+        Track_arrays.append(trkpath)
+
+        trk_length = GetTrackLength(trkpath, data)
+
+        if (trk_length > prim_len):
+            # print(trk_length, prim_len)
+            prim_len = trk_length
+            prim_track_id = index
+            prim_track_arr = trkpath
+            prim_energy = GetTrackEnergy(trkpath, data, False)
+    
+    # Create the primary track
+    RebuiltTrack_.append({"id":0, "start":prim_track_arr[0], "end":prim_track_arr[-1], "length":trk_length, "energy":prim_energy, "label":"Primary", "c":"Teal", "nodes":prim_track_arr})
+
+    trk_ids = 1
+
+    brem_nodes = []
+
+    # Need to find out which tracks are connected to primary and which are not. 
+    for index, end_point in enumerate(end_points):
+
+        if (end_point in prim_track_arr):
+            continue
+
+        trkpath = GetDeltaPath(connected_nodes_, end_point)
+        attached_daughter = any(item in prim_track_arr for item in trkpath)
+        length = GetTrackLength(trkpath, data)
+        
+        # These are tracks attached to the primary
+        # Label them as deltas
+        if (attached_daughter):
+            energy = GetTrackEnergy(trkpath, data, True)
+            RebuiltTrack_.append({"id":trk_ids, "start":trkpath[0], "end":trkpath[-1], "length":length, "energy":energy, "label":"Delta", "c":"DarkRed", "nodes":trkpath})
+        # These are tracks not attached to the primary
+        # Label them as brems
+        else:
+            if (any(item in brem_nodes for item in trkpath)):
+                continue
+            energy = GetTrackEnergy(trkpath, data, False)
+            RebuiltTrack_.append({"id":trk_ids, "start":trkpath[0], "end":trkpath[-1], "length":length, "energy":energy, "label":"Brem", "c":"Orange", "nodes":trkpath})
+            brem_nodes = brem_nodes + trkpath
+
+        trk_ids = trk_ids + 1
+
+    # This is for single nodes
+    single_points = np.where(connection_count_ == 0)[0]
+
+    for index, single_point in enumerate(single_points):
+        trkpath = [single_point]
+        energy = GetTrackEnergy(trkpath, data, False)
+        RebuiltTrack_.append({"id":trk_ids, "start":trkpath[0], "end":trkpath[-1], "length":0, "energy":energy, "label":"Brem", "c":"Orange", "nodes":trkpath})
+        trk_ids = trk_ids + 1
+
+
+    # Quality control
+    data_nodes = data.index.values.tolist()
+
+    track_nodes = []
+
+    e_sum = 0
+    for t in RebuiltTrack_:
+        e_sum = e_sum+t["energy"]
+        track_nodes = track_nodes + t["nodes"]
+
+
+    ratio = e_sum / data.energy.sum()
+
+    if (ratio < 0.999 or ratio > 1.0001):
+        print(ratio)
+        return RebuiltTrack_, False
+
+    are_equal = set(track_nodes) == set(data_nodes)
+
+    if (not are_equal):
+        print(set(data_nodes) - set(track_nodes))
+        return RebuiltTrack_, False
+
+    return RebuiltTrack_, True
+
+
+# Re-do all the Trackbuilding
+
+def GetDeltaPath(graph_, node):
+
+    graph = copy.deepcopy(graph_)
+
+    path = [node]
+    
+    query = graph[node][0] # The node should only have 1 connection
+    prev_node = node 
+
+    for index,n in enumerate(range(len(graph))):
+
+        path.append(query)
+        
+        # Get the connected nodes
+        con_nodes = graph[query]
+
+        # We hit a end-point and it didnt loop
+        if (len(con_nodes) == 1):
+            return path
+        
+        if (len(con_nodes) == 3 ):
+            return path
+
+        if (len(con_nodes) > 3 ):
+            print("Error too many nodes in pathing that I was anticipating...")
+
+        # Get the node that went in the query before
+        if con_nodes[1] == prev_node:
+            prev_node = query
+            query = con_nodes[0]
+        else:
+            prev_node = query
+            query = con_nodes[1]
+
+
+def GetLongestPath(graph_, node):
+
+    graph = copy.deepcopy(graph_)
+
+    path = [node]
+    
+    query = graph[node][0] # The node should only have 1 connection
+    prev_node = node 
+
+    for index,n in enumerate(range(len(graph))):
+
+        path.append(query)
+        
+        # Get the connected nodes
+        con_nodes = graph[query]
+
+        # We hit a end-point and it didnt loop
+        if (len(con_nodes) == 1):
+            return path
+        
+        if (len(con_nodes) == 3 ):
+            con_nodes.remove(prev_node)
+            len1 = len(GetNodePath(graph, query, con_nodes[0]))
+            len2 = len(GetNodePath(graph, query, con_nodes[1]))
+
+            if (len1 > len2):
+                prev_node = query
+                query = con_nodes[0]
+            else:
+                prev_node = query
+                query = con_nodes[1]
+            
+            continue
+
+        if (len(con_nodes) > 3 ):
+            print("Error too many nodes in pathing that I was anticipating...")
+
+        # Get the node that went in the query before
+        if con_nodes[1] == prev_node:
+            prev_node = query
+            query = con_nodes[0]
+        else:
+            prev_node = query
+            query = con_nodes[1]
+
+
+
+# Get the length and energy of a track
+def GetTrackLength(path, data):
+    total_length = 0
+
+    # Return the hit if there is only one node
+    if len(path) == 0:
+        return 0
+
+    for t in range(len(path) - 1):
+        point1 = data.iloc[path[t]]
+        point2 = data.iloc[path[t + 1]]
+        
+        distance = calculate_distance(point1, point2)
+        total_length += distance
+
+    return round(total_length, 3)
+
+
+# Get the length and energy of a track
+def GetTrackEnergy(path, data, daughter):
+    
+    total_energy = 0
+
+    if (daughter):
+        path = path[:-1] # Remove the last node which will be duplicated
+
+    # Return the hit if there is only one node
+    if len(path) == 0:
+        return data.iloc[path[0]]['energy']
+
+    for t in range(len(path)):
+        point = data.iloc[path[t]]
+        total_energy += point['energy']
+    
+    return total_energy
