@@ -22,12 +22,14 @@ def RunReco(data, cluster):
     # shuffle the data to ensure we dont use g4 ordering
     data = data.sample(frac=1).reset_index(drop=True)
 
-    # Cluster the data if required
-    if (cluster):
-       data =  RunClustering(data, [10,20,30], 30)
-
     # then sort it based on the x,y,z
     data = data.sort_values(by=['x', "y", "z"]).reset_index(drop=True)
+
+    # Cluster the data if required
+    if (cluster):
+        data =  RunClustering(data, [10,20,30], 30)
+        # then re-sort sort it based on the x,y,z
+        data = data.sort_values(by=['y', "z", "x"]).reset_index(drop=True)
 
     # Calculate the distance matrix
     dist_matrix = distance_matrix(data[['x', 'y', 'z']], data[['x', 'y', 'z']])
@@ -44,9 +46,10 @@ def RunReco(data, cluster):
     # init_dist_thresh = 15 # max distance for initial connections [mm]
     # incr_dist_thresh = [2,4,6,8,10,12,14,16,18,20] # Second stage, look for closest nodes, then slowly increase threshold [mm]
 
-    init_dist_thresh = 35 # max distance for initial connections [mm]
-    incr_dist_thresh = [2,4,6,8,10,12,14,16,18,20,25,30,35,40,45,50] # Second stage, look for closest nodes, then slowly increase threshold [mm]
-
+    Mean_dist = GetMeanNodeDistances(data) # Mean distance between nodes
+    init_dist_thresh = Mean_dist*2 # max distance for initial connections [mm]
+    incr_dist_thresh = np.linspace(1, Mean_dist*5, 15, dtype=int) # Second stage, look for closest nodes, then slowly increase threshold [mm]
+    incr_dist_thresh = np.unique(incr_dist_thresh)
 
     for i in range(len(data)):
         # Find the index of the closest node (excluding itself)
@@ -114,12 +117,10 @@ def RunReco(data, cluster):
         Tracks.append(Track)
 
 
-    # for t in Tracks:
-    #     print(t)
-
     # print(GetMeanNodeDist(Tracks, data))
 
     dist_threshold = 4*GetMeanNodeDist(Tracks, data)
+    print("Dist Thresh",dist_threshold)
 
     # Add in any nodes without connections to the tracks as gammas and re-label other tracks as gammas
     AddConnectionlessNodes(connection_count, Tracks, data)
@@ -128,18 +129,26 @@ def RunReco(data, cluster):
 
     q = 0
     while not finished:
-        # print("Loop: ", q)
-
-        finished, Tracks = ConnectTracks(Tracks, connected_nodes, connections, connection_count, dist_matrix, dist_threshold, data)
-
+        finished, Tracks, connected_nodes, connections, connection_count = ConnectTracks(Tracks, connected_nodes, connections, connection_count, dist_matrix, dist_threshold, data)
         q=q+1
 
-
-    print("Total Tracks:", len(Tracks))
+    # Quality control
+    # If end node is within threshold to a node with three connections or another end
+    # Then we might have made a mistake
+    # Try breaking the proposed node 
 
 
     ## Set the colours of the tracks
-    Tracks = CategorizeTracks(Tracks)
+    # Tracks = CategorizeTracks(Tracks)
+    
+    # Redo the track building
+    Tracks = []
+    Tracks, pass_flag = RebuildTracks(connected_nodes, connection_count, data)
+    # print(len(connected_nodes), connected_nodes)
+
+    print("Pass Flag:",pass_flag)
+
+    # Function to get track metadata
 
 
     num_nodes = 0
@@ -208,6 +217,9 @@ df_list = []
 for event_num in hits.event_id.unique():
     print("On Event:", event_num)
 
+    # if (event_num != 11300):
+        # continue
+
     hit = hits[hits.event_id == event_num]
 
     df, Tracks, connected_nodes, connection_count = RunReco(hit, cluster)
@@ -228,15 +240,22 @@ df = pd.concat(df_list)
 #     pickle.dump(connected_nodes_dict, pickle_file)
 #     pickle.dump(connections_count_dict, pickle_file)
 
+print("Len 1", len(df))
+
+
 if plot:
+    print("Plotting Events")
     for evt in df.event_id.unique():
 
-        # if (evt == 501):
-        #     break
+        print("On Event:", evt)
+        # if (evt != 11300):
+        #     continue
 
         temp_df = df[df.event_id == evt]
         # temp_df = temp_df.sort_values(by='id')
         temp_df.index = temp_df.id
+
+        # print(temp_df)
 
         connected_nodes = connected_nodes_dict[evt]
         connection_count = connections_count_dict[evt]
@@ -254,7 +273,10 @@ if plot:
         plot_tracks(axs[2], temp_df['y'], temp_df['z'], connection_count, 'Y', 'Z', Tracks)
 
         plt.tight_layout()
-        plt.savefig(f"plots/TrackingAlgoOut/event_{evt}.pdf")
+        if (cluster !=0):
+            plt.savefig(f"plots/TrackingAlgoOut/event_{evt}_cluster.pdf")
+        else:
+            plt.savefig(f"plots/TrackingAlgoOut/event_{evt}.pdf")
 
 
 

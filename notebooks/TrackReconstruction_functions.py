@@ -5,6 +5,7 @@ from scipy.spatial import distance_matrix
 import matplotlib.pyplot as plt
 import itertools
 import copy
+from scipy.spatial.distance import cdist
 
 colormap = plt.cm.get_cmap('Dark2')
 color_cycle = itertools.cycle(colormap.colors)
@@ -772,6 +773,8 @@ def RunClustering(node_centers_df, cluster_radii, binsize):
     # Make the dataframe again
     databin = pd.DataFrame({  "event_id" : event_id, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
 
+    databin["event_id"] = databin["event_id"].astype('int')
+
     return databin
 
 
@@ -813,19 +816,27 @@ def plot_tracks(ax, x, y, connection_count, x_label, y_label, Tracks_):
     ax.set_title(f'{x_label}-{y_label} Projection')
 
 
-def RebuildTracks(connected_nodes_, connection_count_, data):
+def MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes, data, iteration, trk_ids, RebuiltTrack_):
 
-    RebuiltTrack_ = []
     Track_arrays = []
-    Daughter_Flag = []
-
-    # Get all nodes with single connections
-    end_points = np.where(connection_count_ == 1)[0]
 
     prim_track_id = -1
     prim_len = 0
     prim_track_arr = []
     prim_energy = 0
+
+    # Get all nodes with single connections
+    end_points = np.where(connection_count_ == 1)[0]
+    end_points = [x for x in end_points if x in remaining_nodes]
+
+    if (iteration == 0):
+        primary_label = "Primary"
+        delta_label = "Delta"
+        color = "Teal"
+    else:
+        primary_label = "Brem"
+        delta_label = "BremDelta"
+        color = next(color_cycle)
 
     for index, end_point in enumerate(end_points):
         trkpath = GetLongestPath(connected_nodes_, end_point)
@@ -834,47 +845,38 @@ def RebuildTracks(connected_nodes_, connection_count_, data):
         trk_length = GetTrackLength(trkpath, data)
 
         if (trk_length > prim_len):
-            # print(trk_length, prim_len)
             prim_len = trk_length
             prim_track_id = index
             prim_track_arr = trkpath
             prim_energy = GetTrackEnergy(trkpath, data, False)
     
     # Create the primary track
-    RebuiltTrack_.append({"id":0, "start":prim_track_arr[0], "end":prim_track_arr[-1], "length":trk_length, "energy":prim_energy, "label":"Primary", "c":"Teal", "nodes":prim_track_arr})
+    RebuiltTrack_.append({"id":trk_ids, "start":prim_track_arr[0], "end":prim_track_arr[-1], "length":trk_length, "energy":prim_energy, "label":primary_label, "c":color, "nodes":prim_track_arr})
+    trk_ids = trk_ids + 1
 
-    trk_ids = 1
+    # Get all nodes with three connections in the primary track
+    multi_connections = np.where(connection_count_ == 3)[0]
+    prim_track_multi_connections = [x for x in multi_connections if x in prim_track_arr]
 
-    brem_nodes = []
+    for node in prim_track_multi_connections:
+        delta_node = [x for x in connected_nodes_[node] if x not in prim_track_arr]
 
-    # Need to find out which tracks are connected to primary and which are not. 
-    for index, end_point in enumerate(end_points):
+        if (len(delta_node) > 1):
+            print("Error the delta node has more than one node after cut")
 
-        if (end_point in prim_track_arr):
-            continue
+        delta_paths = GetDeltaPath(connected_nodes_, node , delta_node[0], 0)
+    
+        for t in range(len(delta_paths)):
+            trkpath = delta_paths[t]
+            trk_energy = GetTrackEnergy(trkpath, data, True)
+            trk_length = GetTrackLength(trkpath, data)
+            RebuiltTrack_.append({"id":trk_ids, "start":trkpath[0], "end":trkpath[-1], "length":trk_length, "energy":trk_energy, "label":f"{delta_label}{t}", "c":"DarkRed", "nodes":trkpath})
+            trk_ids = trk_ids + 1
 
-        trkpath = GetDeltaPath(connected_nodes_, end_point)
-        attached_daughter = any(item in prim_track_arr for item in trkpath)
-        length = GetTrackLength(trkpath, data)
-        
-        # These are tracks attached to the primary
-        # Label them as deltas
-        if (attached_daughter):
-            energy = GetTrackEnergy(trkpath, data, True)
-            RebuiltTrack_.append({"id":trk_ids, "start":trkpath[0], "end":trkpath[-1], "length":length, "energy":energy, "label":"Delta", "c":"DarkRed", "nodes":trkpath})
-        # These are tracks not attached to the primary
-        # Label them as brems
-        else:
-            if (any(item in brem_nodes for item in trkpath)):
-                continue
-            energy = GetTrackEnergy(trkpath, data, False)
-            RebuiltTrack_.append({"id":trk_ids, "start":trkpath[0], "end":trkpath[-1], "length":length, "energy":energy, "label":"Brem", "c":"Orange", "nodes":trkpath})
-            brem_nodes = brem_nodes + trkpath
-
-        trk_ids = trk_ids + 1
 
     # This is for single nodes
     single_points = np.where(connection_count_ == 0)[0]
+    single_points = [x for x in single_points if x in remaining_nodes]
 
     for index, single_point in enumerate(single_points):
         trkpath = [single_point]
@@ -883,11 +885,33 @@ def RebuildTracks(connected_nodes_, connection_count_, data):
         trk_ids = trk_ids + 1
 
 
-    # Quality control
-    data_nodes = data.index.values.tolist()
+    track_nodes = []
+    for t in RebuiltTrack_:
+        track_nodes = track_nodes + t["nodes"]
+    remaining_nodes = list(set(data_nodes) - set(track_nodes))
 
+    return RebuiltTrack_, remaining_nodes, trk_ids
+
+
+def RebuildTracks(connected_nodes_, connection_count_, data):
+
+    RebuiltTrack_ = []
+    Track_arrays = []
+    Accounted_nodes = []
     track_nodes = []
 
+    data_nodes = data.index.values.tolist()
+    remaining_nodes = data_nodes
+    trk_ids = 0
+    i = 0
+    
+    # Loop over and build tracks
+    while remaining_nodes:
+        RebuildTracks_, remaining_nodes, trk_ids = MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes, data, i, trk_ids, RebuiltTrack_)
+        i = i + 1
+
+    # Quality control
+    track_nodes = []
     e_sum = 0
     for t in RebuiltTrack_:
         e_sum = e_sum+t["energy"]
@@ -897,42 +921,60 @@ def RebuildTracks(connected_nodes_, connection_count_, data):
     ratio = e_sum / data.energy.sum()
 
     if (ratio < 0.999 or ratio > 1.0001):
-        print(ratio)
+        print("Ratio is off:", ratio)
         return RebuiltTrack_, False
 
     are_equal = set(track_nodes) == set(data_nodes)
 
     if (not are_equal):
-        print(set(data_nodes) - set(track_nodes))
+        print("Missing Nodes:", set(data_nodes) - set(track_nodes))
         return RebuiltTrack_, False
 
     return RebuiltTrack_, True
 
 
-# Re-do all the Trackbuilding
-
-def GetDeltaPath(graph_, node):
-
-    graph = copy.deepcopy(graph_)
-
-    path = [node]
+# Function to walk along a track segment till we get to an end
+def GetDeltaPath(graph_, start_node, forward_node, trkidx):
     
-    query = graph[node][0] # The node should only have 1 connection
-    prev_node = node 
+    graph = copy.deepcopy(graph_)
+    
+    paths = {trkidx : [start_node]}
+    
+    query = forward_node
+    prev_node = start_node 
 
     for index,n in enumerate(range(len(graph))):
 
-        path.append(query)
+        paths[trkidx].append(query)
         
         # Get the connected nodes
         con_nodes = graph[query]
 
         # We hit a end-point and it didnt loop
         if (len(con_nodes) == 1):
-            return path
+            return paths
         
         if (len(con_nodes) == 3 ):
-            return path
+            con_nodes.remove(prev_node)
+
+            path1 = GetDeltaPath(graph, query, con_nodes[0], 0)
+            path2 = GetDeltaPath(graph, query, con_nodes[1], 0)
+
+            len1 = len(path1[0])
+            len2 = len(path2[0])
+
+            if (len1 > len2):
+                prev_node = query
+                query = con_nodes[0]
+                paths[trkidx+1] = path2[0]
+            else:
+                prev_node = query
+                query = con_nodes[1]
+                paths[trkidx+1] = path1[0]
+            
+            trkidx = trkidx+1
+
+            continue
 
         if (len(con_nodes) > 3 ):
             print("Error too many nodes in pathing that I was anticipating...")
@@ -944,6 +986,8 @@ def GetDeltaPath(graph_, node):
         else:
             prev_node = query
             query = con_nodes[1]
+
+    return paths
 
 
 def GetLongestPath(graph_, node):
@@ -991,6 +1035,8 @@ def GetLongestPath(graph_, node):
             prev_node = query
             query = con_nodes[1]
 
+    return path
+
 
 
 # Get the length and energy of a track
@@ -1017,7 +1063,7 @@ def GetTrackEnergy(path, data, daughter):
     total_energy = 0
 
     if (daughter):
-        path = path[:-1] # Remove the last node which will be duplicated
+        path = path[1:] # Remove the first node which will be duplicated
 
     # Return the hit if there is only one node
     if len(path) == 0:
@@ -1028,3 +1074,26 @@ def GetTrackEnergy(path, data, daughter):
         total_energy += point['energy']
     
     return total_energy
+
+
+# Get the mean distances between nodes:
+def GetMeanNodeDistances(df):
+
+    # Extract x, y, z coordinates as a numpy array
+    points = df[['x', 'y', 'z']].values
+
+    # Calculate the Euclidean distance between each pair of points
+    distances = cdist(points, points, metric='euclidean')
+
+    # Replace the diagonal (self-distance) with np.inf so it doesn't get selected as minimum
+    np.fill_diagonal(distances, np.inf)
+
+    # Find the minimum distance for each row
+    min_distances = distances.min(axis=1)
+
+    # Calculate the mean of the minimum distances
+    median_distance = np.median(min_distances)
+
+    print("Median distance to the closest row:", median_distance)
+
+    return median_distance
