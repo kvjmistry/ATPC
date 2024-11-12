@@ -51,39 +51,36 @@ if [ "$mode" == "CO2" ]; then
     python3 ${SCRIPT} ${JOBNAME} 1 0.25 15 ${JOBID} # 0.25 % CO2
     python3 ${SCRIPT} ${JOBNAME} 1 0.5  12 ${JOBID} # 0.5 % CO2
     python3 ${SCRIPT} ${JOBNAME} 1 5    10 ${JOBID} # 5.0 % CO2
-    rm ATPC_0nubb.h5
+    rm ATPC_Tl.h5
 else
     # 5 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
-    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_0nubb_5bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_5bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
     python3 ${SCRIPT} ${JOBNAME}_5bar 0 5 3 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_5bar 1 5 6 ${JOBID} # 5.0 % CO2
 
     # 10 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 10. bar#" ${CONFIG}
-    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_0nubb_10bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_10bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
     python3 ${SCRIPT} ${JOBNAME}_10bar 0 5 2 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_10bar 1 5 4 ${JOBID} # 5.0 % CO2
 
     # 15 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
-    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_0nubb_15bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_15bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
     python3 ${SCRIPT} ${JOBNAME}_15bar 0 5 1 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_15bar 1 5 2 ${JOBID} # 5.0 % CO2
 
     # Remove the large file
-    rm ATPC_0nubb_5bar.h5
-    rm ATPC_0nubb_10bar.h5
-    rm ATPC_0nubb_15bar.h5
+    rm ATPC_Tl_5bar.h5
+    rm ATPC_Tl_10bar.h5
+    rm ATPC_Tl_15bar.h5
 fi
 
 ls -ltrh
-
-# Remove the large file
-rm ATPC_Tl.h5
 
 echo "Taring the h5 files"
 tar -cvf ATPC_Tl.tar *.h5
