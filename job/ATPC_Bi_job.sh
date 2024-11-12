@@ -13,6 +13,9 @@ echo "JOBID $1 running on `whoami`@`hostname`"
 SCRIPT=$3
 echo "Script name is: ${SCRIPT}"
 
+MODE=$4
+echo "Mode is: ${MODE}"
+
 start=`date +%s`
 
 # Setup nexus
@@ -39,13 +42,35 @@ cat ${CONFIG}
 
 # NEXUS
 echo "Running NEXUS" 
-nexus -n $N_EVENTS ${INIT}
-python3 ${SCRIPT} ${JOBNAME} 0 0.05 5 ${JOBID} # Just smearing
-python3 ${SCRIPT} ${JOBNAME} 1 0.05 5 ${JOBID} # close to zero diffusion
-python3 ${SCRIPT} ${JOBNAME} 1 0.1  18 ${JOBID} # 0.1 % CO2
-python3 ${SCRIPT} ${JOBNAME} 1 0.25 15 ${JOBID} # 0.25 % CO2
-python3 ${SCRIPT} ${JOBNAME} 1 0.5  12 ${JOBID} # 0.5 % CO2
-python3 ${SCRIPT} ${JOBNAME} 1 5    10 ${JOBID} # 5.0 % CO2
+
+if [ "$mode" == "CO2" ]; then
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME} 0 0.05 5 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME} 1 0.05 5 ${JOBID} # close to zero diffusion
+    python3 ${SCRIPT} ${JOBNAME} 1 0.1  18 ${JOBID} # 0.1 % CO2
+    python3 ${SCRIPT} ${JOBNAME} 1 0.25 15 ${JOBID} # 0.25 % CO2
+    python3 ${SCRIPT} ${JOBNAME} 1 0.5  12 ${JOBID} # 0.5 % CO2
+    python3 ${SCRIPT} ${JOBNAME} 1 5    10 ${JOBID} # 5.0 % CO2
+else
+    # 5 bar
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME}_5bar 0 5 3 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_5bar 1 5 6 ${JOBID} # 5.0 % CO2
+
+    # 10 bar
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 10. bar#" ${CONFIG}
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME}_10bar 0 5 2 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_10bar 1 5 4 ${JOBID} # 5.0 % CO2
+
+    # 15 bar
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME}_15bar 0 5 1 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_15bar 1 5 2 ${JOBID} # 5.0 % CO2
+fi
+
 
 ls -ltrh
 
