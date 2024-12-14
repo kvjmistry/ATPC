@@ -71,6 +71,7 @@ jobid = int(sys.argv[6])
 
 print("Scaling Factor: ", diff_scaling)
 print("CO2 Percentage: ", percentage)
+print("Pressure: ", pressure)
 print("DL: ", DL, "mm/sqrt(cm)")
 print("DT: ", DT, "mm/sqrt(cm)")
 print("binsize is: ", binsize, "mm")
@@ -152,6 +153,10 @@ min_event_id = min( hits.event_id.unique())
 # ---------------
 for index, e in enumerate(hits.event_id.unique()):
     print("On Event:", e - min_event_id)
+
+    # Skip if too many events in the file
+    if (index > 50):
+        break
 
     # Record the end time
     end_time = time.time()
