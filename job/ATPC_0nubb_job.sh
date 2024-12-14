@@ -47,34 +47,34 @@ echo "Running NEXUS"
 
 if [ "$mode" == "CO2" ]; then
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME} 0 0.05 5 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME} 1 0.05 5 ${JOBID} # close to zero diffusion
-    python3 ${SCRIPT} ${JOBNAME} 1 0.1  18 ${JOBID} # 0.1 % CO2
-    python3 ${SCRIPT} ${JOBNAME} 1 0.25 15 ${JOBID} # 0.25 % CO2
-    python3 ${SCRIPT} ${JOBNAME} 1 0.5  12 ${JOBID} # 0.5 % CO2
-    python3 ${SCRIPT} ${JOBNAME} 1 5    10 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME} 0 0.05 5 1.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME} 1 0.05 5 1.0 ${JOBID} # close to zero diffusion
+    python3 ${SCRIPT} ${JOBNAME} 1 0.1  18 1.0 ${JOBID} # 0.1 % CO2
+    python3 ${SCRIPT} ${JOBNAME} 1 0.25 15 1.0 ${JOBID} # 0.25 % CO2
+    python3 ${SCRIPT} ${JOBNAME} 1 0.5  12 1.0 ${JOBID} # 0.5 % CO2
+    python3 ${SCRIPT} ${JOBNAME} 1 5    10 1.0 ${JOBID} # 5.0 % CO2
     rm ATPC_0nubb.h5
 else
     # 5 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_0nubb_5bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_5bar 0 5 3 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME}_5bar 1 5 6 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_5bar 0 5 3 5.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_5bar 1 5 6 5.0 ${JOBID} # 5.0 % CO2
 
     # 10 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 10. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_0nubb_10bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_10bar 0 5 2 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME}_10bar 1 5 4 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_10bar 0 5 2 10.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_10bar 1 5 4 10.0 ${JOBID} # 5.0 % CO2
 
     # 15 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_0nubb_15bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_15bar 0 5 1 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME}_15bar 1 5 2 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_15bar 0 5 1 15.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_15bar 1 5 2 15.0 ${JOBID} # 5.0 % CO2
 
     # Remove the large file
     rm ATPC_0nubb_5bar.h5

@@ -7,7 +7,7 @@ from collections import Counter
 import time
 
 # USAGE:
-# python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <binsize> <JOBID>
+# python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
 # e.g. python3 SmearEvents.py /Users/mistryk2/Packages/nexus/ATPC_0nuBB 1 1 10
 
 # Record the start time
@@ -25,6 +25,8 @@ rng = np.random.default_rng()
 
 percentage =  float(sys.argv[3])
 
+pressure =  float(sys.argv[5])
+
 # Diffusion values desired
 
 # The percentage 0 is actually a small amount
@@ -41,8 +43,22 @@ elif (percentage == 0.5):
     DL = 0.507 # mm / sqrt(cm)
     DT = 0.373 # mm / sqrt(cm)
 elif (percentage == 5):
-    DL = 0.290 # mm / sqrt(cm)
-    DT = 0.279 # mm / sqrt(cm)
+
+
+    if (pressure == 1.0):
+        DL = 0.290 # mm / sqrt(cm)
+        DT = 0.279 # mm / sqrt(cm)
+    elif (pressure == 5.0):
+        DL = 0.270
+        DT = 0.259
+    elif (pressure == 10.0):
+        DL = 0.251
+        DT = 0.249
+    elif (pressure == 15.0):
+        DL = 0.258
+        DT = 0.255
+    else:
+        print("Error pressure not found")
 else:
     print("Error CO2 percentage not defined at 75 V/cm field")
 
@@ -51,7 +67,7 @@ else:
 # scaling factor is in number of sigma
 diff_scaling = float(sys.argv[2])
 binsize = int(sys.argv[4])
-jobid = int(sys.argv[5])
+jobid = int(sys.argv[6])
 
 print("Scaling Factor: ", diff_scaling)
 print("CO2 Percentage: ", percentage)
