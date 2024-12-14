@@ -41,7 +41,7 @@ transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/$(mode)/$(j
 +JobDurationCategory = "Medium"
 
 # Use a singularity image to submit the file. The image should be stored in the protected area of your workspace
-+SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC2.sif"
++SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC3.sif"
 
 
 # Tell HTCondor requirements (e.g., operating system) your job needs, 
@@ -55,4 +55,4 @@ request_disk = 5GB
 max_idle = 2000
 
 # Tell HTCondor the number of instances to run:
-queue 1000
+queue 2000
