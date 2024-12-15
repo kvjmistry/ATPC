@@ -325,8 +325,11 @@ for index, e in enumerate(hits.event_id.unique()):
     # Make the dataframe again
     electrons_smear = pd.DataFrame({  "event_id" : events, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
 
-    if (energy_temp != sum(energy_mean_arr)):
-        print("Error! Mis match in the summed energy: ", energy_temp, sum(energy_mean_arr))
+    rounded_energy_temp = round(energy_temp, 3)
+    rounded_energy_sum = round(sum(energy_mean_arr), 3)
+
+    if rounded_energy_temp != rounded_energy_sum:
+        print(f"Error! Mismatch in the summed energy: {rounded_energy_temp} != {rounded_energy_sum}")
 
     # File writing
     electrons_smear = electrons_smear.sort_values(by=['event_id', 'z', 'x', 'y'])
