@@ -57,21 +57,21 @@ else
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_5bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_5bar 0 5 10 5.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_5bar 0 5 0.05 5.0 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_5bar 1 5 10 5.0 ${JOBID} # 5.0 % CO2
 
     # 10 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 10. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_10bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_10bar 0 5 10 10.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_10bar 0 5 0.05 10.0 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_10bar 1 5 10 10.0 ${JOBID} # 5.0 % CO2
 
     # 15 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_15bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_15bar 0 5 10 15.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_15bar 0 5 0.05 15.0 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_15bar 1 5 10 15.0 ${JOBID} # 5.0 % CO2
 
     # Remove the large file
