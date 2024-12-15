@@ -20,6 +20,13 @@ hits = pd.read_hdf(sys.argv[1]+".h5", 'MC/hits')
 parts = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
 print("Finished loading hits")
 
+# Get the first 50 unique events
+event_list = hits['event'].unique()[0:50]
+
+# Filter the DataFrame to keep only 50 events
+hits = hits[hits['event'].isin(event_list)]
+parts = parts[parts['event'].isin(event_list)]
+
 # init the RNG
 rng = np.random.default_rng()
 
@@ -43,7 +50,6 @@ elif (percentage == 0.5):
     DL = 0.507 # mm / sqrt(cm)
     DT = 0.373 # mm / sqrt(cm)
 elif (percentage == 5):
-
 
     if (pressure == 1.0):
         DL = 0.290 # mm / sqrt(cm)
@@ -153,10 +159,6 @@ min_event_id = min( hits.event_id.unique())
 # ---------------
 for index, e in enumerate(hits.event_id.unique()):
     print("On Event:", e - min_event_id)
-
-    # Skip if too many events in the file
-    if (index > 50):
-        break
 
     # Record the end time
     end_time = time.time()
