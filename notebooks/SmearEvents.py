@@ -72,7 +72,7 @@ else:
 # This is the scaling amount of diffusion
 # scaling factor is in number of sigma
 diff_scaling = float(sys.argv[2])
-binsize = int(sys.argv[4])
+binsize = float(sys.argv[4])
 jobid = int(sys.argv[6])
 
 print("Scaling Factor: ", diff_scaling)
