@@ -23,7 +23,7 @@ echo "Setting Up NEXUS"
 source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
-N_EVENTS=100000
+N_EVENTS=10000
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 
@@ -45,12 +45,12 @@ echo "Running NEXUS"
 
 if [ "$mode" == "CO2" ]; then
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME} 0 0.05 5 1.0 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME} 1 0.05 5 1.0 ${JOBID} # close to zero diffusion
-    python3 ${SCRIPT} ${JOBNAME} 1 0.1  18 1.0 ${JOBID} # 0.1 % CO2
-    python3 ${SCRIPT} ${JOBNAME} 1 0.25 15 1.0 ${JOBID} # 0.25 % CO2
-    python3 ${SCRIPT} ${JOBNAME} 1 0.5  12 1.0 ${JOBID} # 0.5 % CO2
-    python3 ${SCRIPT} ${JOBNAME} 1 5    10 1.0 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 0 0.05 5 1.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.05 5 1.0 ${JOBID} # close to zero diffusion
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.1  18 1.0 ${JOBID} # 0.1 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.25 15 1.0 ${JOBID} # 0.25 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.5  12 1.0 ${JOBID} # 0.5 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1 5    10 1.0 ${JOBID} # 5.0 % CO2
     rm ATPC_Bi.h5
 else
     # 5 bar
