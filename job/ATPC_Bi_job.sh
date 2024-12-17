@@ -43,7 +43,10 @@ cat ${CONFIG}
 # NEXUS
 echo "Running NEXUS" 
 
-if [ "$mode" == "CO2" ]; then
+if [ "$MODE" == "CO2" ]; then
+    # 1 bar
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 1. bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_1bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
     python3 ${SCRIPT} ${JOBNAME}_1bar 0 0.05 5 1.0 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.05 5 1.0 ${JOBID} # close to zero diffusion
@@ -51,7 +54,7 @@ if [ "$mode" == "CO2" ]; then
     python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.25 15 1.0 ${JOBID} # 0.25 % CO2
     python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.5  12 1.0 ${JOBID} # 0.5 % CO2
     python3 ${SCRIPT} ${JOBNAME}_1bar 1 5    10 1.0 ${JOBID} # 5.0 % CO2
-    rm ATPC_Bi.h5
+    rm ATPC_Bi_1bar.h5
 else
     # 5 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
