@@ -23,7 +23,7 @@ echo "Setting Up NEXUS"
 source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
-N_EVENTS=100000
+N_EVENTS=2500
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 
@@ -59,7 +59,7 @@ elif [ "$MODE" == "NEXUS" ]; then
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_15bar_${JOBID}#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python CompressEvents.py ATPC_Tl_15bar_${JOBID}.h5
+    python3 CompressEvents.py ATPC_Tl_15bar_${JOBID}.h5
     rm ATPC_Tl_15bar_${JOBID}.h5
 
 else

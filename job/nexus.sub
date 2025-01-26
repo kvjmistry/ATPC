@@ -13,7 +13,8 @@ script=SmearEvents.py
 # script=CompressEvents.py
 
 #mode=CO2
-mode=Pressure
+#mode=Pressure
+mode=NEXUS
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
@@ -55,4 +56,4 @@ request_disk = 5GB
 max_idle = 2000
 
 # Tell HTCondor the number of instances to run:
-queue 3000
+queue 500
