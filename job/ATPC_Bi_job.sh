@@ -55,6 +55,12 @@ if [ "$MODE" == "CO2" ]; then
     python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.5  12 1.0 ${JOBID} # 0.5 % CO2
     python3 ${SCRIPT} ${JOBNAME}_1bar 1 5    10 1.0 ${JOBID} # 5.0 % CO2
     rm ATPC_Bi_1bar.h5
+elif [ "$MODE" == "NEXUS" ]; then
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_15bar_${JOBID}#" ${CONFIG}
+    nexus -n $N_EVENTS ${INIT}
+    python CompressEvents.py ATPC_Bi_15bar_${JOBID}.h5
+    rm ATPC_Bi_15bar_${JOBID}.h5
 else
     # 5 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
