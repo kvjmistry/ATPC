@@ -61,7 +61,7 @@ elif [ "$MODE" == "NEXUS" ]; then
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_0nubb_15bar_${JOBID}#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 CompressEvents.py ATPC_0nubb_15bar_${JOBID}.h5
+    python3 CompressEvents.py ATPC_0nubb_15bar_${JOBID}
     rm ATPC_0nubb_15bar_${JOBID}.h5
 
 else
