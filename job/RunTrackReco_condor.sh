@@ -17,7 +17,7 @@ start=`date +%s`
 
 ls -ltrh
 
-python TrackReconstruction.py $input_file 0 ${JOBID}
+python3 TrackReconstruction.py $input_file 0 ${JOBID}
 
 rm TrackReconstruction_functions.py
 rm ${input_file}
@@ -25,6 +25,8 @@ rm ${input_file}
 ls -ltrh
 
 tar -cvf ${JOBNAME}.tar *.h5 *.pkl
+
+rm *.h5 *.pkl
 
 
 echo "FINISHED....EXITING"

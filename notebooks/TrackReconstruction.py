@@ -204,7 +204,7 @@ infile     = sys.argv[1]
 cluster = int(sys.argv[2])
 jobid   = int(sys.argv[3])
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
-plot=True
+plot=False
 
 hits = pd.read_hdf(infile,"MC/hits")
 # parts = pd.read_hdf(infile,"MC/particles")

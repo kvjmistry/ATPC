@@ -1,14 +1,14 @@
 # trackreco.sub
 
 # The job title here.
-jobname=ATPC_0nubb
-# jobname=ATPC_Tl
+#jobname=ATPC_0nubb
+jobname=ATPC_Tl
 # jobname=ATPC_Bi
 
-#PRESSURE=1bar
+PRESSURE=1bar
 #PRESSURE=5bar
 #PRESSURE=10bar
-PRESSURE=15bar
+#PRESSURE=15bar
 
 
 DIFF=nodiff
@@ -17,8 +17,6 @@ DIFF=nodiff
 #DIFF=0.25percent
 #DIFF=0.5percent
 #DIFF=0.5percent
-
-infiles=filelists/$(jobname)_$(PRESSURE)_$(DIFF).txt
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
@@ -37,16 +35,16 @@ error  = jobs/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/jobid$(NewProcess)/$(Clus
 output = jobs/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 
 # Transfer input files
-transfer_input_files = $(infile),$(HOME_LOCATION)/notebooks/TrackReconstruction.py,$(HOME_LOCATION)/notebooks/TrackReconstruction_functions.py
+transfer_input_files = /ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/$(jobname)/$(PRESSURE)/$(DIFF)/$(infile),$(HOME_LOCATION)/notebooks/TrackReconstruction.py,$(HOME_LOCATION)/notebooks/TrackReconstruction_functions.py
 
 # Transfer output files
-transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/$(mode)/trackreco/$(jobname)/$(jobname)_trackreco_$(Cluster)_$(NewProcess).tar"
+transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/$(jobname)_trackreco_$(Cluster)_$(NewProcess).tar"
 
 # Specify Job duration category as "Medium" (expected runtime <10 hr) or "Long" (expected runtime <20 hr). 
 +JobDurationCategory = "Medium"
 
 # Use a singularity image to submit the file. The image should be stored in the protected area of your workspace
-+SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC5.sif"
++SingularityImage = "osdf:////ospool/ap40/data/krishan.mistry/containers/docker_nexus_ATPC5.sif"
 
 
 # Tell HTCondor requirements (e.g., operating system) your job needs, 
@@ -60,4 +58,4 @@ request_disk = 5GB
 max_idle = 2000
 
 # Tell HTCondor the number of instances to run:
-queue infile from $(infiles)
+queue infile from filelists/$(jobname)_$(PRESSURE)_$(DIFF).txt
