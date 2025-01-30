@@ -16,7 +16,6 @@ SAMPLE=0nubb
 
 mkdir -p /media/argon/HardDrive_8TB/Krishan/ATPC/RECO/${SAMPLE}/
 cd       /media/argon/HardDrive_8TB/Krishan/ATPC/RECO/${SAMPLE}/
-cp /home/argon/Projects/Krishan/ATPC/notebooks/TrackReconstruction_functions.py .
 
 
 input_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" /home/argon/Projects/Krishan/ATPC/eventlists/${SAMPLE}_files.txt)

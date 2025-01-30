@@ -31,14 +31,14 @@ HOME_LOCATION=/home/krishan.mistry/code/ATPC/
 #NewProcess = $INT(newjobid, %d)
 NewProcess = $(Process)
 
-executable = $(jobname)_job.sh
-arguments = $(NewProcess) $(jobname)
+executable = RunTrackReco_condor.sh
+arguments = $(NewProcess) $(jobname) $(infile)
 
 # Specify the name of the log, standard error, and standard output (or "screen output") files. Wherever you see $(Cluster), HTCondor will insert the 
 #  queue number assigned to this set of jobs at the time of submission.
-log    = jobs/trackreco/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).log
-error  = jobs/trackreco/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).err
-output = jobs/trackreco/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
+log    = jobs/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).log
+error  = jobs/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).err
+output = jobs/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 
 # Transfer input files
 transfer_input_files = $(infile),$(HOME_LOCATION)/notebooks/TrackReconstruction.py,$(HOME_LOCATION)/notebooks/TrackReconstruction_functions.py
