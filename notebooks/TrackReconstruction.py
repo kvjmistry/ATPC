@@ -27,7 +27,7 @@ def RunReco(data, cluster):
 
     # Cluster the data if required
     if (cluster):
-        data =  RunClustering(data, [10,20,30], 30)
+        data =  RunClustering(data, [10], 30)
         # then re-sort sort it based on the x,y,z
         data = data.sort_values(by=['y', "z", "x"]).reset_index(drop=True)
 
@@ -213,9 +213,10 @@ Track_dict = {}
 connected_nodes_dict = {}
 connections_count_dict = {}
 df_list = []
+df_meta = []
 
-for event_num in hits.event_id.unique():
-    print("On Event:", event_num)
+for index, event_num in enumerate(hits.event_id.unique()):
+    print("On index, Event:", index, event_num)
 
     # if (event_num != 11300):
         # continue
@@ -227,27 +228,33 @@ for event_num in hits.event_id.unique():
     connected_nodes_dict[event_num] = connected_nodes
     connections_count_dict[event_num] = connection_count
     df_list.append(df)
+    temp_meta = GetTrackMeta(df)
+    df_meta.append(temp_meta)
 
+    print("Printing Metadata\n", temp_meta)
+    print("\n\n")
 
 
 df = pd.concat(df_list)
+df_meta = pd.concat(df_meta)
 
-# df.to_hdf(f"{file_out_seg}_{jobid}_reco.h5", key='data', mode='w')
+with pd.HDFStore(f"{file_out_seg}_{jobid}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
+    # Write each DataFrame to the file with a unique key
+    store.put('data', df, format='table')
+    store.put('meta', df_meta, format='table')
 
 
-# with open(f"{file_out_seg}_{jobid}_trackinfo.pkl", 'wb') as pickle_file:
-#     pickle.dump(Track_dict, pickle_file)
-#     pickle.dump(connected_nodes_dict, pickle_file)
-#     pickle.dump(connections_count_dict, pickle_file)
-
-print("Len 1", len(df))
+with open(f"{file_out_seg}_{jobid}_trackinfo.pkl", 'wb') as pickle_file:
+    pickle.dump(Track_dict, pickle_file)
+    pickle.dump(connected_nodes_dict, pickle_file)
+    pickle.dump(connections_count_dict, pickle_file)
 
 
 if plot:
     print("Plotting Events")
-    for evt in df.event_id.unique():
+    for index, evt in enumerate(df.event_id.unique()):
 
-        print("On Event:", evt)
+        print("On index, Event:", index, evt)
         # if (evt != 11300):
         #     continue
 
@@ -277,9 +284,3 @@ if plot:
             plt.savefig(f"plots/TrackingAlgoOut/event_{evt}_cluster.pdf")
         else:
             plt.savefig(f"plots/TrackingAlgoOut/event_{evt}.pdf")
-
-
-
-
-# df_reco = pd.DataFrame(mydict_reco) 
-# df_reco.to_csv(file_out, sep=',', index=False, header=False) 

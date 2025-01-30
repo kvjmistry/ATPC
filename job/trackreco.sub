@@ -1,0 +1,67 @@
+# nexus.sub
+
+# The job title here.
+jobname=ATPC_0nubb
+# jobname=ATPC_Tl
+# jobname=ATPC_Bi
+
+CONFIG=$(jobname).config.mac
+INIT=$(jobname).init.mac
+
+
+#PRESSURE=1bar
+#PRESSURE=5bar
+#PRESSURE=10bar
+PRESSURE=15bar
+
+
+DIFF=nodiff
+#DIFF=0.05percent
+#DIFF=0.1percent
+#DIFF=0.25percent
+#DIFF=0.5percent
+#DIFF=0.5percent
+
+infiles=$(jobname)_$(PRESSURE)_$(DIFF).txt
+
+OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
+HOME_LOCATION=/home/krishan.mistry/code/ATPC/
+
+# newjobid = $(Process) + 100
+#NewProcess = $INT(newjobid, %d)
+NewProcess = $(Process)
+
+executable = $(jobname)_job.sh
+arguments = $(NewProcess) $(jobname)
+
+# Specify the name of the log, standard error, and standard output (or "screen output") files. Wherever you see $(Cluster), HTCondor will insert the 
+#  queue number assigned to this set of jobs at the time of submission.
+log    = jobs/trackreco/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).log
+error  = jobs/trackreco/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).err
+output = jobs/trackreco/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
+
+# Transfer input files
+transfer_input_files = $(infile),$(HOME_LOCATION)/notebooks/TrackReconstruction.py,$(HOME_LOCATION)/notebooks/TrackReconstruction_functions.py
+
+# Transfer output files
+transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/$(mode)/trackreco/$(jobname)/$(jobname)_trackreco_$(Cluster)_$(NewProcess).tar"
+
+# Specify Job duration category as "Medium" (expected runtime <10 hr) or "Long" (expected runtime <20 hr). 
++JobDurationCategory = "Medium"
+
+# Use a singularity image to submit the file. The image should be stored in the protected area of your workspace
++SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC5.sif"
+
+
+# Tell HTCondor requirements (e.g., operating system) your job needs, 
+# what amount of compute resources each job will need on the computer where it runs.
+requirements = (Arch == "X86_64" && TARGET.GLIDEIN_ResourceName =!= "Lehigh - Hawk" && TARGET.GLIDEIN_ResourceName =!= "UA-LR-ITS-EP")
+request_cpus = 1
+request_memory = 4GB
+request_disk = 5GB
+
+# If submitting more than 10k jobs use this statement
+max_idle = 2000
+
+# Tell HTCondor the number of instances to run:
+queue infile from $(infiles)

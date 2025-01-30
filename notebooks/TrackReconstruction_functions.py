@@ -1097,3 +1097,13 @@ def GetMeanNodeDistances(df):
     print("Median distance to the closest row:", median_distance)
 
     return median_distance
+
+# Get track level variables like total energy and total length
+def GetTrackMeta(df):
+
+    df_meta = df.groupby(["event_id", "trkID"]).agg({
+        "energy": "sum",  # Sum the energy
+        "cumulative_distance": "max"  # Get the largest cumulative_distance
+    }).reset_index()
+
+    return df_meta
