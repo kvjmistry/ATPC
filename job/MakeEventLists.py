@@ -23,6 +23,10 @@ diffs = ["0.05percent", "0.1percent", "0.25percent", "0.5percent", "5percent", "
 
 for m in modes:
     for p in pressures:
+        
+        if (p != "1bar"):
+            diffs = ["5percent", "nodiff"]
+        
         for d in diffs:
             MakeList(m, p, d)
 
