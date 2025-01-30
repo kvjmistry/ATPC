@@ -1,13 +1,9 @@
-# nexus.sub
+# trackreco.sub
 
 # The job title here.
 jobname=ATPC_0nubb
 # jobname=ATPC_Tl
 # jobname=ATPC_Bi
-
-CONFIG=$(jobname).config.mac
-INIT=$(jobname).init.mac
-
 
 #PRESSURE=1bar
 #PRESSURE=5bar
