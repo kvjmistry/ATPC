@@ -18,7 +18,7 @@ DIFF=nodiff
 #DIFF=0.5percent
 #DIFF=0.5percent
 
-infiles=$(jobname)_$(PRESSURE)_$(DIFF).txt
+infiles=filelists/$(jobname)_$(PRESSURE)_$(DIFF).txt
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
