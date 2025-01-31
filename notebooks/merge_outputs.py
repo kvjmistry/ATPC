@@ -23,6 +23,16 @@ dfs = pd.concat(dfs)
 df_meta = pd.concat(df_meta)
 
 print(dfs)
+print(df_meta)
+
+with pd.HDFStore(f"{file_out}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
+    # Write each DataFrame to the file with a unique key
+    store.put('data', df, format='table')
+    store.put('meta', df_meta, format='table')
+
+# Finished with these dataframes
+del dfs
+del df_meta
 
 Tracks = []
 connections = []
@@ -41,13 +51,6 @@ for index, f in enumerate(files):
             Tracks.update(pickle.load(pickle_file))
             connections.update(pickle.load(pickle_file))
             connection_counts.update(pickle.load(pickle_file))
-
-
-with pd.HDFStore(f"{file_out}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
-    # Write each DataFrame to the file with a unique key
-    store.put('data', df, format='table')
-    store.put('meta', df_meta, format='table')
-
 
 
 with open(f"{file_out}_trackreco.pkl", 'wb') as pickle_file:
