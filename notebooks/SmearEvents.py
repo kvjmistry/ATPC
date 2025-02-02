@@ -6,6 +6,8 @@ import pandas as pd
 from collections import Counter
 import time
 
+pd.options.mode.chained_assignment = None  # Disable the warning
+
 # USAGE:
 # python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
 # e.g. python3 SmearEvents.py /Users/mistryk2/Packages/nexus/ATPC_0nuBB 1 1 10
@@ -190,7 +192,7 @@ for index, e in enumerate(hits.event_id.unique()):
     event["n"] = round(event["energy"]/E_mean)
     
     # Smear the energy by Fano amount
-    event["n"] = event["n"].apply(smear_N)
+    event["n"] = event["n"].apply(smear_energy)
 
     # Loop over the particles and get the differences between steps ------
     particles = event.particle_id.unique()
