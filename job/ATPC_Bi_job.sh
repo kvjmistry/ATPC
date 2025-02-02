@@ -48,16 +48,18 @@ if [ "$MODE" == "CO2" ]; then
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 1. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_1bar#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_1bar 0 0.05 5 1.0 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.05 5 1.0 ${JOBID} # close to zero diffusion
-    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.1  18 1.0 ${JOBID} # 0.1 % CO2
+    # <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
+    python3 ${SCRIPT} ${JOBNAME}_1bar 0 0.05  5 1.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.05  5 1.0 ${JOBID} # close to zero diffusion
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1  0.1 18 1.0 ${JOBID} # 0.1 % CO2
     python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.25 15 1.0 ${JOBID} # 0.25 % CO2
-    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.5  12 1.0 ${JOBID} # 0.5 % CO2
-    python3 ${SCRIPT} ${JOBNAME}_1bar 1 5    10 1.0 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1  0.5 12 1.0 ${JOBID} # 0.5 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1    5 10 1.0 ${JOBID} # 5.0 % CO2
     rm ATPC_Bi_1bar.h5
 elif [ "$MODE" == "NEXUS" ]; then
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_15bar_${JOBID}#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.432 m#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
     python3 CompressEvents.py ATPC_Bi_15bar_${JOBID}
     rm ATPC_Bi_15bar_${JOBID}.h5
@@ -65,23 +67,26 @@ else
     # 5 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_5bar#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 3.508 m#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_5bar 0 0.05 5 5.0 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME}_5bar 1 5 10 5.0 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_5bar 0 0.05  5 5.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_5bar 1    5 10 5.0 ${JOBID} # 5.0 % CO2
 
     # 10 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 10. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_10bar#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.784 m#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_10bar 0 0.05 5 10.0 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME}_10bar 1 5 10 10.0 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_10bar 0 0.05  5 10.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_10bar 1    5 10 10.0 ${JOBID} # 5.0 % CO2
 
     # 15 bar
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_15bar#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.432 m#" ${CONFIG}
     nexus -n $N_EVENTS ${INIT}
-    python3 ${SCRIPT} ${JOBNAME}_15bar 0 0.05 5 15.0 ${JOBID} # Just smearing
-    python3 ${SCRIPT} ${JOBNAME}_15bar 1 5 10 15.0 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_15bar 0 0.05  5 15.0 ${JOBID} # Just smearing
+    python3 ${SCRIPT} ${JOBNAME}_15bar 1    5 10 15.0 ${JOBID} # 5.0 % CO2
 
     # Remove the large file
     rm ATPC_Bi_5bar.h5

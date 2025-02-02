@@ -82,25 +82,29 @@ print("DL: ", DL, "mm/sqrt(cm)")
 print("DT: ", DT, "mm/sqrt(cm)")
 print("binsize is: ", binsize, "mm")
 
+# Calculate the detector half-length
+det_size = int(np.cbrt(6000**3/pressure)/2.0) 
+
 # Create the bins ---- 
 xbw=binsize
-xmin=-3000 - binsize/2 
-xmax=3000 + binsize/2
+xmin=-det_size - binsize/2 
+xmax=det_size + binsize/2
 
 ybw=binsize
-ymin=-3000 - binsize/2 
-ymax=3000 + binsize/2
+ymin=-det_size - binsize/2 
+ymax=det_size + binsize/2
 
 
 # This shifts the z pos of the events so 0 is at anode
 # can set this to zero
-z_shift = 3000
-print("z_shift is:", z_shift)
+z_shift = det_size
 # z_shift = 0
 
 zbw=binsize
-zmin=-3000 + z_shift - binsize/2 
-zmax=3000 + z_shift + binsize/2
+zmin=-det_size + z_shift - binsize/2 
+zmax=det_size + z_shift + binsize/2
+
+print("Detector size is:", det_size*2)
 
 
 # bins for x, y, z
@@ -115,7 +119,7 @@ zbin_c = zbins[:-1] + zbw / 2
 
 
 # Mean energy per e-. This splits up each G4 into E_hit/E_mean electrons
-E_mean = 25e-6 # [eV]
+E_mean = 24.8e-6 # [eV]
 
 df_smear = []
 
@@ -150,6 +154,14 @@ def generate_random(row):
 
     return pd.Series([x_smear, y_smear, z_smear], index=['x_smear', 'y_smear', 'z_smear'])
 
+# Function to smear the number of electrons in each hit by the fano factor
+def smear_energy(N):
+    if N < 10:
+        return np.random.poisson(N)  # Poisson for small N
+    else:
+        sigma = np.sqrt(N * 0.15) # 0.15 Fano factor
+        return int(round(np.random.normal(N, sigma)))  # Apply Gauss+rounding
+
 # Print the number of events:
 print("Number of events to process: ", len(hits.event_id.unique()))
 min_event_id = min( hits.event_id.unique())
@@ -176,6 +188,9 @@ for index, e in enumerate(hits.event_id.unique()):
 
     # Calc number of electrons in a hit
     event["n"] = round(event["energy"]/E_mean)
+    
+    # Smear the energy by Fano amount
+    event["n"] = event["n"].apply(smear_N)
 
     # Loop over the particles and get the differences between steps ------
     particles = event.particle_id.unique()
