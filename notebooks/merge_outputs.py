@@ -27,7 +27,7 @@ print(df_meta)
 
 with pd.HDFStore(f"{file_out}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
-    store.put('data', df, format='table')
+    store.put('data', dfs, format='table')
     store.put('meta', df_meta, format='table')
 
 # Finished with these dataframes
