@@ -24,7 +24,7 @@ source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
 # ~ 1000 events generated made 500 events, so 50% need about 4k jobs
-N_EVENTS=250
+N_EVENTS=50
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 
