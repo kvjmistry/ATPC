@@ -13,11 +13,21 @@ echo "JOBID $JOBNAME running on `whoami`@`hostname`"
 input_file=$3
 echo "Input file name is: ${input_file}"
 
+PRESS=$4
+
+# Remove the "bar"
+PRESS=$(echo "${PRESS}" | sed 's/[^0-9]*//g')
+echo "$PRESS"
+echo "Pressure is: ${PRESS}bar"
+
+Diff=$4
+echo "Diff is: ${Diff}"
+
 start=`date +%s`
 
 ls -ltrh
 
-python3 TrackReconstruction.py $input_file 0 ${JOBID}
+python3 TrackReconstruction.py $input_file ${JOBID} ${PRESS} ${Diff}
 
 rm TrackReconstruction_functions.py
 rm ${input_file}

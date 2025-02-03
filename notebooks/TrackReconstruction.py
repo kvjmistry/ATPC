@@ -132,15 +132,7 @@ def RunReco(data, cluster):
         finished, Tracks, connected_nodes, connections, connection_count = ConnectTracks(Tracks, connected_nodes, connections, connection_count, dist_matrix, dist_threshold, data)
         q=q+1
 
-    # Quality control
-    # If end node is within threshold to a node with three connections or another end
-    # Then we might have made a mistake
-    # Try breaking the proposed node 
 
-
-    ## Set the colours of the tracks
-    # Tracks = CategorizeTracks(Tracks)
-    
     # Redo the track building
     Tracks = []
     Tracks, pass_flag = RebuildTracks(connected_nodes, connection_count, data)
@@ -148,9 +140,7 @@ def RunReco(data, cluster):
 
     print("Pass Flag:",pass_flag)
 
-    # Function to get track metadata
-
-
+    # Function to get track topo info
     num_nodes = 0
     primary_track_id = -1
     primary_nodes = []
@@ -192,17 +182,24 @@ def RunReco(data, cluster):
             df_angles = pd.concat([df_angles, trk], ignore_index=True)
 
 
+    df_angles = CalcTortuosity(df_angles) # Add the tortuosity variable to the tracks
     print(df_angles)
     return df_angles, Tracks, connected_nodes, connection_count
 
 
-# USAGE: python TrackReconstruction.py <infile> <clustering option>
-# python TrackReconstruction.py "Leptoquark_SM_nexus.h5" 0
+# USAGE: python TrackReconstruction.py <infile> <pressure> <diffusion amount>
+# python TrackReconstruction.py "ATPC_0nubb_15bar_smear_144.h5" "1bar" "nodiff"
 
 # Input file
 infile     = sys.argv[1]
-cluster = int(sys.argv[2])
-jobid   = int(sys.argv[3])
+jobid    = int(sys.argv[2])
+pressure = int(sys.argv[3])
+diffusion= float(sys.argv[4])
+
+if (diffusion != "nodiff"):
+    cluster = 1
+
+
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
 plot=False
 
@@ -228,7 +225,7 @@ for index, event_num in enumerate(hits.event_id.unique()):
     connected_nodes_dict[event_num] = connected_nodes
     connections_count_dict[event_num] = connection_count
     df_list.append(df)
-    temp_meta = GetTrackMeta(df)
+    temp_meta = GetTrackdf(df, Tracks, 500/pressure, 200/pressure) # scale these params inversely with the pressure
     df_meta.append(temp_meta)
 
     print("Printing Metadata\n", temp_meta)

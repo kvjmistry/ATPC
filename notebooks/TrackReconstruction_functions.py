@@ -1098,17 +1098,6 @@ def GetMeanNodeDistances(df):
 
     return median_distance
 
-# Get track level variables like total energy and total length
-def GetTrackMeta(df):
-
-    df_meta = df.groupby(["event_id", "trkID"]).agg({
-        "energy": "sum",  # Sum the energy
-        "cumulative_distance": "max"  # Get the largest cumulative_distance
-    }).reset_index()
-
-    return df_meta
-
-
 # Calculate the tortuosity and add it to the dataframe
 def CalcTortuosity(df_angles):
 
@@ -1169,7 +1158,7 @@ def SortEnergy(blob1, blob2):
         return blob2, blob1, True
 
 
-def GetTrackProperties(df, trkID, p_start, p_end, eventid, distance_threshold, T_threshold):
+def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_threshold, T_threshold):
 
     counter = 0
 
@@ -1191,6 +1180,7 @@ def GetTrackProperties(df, trkID, p_start, p_end, eventid, distance_threshold, T
     properties_df = pd.DataFrame({
         "event_id": [eventid],
         "trkID"   : [trkID],
+        "primary" : [primary],
         "blob1" : [blob1],
         "blob2" : [blob2],
         "Tortuosity1"    : [T1], 
@@ -1249,14 +1239,15 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
         p_end   = t["end"]
 
         eventid = df_angles.event_id.iloc[0]
+        primary = df_angles[df_angles.trkID == t["id"]].primary.iloc[0]
 
-        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], p_start, p_end, eventid, distance_threshold, T_threshold)
+        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], primary, p_start, p_end, eventid, distance_threshold, T_threshold)
 
         # Convert to DataFrame
         df = pd.DataFrame([filtered_data])
         df.rename(columns={'id': 'trkID'}, inplace=True)
         df = properties_df.merge(df, on='trkID', how='inner')
-        df = df[["event_id", "trkID", "start", "end", "length", "energy", "blob1", "blob2", "Tortuosity1", "Tortuosity2", "label"]]
+        df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "Tortuosity1", "Tortuosity2", "label"]]
 
         Track_df.append(df)
 
