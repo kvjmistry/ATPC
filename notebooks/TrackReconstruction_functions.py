@@ -1107,3 +1107,158 @@ def GetTrackMeta(df):
     }).reset_index()
 
     return df_meta
+
+
+# Calculate the tortuosity and add it to the dataframe
+def CalcTortuosity(df_angles):
+
+    # df_angles['distance_diff'] = df_angles.groupby(['event_id', 'trkID'])['cumulative_distance'].diff().fillna(0)
+
+    df_angles["Tortuosity"] = 0
+
+    Tortuosity = []
+
+    window = 10
+
+    for trkID in df_angles.trkID.unique():
+
+        # Get the track
+        trk_df = df_angles[df_angles.trkID == trkID]
+
+        # Try to dynamically calculate the window size by splitting into 100 pieces
+        window = int(len(trk_df)/100 + 1)
+        if window < 5:
+            window = 5
+
+        # Loop over the nodes in the track
+        for index in range(len(trk_df)):
+
+            start = max(0, index - window)  # Prevent going below index 0
+            end = min(len(trk_df), index + window + 1)  # Prevent exceeding last index
+            
+            temp_df = trk_df.iloc[start:end]
+
+            point1 = temp_df.iloc[0]
+            point2 = temp_df.iloc[-1]
+            segment_length = calculate_distance(point1, point2)
+
+            # Avoids division by zero
+            if (segment_length == 0):
+                segment_length = 1
+
+            # Get the diff between each row
+            cum_distance = 0
+            for i in range(1, len(temp_df)):
+                
+                prev_point = temp_df.iloc[i - 1][['x', 'y', 'z']].to_numpy()
+                curr_point = temp_df.iloc[i][['x', 'y', 'z']].to_numpy()
+                cum_distance+=euclidean_distance(curr_point,prev_point)
+
+            Tortuosity.append(cum_distance/segment_length)
+
+    df_angles["Tortuosity"] = Tortuosity
+
+    return df_angles
+
+def SortEnergy(blob1, blob2):
+
+    # Extra flag to indicate the ends were swapped
+    if (blob1 > blob2):
+        return blob1, blob2, False
+    else:
+        return blob2, blob1, True
+
+
+def GetTrackProperties(df, trkID, p_start, p_end, eventid, distance_threshold, T_threshold):
+
+    counter = 0
+
+    # Now Get the energy of the primary end points
+    # start_energy = GetEnergyinRange(df, p_start, distance_threshold)
+    # end_energy   = GetEnergyinRange(df, p_end,   distance_threshold)
+    
+    start_energy, end_energy = GetEndEnergy(df, distance_threshold) # Uses cumulative distance
+
+    blob1, blob2, swapped_flag = SortEnergy(start_energy, end_energy)
+
+    if (not swapped_flag):
+        T1, T2 = GetEndTortuosity(df, T_threshold)
+    else:
+        T2, T1 = GetEndTortuosity(df, T_threshold)
+
+
+    # Create a new DataFrame to append
+    properties_df = pd.DataFrame({
+        "event_id": [eventid],
+        "trkID"   : [trkID],
+        "blob1" : [blob1],
+        "blob2" : [blob2],
+        "Tortuosity1"    : [T1], 
+        "Tortuosity2"    : [T2]
+    })
+
+    properties_df["trkID"] = properties_df["trkID"].astype(int)
+
+    counter = counter+1
+
+    return properties_df
+
+
+def GetEndTortuosity(df, T_threshold):
+    df_T1 = df[df.cumulative_distance < T_threshold]
+    T1 = df_T1["Tortuosity"].mean()
+
+    end_threshold = max(df.cumulative_distance) - T_threshold
+    df_T2 = df[df['cumulative_distance'] > end_threshold]
+    T2 = df_T2["Tortuosity"].mean()
+    return T1, T2
+
+
+def GetEnergyinRange(df, p_start, distance_threshold):
+    # Get coordinates where id is p_start
+    start_coord = df[df['id'] == p_start][['x', 'y', 'z']].values
+
+    # Calculate the Euclidean distance from each row to each row with id == p_start
+    distances = np.sqrt(((df[['x', 'y', 'z']].values[:, None] - start_coord) ** 2).sum(axis=2))
+
+    # Find rows where any distance to id == p_start rows is less than the threshold
+    mask = (distances < distance_threshold).any(axis=1)
+    result = df[mask]
+    return result.energy.sum()
+
+def GetEndEnergy(df, distance_threshold):
+    df_E1 = df[df.cumulative_distance < distance_threshold]
+    E1 = df_E1["energy"].sum()
+
+    end_threshold = max(df.cumulative_distance) - distance_threshold
+    df_E2 = df[df['cumulative_distance'] > end_threshold]
+    E2 = df_E2["energy"].sum()
+    return E1, E2
+
+
+# Get the track metadata
+def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
+    Track_df = []
+
+    for t in RebuiltTrack:
+
+        # Select only specific variables to store for the track properties
+        filtered_data = {key: t[key] for key in ['id', 'start', 'end', 'length', 'energy', 'label']}
+
+        p_start = t["start"]
+        p_end   = t["end"]
+
+        eventid = df_angles.event_id.iloc[0]
+
+        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], p_start, p_end, eventid, distance_threshold, T_threshold)
+
+        # Convert to DataFrame
+        df = pd.DataFrame([filtered_data])
+        df.rename(columns={'id': 'trkID'}, inplace=True)
+        df = properties_df.merge(df, on='trkID', how='inner')
+        df = df[["event_id", "trkID", "start", "end", "length", "energy", "blob1", "blob2", "Tortuosity1", "Tortuosity2", "label"]]
+
+        Track_df.append(df)
+
+    Track_df = pd.concat(Track_df)
+    return Track_df
