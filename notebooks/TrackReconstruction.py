@@ -10,7 +10,7 @@ import pickle
 import os
 
 
-def RunReco(data, cluster):
+def RunReco(data, cluster, sort_flag):
 
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
@@ -23,7 +23,12 @@ def RunReco(data, cluster):
     data = data.sample(frac=1).reset_index(drop=True)
 
     # then sort it based on the x,y,z
-    data = data.sort_values(by=['x', "y", "z"]).reset_index(drop=True)
+    if (sort_flag == 0):
+        data = data.sort_values(by=['x', "y", "z"]).reset_index(drop=True)
+    elif (sort_flag == 1):
+        data = data.sort_values(by=['y', "z", "x"]).reset_index(drop=True)
+    else:
+        data = data.sort_values(by=['z', "x", "y"]).reset_index(drop=True)
 
     # Cluster the data if required
     if (cluster):
@@ -66,7 +71,7 @@ def RunReco(data, cluster):
                 
                 # Add connection between node i and closest_idx if it doesnt form a cycle
                 if (not cycle):
-                    UpdateConnections(i, closest_idx, connected_nodes, connections, connection_count)
+                    connected_nodes, connections, connection_count = UpdateConnections(i, closest_idx, connected_nodes, connections, connection_count)
 
     # Get indices where the value is 1
     single_nodes = np.where(connection_count == 1)[0]
@@ -94,7 +99,7 @@ def RunReco(data, cluster):
                             cycle  = Testcycle(i, closest_idx ,connected_nodes, connections, connection_count)
                             
                             if not cycle:
-                                UpdateConnections(i, closest_idx, connected_nodes, connections, connection_count)
+                                connected_nodes, connections, connection_count = UpdateConnections(i, closest_idx, connected_nodes, connections, connection_count)
                                 break
 
     # Get indices where the value is 1
@@ -139,6 +144,10 @@ def RunReco(data, cluster):
     # print(len(connected_nodes), connected_nodes)
 
     print("Pass Flag:",pass_flag)
+   
+    # return if the event did not pass
+    if (not pass_flag):
+        return data, Tracks, connected_nodes, connection_count, pass_flag
 
     # Function to get track topo info
     num_nodes = 0
@@ -184,24 +193,28 @@ def RunReco(data, cluster):
 
     df_angles = CalcTortuosity(df_angles) # Add the tortuosity variable to the tracks
     print(df_angles)
-    return df_angles, Tracks, connected_nodes, connection_count
+    return df_angles, Tracks, connected_nodes, connection_count, pass_flag
 
 
-# USAGE: python TrackReconstruction.py <infile> <pressure> <diffusion amount>
-# python TrackReconstruction.py "ATPC_0nubb_15bar_smear_144.h5" "1bar" "nodiff"
+# USAGE: python TrackReconstruction.py <infile> <JOBID> <pressure> <diffusion amount>
+# python TrackReconstruction.py "ATPC_0nubb_15bar_smear_144.h5" 0 1 "nodiff"
 
 # Input file
 infile     = sys.argv[1]
 jobid    = int(sys.argv[2])
 pressure = int(sys.argv[3])
-diffusion= float(sys.argv[4])
+diffusion= sys.argv[4]
 
 if (diffusion != "nodiff"):
+    print("Including Clustering!")
     cluster = 1
+else:
+    print("No Clustering!")
+    cluster = 0
 
 
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
-plot=False
+plot=True
 
 hits = pd.read_hdf(infile,"MC/hits")
 # parts = pd.read_hdf(infile,"MC/particles")
@@ -212,6 +225,8 @@ connections_count_dict = {}
 df_list = []
 df_meta = []
 
+print("Total events to process:", len(hits.event_id.unique()))
+
 for index, event_num in enumerate(hits.event_id.unique()):
     print("On index, Event:", index, event_num)
 
@@ -220,7 +235,15 @@ for index, event_num in enumerate(hits.event_id.unique()):
 
     hit = hits[hits.event_id == event_num]
 
-    df, Tracks, connected_nodes, connection_count = RunReco(hit, cluster)
+    df, Tracks, connected_nodes, connection_count, pass_flag = RunReco(hit, cluster, 0)
+    if (not pass_flag):
+        print("Error in track reco, try resorting hits")
+        df, Tracks, connected_nodes, connection_count, pass_flag = RunReco(hit, cluster, 1)
+    if (not pass_flag):
+        print("Error in track reco, try resorting hits")
+        df, Tracks, connected_nodes, connection_count, pass_flag = RunReco(hit, cluster, 2)
+
+
     Track_dict[event_num] = Tracks
     connected_nodes_dict[event_num] = connected_nodes
     connections_count_dict[event_num] = connection_count

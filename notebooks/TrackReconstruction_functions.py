@@ -876,7 +876,7 @@ def MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes,
 
     # This is for single nodes
     single_points = np.where(connection_count_ == 0)[0]
-    single_points = [x for x in single_points if x in remaining_nodes]
+    single_points = [x for x in single_points if x in remaining_nodes] # Removes ones that have already been added
 
     for index, single_point in enumerate(single_points):
         trkpath = [single_point]
@@ -1103,7 +1103,7 @@ def CalcTortuosity(df_angles):
 
     # df_angles['distance_diff'] = df_angles.groupby(['event_id', 'trkID'])['cumulative_distance'].diff().fillna(0)
 
-    df_angles["Tortuosity"] = 0
+    df_angles["Tortuosity"] = 1.0
 
     Tortuosity = []
 
@@ -1201,6 +1201,12 @@ def GetEndTortuosity(df, T_threshold):
     end_threshold = max(df.cumulative_distance) - T_threshold
     df_T2 = df[df['cumulative_distance'] > end_threshold]
     T2 = df_T2["Tortuosity"].mean()
+
+    if T1 == 0:
+        T1 = 1.0
+    if T2 == 0:
+        T2 = 1.0
+
     return T1, T2
 
 
@@ -1239,9 +1245,9 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
         p_end   = t["end"]
 
         eventid = df_angles.event_id.iloc[0]
-        primary = df_angles[df_angles.trkID == t["id"]].primary.iloc[0]
+        primary_id = df_angles[df_angles.trkID == t["id"]]["primary"].iloc[0]
 
-        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], primary, p_start, p_end, eventid, distance_threshold, T_threshold)
+        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], primary_id, p_start, p_end, eventid, distance_threshold, T_threshold)
 
         # Convert to DataFrame
         df = pd.DataFrame([filtered_data])
