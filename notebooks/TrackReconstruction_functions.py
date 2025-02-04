@@ -111,6 +111,10 @@ def check_start_end_exists(number,Tracks):
 def calculate_distance(point1, point2):
     return np.sqrt((point2['x'] - point1['x'])**2 + (point2['y'] - point1['y'])**2 + (point2['z'] - point1['z'])**2)
 
+# Function to calculate the Euclidean distance between two points -- use with numpy arrays
+def euclidean_distance(p1, p2):
+    return np.sqrt(np.sum((p1 - p2) ** 2))
+
 # Get the length and energy of a track
 def GetTrackLengthEnergy(path, data):
     total_length = 0
@@ -481,10 +485,6 @@ def GetNodePath(graph_, start_node, forward_node):
             prev_node = query
             query = con_nodes[1]
 
-
-# Function to calculate the Euclidean distance between two points
-def euclidean_distance(p1, p2):
-    return np.sqrt(np.sum((p1 - p2) ** 2))
 
 # Function to calculate the angle between two vectors
 def angle_between_vectors(v1, v2):
@@ -1173,6 +1173,12 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
     if (not swapped_flag):
         T1, T2 = GetEndTortuosity(df, T_threshold)
     else:
+        print("Swapping blob names")
+        # Swap the starts and ends too
+        temp_start = p_end
+        temp_end   = p_start
+        p_start = temp_end
+        p_end   = temp_start
         T2, T1 = GetEndTortuosity(df, T_threshold)
 
 
@@ -1181,8 +1187,10 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
         "event_id": [eventid],
         "trkID"   : [trkID],
         "primary" : [primary],
-        "blob1" : [blob1],
-        "blob2" : [blob2],
+        "start"   : [p_start],
+        "end"     : [p_end],
+        "blob1"   : [blob1],
+        "blob2"   : [blob2],
         "Tortuosity1"    : [T1], 
         "Tortuosity2"    : [T2]
     })
@@ -1238,11 +1246,11 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
 
     for t in RebuiltTrack:
 
-        # Select only specific variables to store for the track properties
-        filtered_data = {key: t[key] for key in ['id', 'start', 'end', 'length', 'energy', 'label']}
-
         p_start = t["start"]
         p_end   = t["end"]
+
+        # Select only specific variables to store for the track properties
+        filtered_data = {key: t[key] for key in ['id', 'length', 'energy', 'label']}
 
         eventid = df_angles.event_id.iloc[0]
         primary_id = df_angles[df_angles.trkID == t["id"]]["primary"].iloc[0]
@@ -1259,3 +1267,50 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
 
     Track_df = pd.concat(Track_df)
     return Track_df
+
+
+# If a delta/brem has an position to close to the blob ends, then combine that info into energy and tortuosity.
+def UpdateTrackMeta(Track_df, df_angles, distance):
+
+    df = Track_df.copy()
+
+    prim_df = df[df.primary == 1]
+
+    blob1_energy = [prim_df.blob1.iloc[0]]
+    blob2_energy = [prim_df.blob2.iloc[0]]
+    Tortuosity1 = [prim_df.Tortuosity1.iloc[0]]
+    Tortuosity2 = [prim_df.Tortuosity2.iloc[0]]
+    
+    
+    prim_start = df_angles[df_angles['id'] == prim_df.start.iloc[0]][['x', 'y', 'z']].values
+    prim_end   = df_angles[df_angles['id'] == prim_df.end.iloc[0]][['x', 'y', 'z']].values
+
+    for t in df[df.primary == 0].trkID.unique():
+
+        trk_df = df[df.trkID == t]
+
+        trk_start = df_angles[df_angles['id'] == trk_df.start.iloc[0]][['x', 'y', 'z']].values
+        trk_end   = df_angles[df_angles['id'] == trk_df.end.iloc[0]][['x', 'y', 'z']].values
+
+        # Check delta/brem to the blob1 pos
+        dist_blob1 = euclidean_distance(prim_start, trk_start)
+        if (dist_blob1 < distance):
+            print(f"Adding {trk_df.label.iloc[0]} energy to blob1 as dist was {dist_blob1}")
+            blob1_energy.append(trk_df.energy.iloc[0])
+            Tortuosity1.append(trk_df.Tortuosity1.iloc[0])
+            continue
+
+        # Check delta/brem to the blob2 pos
+        dist_blob2   = euclidean_distance(prim_end, trk_start)
+        if (dist_blob2 < distance):
+            print(f"Adding trk {t} {trk_df.label.iloc[0]} energy to blob2 as dist was {dist_blob2}")
+            blob2_energy.append(trk_df.energy.iloc[0])
+            Tortuosity2.append(trk_df.Tortuosity2.iloc[0])
+            continue
+
+    df.loc[df['primary'] == 1, 'blob1'] = np.float32(sum(blob1_energy))
+    df.loc[df['primary'] == 1, 'blob2'] = np.float32(sum(blob2_energy))
+    df.loc[df['primary'] == 1, 'Tortuosity1'] = sum(Tortuosity1)/len(Tortuosity1)
+    df.loc[df['primary'] == 1, 'Tortuosity2'] = sum(Tortuosity2)/len(Tortuosity1)
+
+    return df
