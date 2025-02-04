@@ -1,12 +1,12 @@
 # trackreco.sub
 
 # The job title here.
-#jobname=ATPC_0nubb
-jobname=ATPC_Tl
+jobname=ATPC_0nubb
+#jobname=ATPC_Tl
 # jobname=ATPC_Bi
 
-PRESSURE=1bar
-#PRESSURE=5bar
+#PRESSURE=1bar
+PRESSURE=5bar
 #PRESSURE=10bar
 #PRESSURE=15bar
 
@@ -44,7 +44,7 @@ transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/trackreco/$
 +JobDurationCategory = "Medium"
 
 # Use a singularity image to submit the file. The image should be stored in the protected area of your workspace
-+SingularityImage = "osdf:////ospool/ap40/data/krishan.mistry/containers/docker_nexus_ATPC5.sif"
++SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC5.sif"
 
 
 # Tell HTCondor requirements (e.g., operating system) your job needs, 
