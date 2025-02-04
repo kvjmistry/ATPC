@@ -24,7 +24,7 @@ source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
 # ~ 1000 events generated made 500 events, so 50% need about 4k jobs
-N_EVENTS=50
+N_EVENTS=125
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 
@@ -108,6 +108,7 @@ tar -cvf ATPC_0nubb.tar *.h5
 rm *.h5
 rm *.mac
 # rm *.txt
+rm *.dat
 rm *.py
 
 echo "FINISHED....EXITING" 

@@ -23,7 +23,7 @@ echo "Setting Up NEXUS"
 source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
-N_EVENTS=2500
+N_EVENTS=26000
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 
@@ -104,6 +104,7 @@ tar -cvf ATPC_Tl.tar *.h5
 rm *.h5
 rm *.mac
 # rm *.txt
+rm *.dat
 rm *.py
 
 echo "FINISHED....EXITING" 
