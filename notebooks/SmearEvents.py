@@ -130,31 +130,24 @@ df_smear = []
 # The ends of the track are sampled in the backward direction only 
 def generate_random(row):
     r0 = np.array([row['x'], row['y'], row['z']])
-    r1 = np.array([row['x'] - row['dx'], row['y'] - row['dy'], row['z'] - row['dz']]) # backward delta
-    
-    # Uniformly move the backward from the hit by its step size
+    r1 = np.array([row['x'] - row['dx'], row['y'] - row['dy'], row['z'] - row['dz']])  # Backward delta
+
+    # Uniformly move backward from the hit by its step size
     random_number = rng.uniform(0, 1)
-    new_r = r0+random_number*(r1 - r0)
+    new_r = r0 + random_number * (r1 - r0)
 
-    x_smear, y_smear, z_smear = new_r[0], new_r[1], new_r[2]
+    # Apply diffusion if scaling is nonzero
+    if diff_scaling != 0.0:
+        z = new_r[2]  # mm
+        sigma_DL = diff_scaling * DL * np.sqrt(z / 10.0)  # mm  
+        sigma_DT = diff_scaling * DT * np.sqrt(z / 10.0)  # mm  
 
-    # Apply some diffusion to the electron too if the scaling is non-zero
-    if (diff_scaling != 0.0):
-        x = x_smear # mm
-        y = y_smear # mm
-        z = z_smear # mm
-        sigma_DL = diff_scaling*DL*np.sqrt(z/10.) # mm  
-        sigma_DT = diff_scaling*DT*np.sqrt(z/10.) # mm 
-    
-        xy = np.array([x, y])
-        cov_xy = np.array([[sigma_DT, 0], [0, sigma_DT]])
-        
-        xy_smear_diff = rng.multivariate_normal(xy, cov_xy, 1)
-        x_smear = xy_smear_diff[0, 0]
-        y_smear = xy_smear_diff[0, 1]
-        z_smear = rng.normal(z, sigma_DL)
+        mean = new_r
+        cov = np.diag([sigma_DT**2, sigma_DT**2, sigma_DL**2])  # 3D covariance matrix
 
-    return pd.Series([x_smear, y_smear, z_smear], index=['x_smear', 'y_smear', 'z_smear'])
+        new_r = rng.multivariate_normal(mean, cov)
+
+    return pd.Series(new_r, index=['x_smear', 'y_smear', 'z_smear'])
 
 # Function to smear the number of electrons in each hit by the fano factor
 def smear_energy(N):
