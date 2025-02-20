@@ -3,4 +3,5 @@
 *.png*
 data
 notebooks/plots
-
+*.pkl*
+*pycache*
