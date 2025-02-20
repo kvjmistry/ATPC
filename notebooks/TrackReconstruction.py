@@ -50,13 +50,13 @@ for index, event_num in enumerate(hits.event_id.unique()):
     hit = hits[hits.event_id == event_num]
 
     # These different function calls allow for different sorting if there is soeme kind of failure
-    df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, 0)
+    df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 0)
     if (not pass_flag):
         print("Error in track reco, try resorting hits")
-        df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, 1)
+        df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 1)
     if (not pass_flag):
         print("Error in track reco, try resorting hits")
-        df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, 2)
+        df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 2)
 
 
     Track_dict[event_num] = Tracks
@@ -117,6 +117,6 @@ if plot:
 
         plt.tight_layout()
         if (cluster !=0):
-            plt.savefig(f"plots/TrackingAlgoOut/event_{evt}_cluster.pdf")
+            plt.savefig(f"plots/TrackingAlgoOut/event_{evt}_{diffusion}.pdf")
         else:
             plt.savefig(f"plots/TrackingAlgoOut/event_{evt}.pdf")

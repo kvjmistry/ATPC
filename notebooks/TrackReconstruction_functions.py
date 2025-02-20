@@ -649,30 +649,78 @@ def Cluster(input_data, R):
 
 
 
-def RunClustering(node_centers_df, cluster_radii, binsize):
+def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
+
+    Diff_smear = 0.0
+
+    # The percentage 0 is actually a small amount
+    if (diffusion == "0.05percent"):
+        Diff_smear = 0.05 # mm / sqrt(cm)
+    elif (diffusion == "0.1percent"):
+        Diff_smear = 0.95 # mm / sqrt(cm)
+    elif (diffusion == "0.25percent"):
+        Diff_smear = 0.703 # mm / sqrt(cm)
+    elif (diffusion == "0.5percent"):
+        Diff_smear = 0.507 # mm / sqrt(cm)
+    elif (diffusion == "5percent"):
+
+        if (pressure == 1):
+            Diff_smear = 0.290 # mm / sqrt(cm)
+        elif (pressure == 5):
+            Diff_smear = 0.270
+        elif (pressure == 10):
+            Diff_smear = 0.251
+        elif (pressure == 15):
+            Diff_smear = 0.258
+        else:
+            print("Error pressure not found")
+    else:
+        print("Error CO2 percentage not defined at 75 V/cm field")
+
+    if (Diff_smear == 0.0):
+        print("Error diffusion value not configured properly")
 
     event_id = node_centers_df.event_id.iloc[0]
 
+    mean_sigma = round(6*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
+
+    # Overwrite cluster radii for now based on a diffusion value
+    cluster_radii = [mean_sigma]
 
     for R in cluster_radii:
         node_centers_df = Cluster(node_centers_df, R)
 
     node_centers_df["event_id"] = event_id
 
+
+    # Calculate the detector half-length
+    det_size = int(np.cbrt(6000**3/pressure)/2.0) 
+
     # Create the bins ---- 
-    xmin=-3000
-    xmax=3000
-    xbw=binsize
+    xbw=mean_sigma
+    xmin=-det_size - mean_sigma/2 
+    xmax=det_size + mean_sigma/2
 
-    ymin=-3000
-    ymax=3000
-    ybw=binsize
+    ybw=mean_sigma
+    ymin=-det_size - mean_sigma/2 
+    ymax=det_size + mean_sigma/2
 
-    zmin=0
-    zmax=6000
-    zbw=binsize
+    # This shifts the z pos of the events so 0 is at anode
+    # can set this to zero
+    z_shift = det_size
+    # z_shift = 0
 
-    # bw = 10 works well for co2 mix with 2 sigma diffusion
+    zbw=mean_sigma
+    zmin=-det_size + z_shift - mean_sigma/2 
+    zmax=det_size + z_shift + mean_sigma/2
+    
+    xbw=mean_sigma
+    xmin=-det_size - mean_sigma/2 
+    xmax=det_size + mean_sigma/2
+
+    ybw=mean_sigma
+    ymin=-det_size - mean_sigma/2 
+    ymax=det_size + mean_sigma/2
 
     # bins for x, y, z
     xbins = np.arange(xmin, xmax+xbw, xbw)
@@ -1316,7 +1364,7 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
     return df
 
 
-def RunTracking(data, cluster, sort_flag):
+def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
@@ -1338,7 +1386,7 @@ def RunTracking(data, cluster, sort_flag):
 
     # Cluster the data if required
     if (cluster):
-        data =  RunClustering(data, [10], 30)
+        data =  RunClustering(data, [10], 30, pressure, diffusion)
         # then re-sort sort it based on the x,y,z
         data = data.sort_values(by=['y', "z", "x"]).reset_index(drop=True)
 
