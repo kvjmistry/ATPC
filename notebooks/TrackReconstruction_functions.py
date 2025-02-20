@@ -682,7 +682,7 @@ def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
 
     event_id = node_centers_df.event_id.iloc[0]
 
-    mean_sigma = round(6*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
+    mean_sigma = round(7*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
 
     # Overwrite cluster radii for now based on a diffusion value
     cluster_radii = [mean_sigma]
@@ -908,6 +908,10 @@ def MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes,
 
     for node in prim_track_multi_connections:
         delta_node = [x for x in connected_nodes_[node] if x not in prim_track_arr]
+
+        if (len(delta_node) == 0):
+            print("Error no delta node after filtering")
+            continue
 
         if (len(delta_node) > 1):
             print("Error the delta node has more than one node after cut")
