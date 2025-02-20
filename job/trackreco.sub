@@ -5,8 +5,8 @@ jobname=ATPC_0nubb
 #jobname=ATPC_Tl
 # jobname=ATPC_Bi
 
-#PRESSURE=1bar
-PRESSURE=5bar
+PRESSURE=1bar
+#PRESSURE=5bar
 #PRESSURE=10bar
 #PRESSURE=15bar
 
@@ -16,7 +16,7 @@ DIFF=nodiff
 #DIFF=0.1percent
 #DIFF=0.25percent
 #DIFF=0.5percent
-#DIFF=0.5percent
+#DIFF=5percent
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/

@@ -20,7 +20,7 @@ PRESS=$(echo "${PRESS}" | sed 's/[^0-9]*//g')
 echo "$PRESS"
 echo "Pressure is: ${PRESS}bar"
 
-Diff=$4
+Diff=$5
 echo "Diff is: ${Diff}"
 
 start=`date +%s`
