@@ -8,7 +8,7 @@ echo "The JOBID number is: ${JOBID}"
 JOBNAME=$2
 echo "The JOBNAME number is: ${JOBNAME}" 
 
-echo "JOBID $1 running on `whoami`@`hostname`"
+echo "JOBID ${JOBNAME} running on `whoami`@`hostname`"
 
 SCRIPT=$3
 echo "Script name is: ${SCRIPT}"
@@ -24,7 +24,7 @@ source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
 # ~ 1000 events generated made 500 events, so 50% need about 4k jobs
-N_EVENTS=125
+N_EVENTS=150
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
 

@@ -8,7 +8,7 @@ echo "The JOBID number is: ${JOBID}"
 JOBNAME=$2
 echo "The JOBNAME number is: ${JOBNAME}" 
 
-echo "JOBID $1 running on `whoami`@`hostname`"
+echo "JOBID ${JOBNAME} running on `whoami`@`hostname`"
 
 SCRIPT=$3
 echo "Script name is: ${SCRIPT}"
@@ -23,30 +23,28 @@ echo "Setting Up NEXUS"
 source /software/nexus/setup_nexus.sh
 
 # Set the configurable variables
-N_EVENTS=35000
+
 CONFIG=${JOBNAME}.config.mac
 INIT=${JOBNAME}.init.mac
-
-echo "N_EVENTS: ${N_EVENTS}"
-
-SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
-echo "The seed number is: ${SEED}" 
-
-# Change the config in the files
-sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
-sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
-
-# Print out the config and init files
-cat ${INIT}
-cat ${CONFIG}
 
 # NEXUS
 echo "Running NEXUS" 
 
 if [ "$MODE" == "CO2" ]; then
     # 1 bar
+
+    N_EVENTS=50000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 1. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_1bar#" ${CONFIG}
+
+    cat ${INIT}
+    cat ${CONFIG}
+
     nexus -n $N_EVENTS ${INIT}
     python3 CompressEvents.py ${JOBNAME}_1bar ${JOBNAME}_1bar # also filters 60 events
     # <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
@@ -60,29 +58,59 @@ if [ "$MODE" == "CO2" ]; then
 
 else
     # 5 bar
+    N_EVENTS=17000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_5bar#" ${CONFIG}
     sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 3.508 m#" ${CONFIG}
+
+    cat ${INIT}
+    cat ${CONFIG}
+
     nexus -n $N_EVENTS ${INIT}
     python3 CompressEvents.py ${JOBNAME}_5bar ${JOBNAME}_5bar # also filters 60 events
     python3 ${SCRIPT} ${JOBNAME}_5bar 0 0.05  5 5.0 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_5bar 1    5 10 5.0 ${JOBID} # 5.0 % CO2
     mv ${JOBNAME}_5bar.h5 ${JOBNAME}_5bar_nexus_${JOBID}.h5
 
-    # 10 bar
+    # 10 bar ------------------------------------------------------------------
+    N_EVENTS=10000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 10. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_10bar#" ${CONFIG}
     sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.784 m#" ${CONFIG}
+
+    cat ${INIT}
+    cat ${CONFIG}
+
     nexus -n $N_EVENTS ${INIT}
     python3 CompressEvents.py ${JOBNAME}_10bar ${JOBNAME}_10bar # also filters 60 events
     python3 ${SCRIPT} ${JOBNAME}_10bar 0 0.05  5 10.0 ${JOBID} # Just smearing
     python3 ${SCRIPT} ${JOBNAME}_10bar 1    5 10 10.0 ${JOBID} # 5.0 % CO2
     mv ${JOBNAME}_10bar.h5 ${JOBNAME}_10bar_nexus_${JOBID}.h5
 
-    # 15 bar
+    # 15 bar ------------------------------------------------------------------
+    N_EVENTS=5000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_15bar#" ${CONFIG}
     sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.432 m#" ${CONFIG}
+
+    cat ${INIT}
+    cat ${CONFIG}
+
     nexus -n $N_EVENTS ${INIT}
     python3 CompressEvents.py ${JOBNAME}_15bar ${JOBNAME}_15bar # also filters 60 events
     python3 ${SCRIPT} ${JOBNAME}_15bar 0 0.05  5 15.0 ${JOBID} # Just smearing

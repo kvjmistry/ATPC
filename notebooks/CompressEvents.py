@@ -10,11 +10,13 @@ import time
 start_time = time.time()
 
 # Load in the hits
-print("Loading hits")
+print("\n\n\nLoading hits")
 print("Filename: ", sys.argv[1]+".h5")
 hits = pd.read_hdf(sys.argv[1]+".h5", 'MC/hits')
 parts = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
 print("Finished loading hits")
+
+print("Total events before:", len(parts['event_id'].unique()))
 
 
 # Filter the events to a set amount
@@ -24,6 +26,10 @@ event_list = hits['event_id'].unique()[0:60]
 # Filter the DataFrame to keep only 50 events
 hits = hits[hits['event_id'].isin(event_list)]
 parts = parts[parts['event_id'].isin(event_list)]
+
+print("Total events after:", len(event_list))
+print(parts)
+print(hits)
 
 print("Saving events to file: ", sys.argv[2]+".h5")
 with pd.HDFStore(sys.argv[2]+".h5", mode='w', complevel=5, complib='zlib') as store:
@@ -36,4 +42,4 @@ end_time = time.time()
 
 # Calculate and print the runtime
 runtime = end_time - start_time
-print(f"Runtime: {runtime:.4f} seconds")
+print(f"Runtime: {runtime:.4f} seconds\n\n\n")
