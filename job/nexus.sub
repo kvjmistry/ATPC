@@ -8,13 +8,10 @@ jobname=ATPC_0nubb
 CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
 
-# script=DiffuseData.py
 script=SmearEvents.py
-# script=CompressEvents.py
 
-#mode=CO2
+mode=CO2
 #mode=Pressure
-mode=NEXUS
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
@@ -36,7 +33,7 @@ output = jobs/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/notebooks/$(script),$(HOME_LOCATION)/notebooks/CompressEvents.py
 
 # Transfer output files
-transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/$(mode)/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).tar"
+transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).tar"
 
 # Specify Job duration category as "Medium" (expected runtime <10 hr) or "Long" (expected runtime <20 hr). 
 +JobDurationCategory = "Medium"

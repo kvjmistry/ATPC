@@ -16,8 +16,17 @@ hits = pd.read_hdf(sys.argv[1]+".h5", 'MC/hits')
 parts = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
 print("Finished loading hits")
 
-print("Saving events to file: ", sys.argv[1]+"_slim.h5")
-with pd.HDFStore(sys.argv[1]+"_slim.h5", mode='w', complevel=5, complib='zlib') as store:
+
+# Filter the events to a set amount
+# Get the first 60 unique events
+event_list = hits['event_id'].unique()[0:60]
+
+# Filter the DataFrame to keep only 50 events
+hits = hits[hits['event_id'].isin(event_list)]
+parts = parts[parts['event_id'].isin(event_list)]
+
+print("Saving events to file: ", sys.argv[2]+".h5")
+with pd.HDFStore(sys.argv[2]+".h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
     store.put('MC/particles', parts, format='table')
     store.put('MC/hits', hits, format='table')

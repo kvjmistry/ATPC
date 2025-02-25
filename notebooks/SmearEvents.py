@@ -22,13 +22,6 @@ hits = pd.read_hdf(sys.argv[1]+".h5", 'MC/hits')
 parts = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
 print("Finished loading hits")
 
-# Get the first 50 unique events
-event_list = hits['event_id'].unique()[0:60]
-
-# Filter the DataFrame to keep only 50 events
-hits = hits[hits['event_id'].isin(event_list)]
-parts = parts[parts['event_id'].isin(event_list)]
-
 # init the RNG
 rng = np.random.default_rng()
 
