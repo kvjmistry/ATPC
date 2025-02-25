@@ -28,7 +28,7 @@ else:
 
 
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
-plot=True
+plot=False
 
 hits = pd.read_hdf(infile,"MC/hits")
 # parts = pd.read_hdf(infile,"MC/particles")
