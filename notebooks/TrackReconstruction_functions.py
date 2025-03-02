@@ -11,9 +11,14 @@ colormap = plt.cm.get_cmap('Dark2')
 color_cycle = itertools.cycle(colormap.colors)
 
 
-
-# Function to add connections made
-# current and current node index is input
+# ---------------------------------------------------------------------------------------------------
+# Function to add connections made to the dictionaries
+# curr_node_indx   : the node we are currently on
+# conn_node_idx    : the proposed node to connect to
+# connected_nodes_ : dictionary that keeps track of what is connected to each node
+#                    format is: index : [connected node 1, connected node 2,...]
+# connections_     :  a simple list that contains pairs of connections e.g. [ (1,3), (3,5)),...]
+# connection_count_: list of the number of connections to each node
 def UpdateConnections(curr_node_idx, conn_node_idx, connected_nodes_, connections_, connection_count_):
 
     # We shouldnt be doing any self connection
@@ -38,21 +43,28 @@ def UpdateConnections(curr_node_idx, conn_node_idx, connected_nodes_, connection
 
     return connected_nodes_, connections_, connection_count_
 
-
+# ---------------------------------------------------------------------------------------------------
 # Function to check if a new connection would form a closed loop
+# this helps to build the track as a continous object without loops
+# node            : the start node
+# target          : the proposed node to check if we connected will form a loop
+# connections_dict: same as connected_nodes, 
+#                   a dictionary that keeps track of what is connected to each node
+#                    format is: index : [connected node 1, connected node 2,...]
 def forms_cycle(node, target, connections_dict):
 
     query = node
     prev_node = node 
     # print(query)
 
+    # Loop
     for index,n in enumerate(range(len(connections_dict))):
         
-        # Get the connected nodes
+        # Get the nodes connected to the present node we are checking
         con_nodes = connections_dict[query]
         # print("Start",query, prev_node, con_nodes)
 
-        # We hit a end-point and it didnt loop
+        # We hit a end-point and it didnt loop (only one node connected)
         if (len(con_nodes) == 1):
             return False
 
@@ -76,9 +88,17 @@ def forms_cycle(node, target, connections_dict):
     # We looped over everything and found no loops
     return False
     
-
-# Helper function for testing for closed loops
-def Testcycle(curr_node, conn_node,connected_nodes_, connections_, connection_count_):
+# ---------------------------------------------------------------------------------------------------
+# Function for testing for closed loops
+# We copy so dont impact the original dicts
+# We then trial the connection to see if it loops or not. Return true if cycle, else false
+# curr_node: the present node we are looking to connect to
+# conn_node: the proposed node to connect to
+# connected_nodes_ : dictionary that keeps track of what is connected to each node
+#                    format is: index : [connected node 1, connected node 2,...]
+# connections_     :  a simple list that contains pairs of connections e.g. [ (1,3), (3,5)),...]
+# connection_count_: list of the number of connections to each node
+def Testcycle(curr_node, conn_node, connected_nodes_, connections_, connection_count_):
 
     # Temporarily add the connection to check for cycles
     temp_connections_dict = copy.deepcopy(connected_nodes_)
@@ -97,7 +117,7 @@ def Testcycle(curr_node, conn_node,connected_nodes_, connections_, connection_co
 
     return cycle
 
-
+# ---------------------------------------------------------------------------------------------------
 def check_start_end_exists(number,Tracks):
     check_start = any(path["start"] == number for path in Tracks)
     check_end = any(path["end"] == number for path in Tracks)
@@ -107,14 +127,17 @@ def check_start_end_exists(number,Tracks):
     else:
         return False
 
+# ---------------------------------------------------------------------------------------------------
 # Function to calculate distance between two points
 def calculate_distance(point1, point2):
     return np.sqrt((point2['x'] - point1['x'])**2 + (point2['y'] - point1['y'])**2 + (point2['z'] - point1['z'])**2)
 
+# ---------------------------------------------------------------------------------------------------
 # Function to calculate the Euclidean distance between two points -- use with numpy arrays
 def euclidean_distance(p1, p2):
     return np.sqrt(np.sum((p1 - p2) ** 2))
 
+# ---------------------------------------------------------------------------------------------------
 # Get the length and energy of a track
 def GetTrackLengthEnergy(path, data):
     total_length = 0
@@ -138,7 +161,7 @@ def GetTrackLengthEnergy(path, data):
     return round(total_length, 3), total_energy
     # return round(total_length, 3), round(total_energy, 3)
 
-
+# ---------------------------------------------------------------------------------------------------
 # Get the length and energy of a track
 def GetMeanNodeDist(Tracks, data):
 
@@ -160,7 +183,7 @@ def GetMeanNodeDist(Tracks, data):
 
     return round(np.median(nodedists), 3)
 
-
+# ---------------------------------------------------------------------------------------------------
 def GetTrackwithNode(closest_idx, Tracks_):
     for t in Tracks_:
         if (closest_idx in t["nodes"]):
@@ -168,6 +191,7 @@ def GetTrackwithNode(closest_idx, Tracks_):
     # The node wasnt found anywhere...
     return -1
 
+# ---------------------------------------------------------------------------------------------------
 def GetTrackDictwithNode(closest_idx, Tracks_):
     for t in Tracks_:
         if (closest_idx in t["nodes"]):
@@ -175,6 +199,7 @@ def GetTrackDictwithNode(closest_idx, Tracks_):
     # The node wasnt found anywhere...
     return -1
 
+# ---------------------------------------------------------------------------------------------------
 def join_tracks(array1, array2):
     # Check if the arrays can be joined directly
     if array1[-1] == array2[0]:
@@ -194,6 +219,7 @@ def join_tracks(array1, array2):
 
     return joined_array
 
+# ---------------------------------------------------------------------------------------------------
 def AddConnectedTracks(curr_track,conn_track, delta_path, seg1_path, seg2_path, UpdatedTracks_, data):
 
     # Get the ids before popping
@@ -225,7 +251,7 @@ def AddConnectedTracks(curr_track,conn_track, delta_path, seg1_path, seg2_path, 
     Primary = {"id":primary_id, "start":joined_track_path[0], "end":joined_track_path[-1], "nodes":joined_track_path, "length":total_length_joined, "energy":total_energy_joined,"label":"track","c":"black"}
     UpdatedTracks_.append(Primary)
 
-
+# ---------------------------------------------------------------------------------------------------
 # Update an existing track in the updated tracks array from the merging of two tracks
 def UpdateAndMergeTrack(curr_track,conn_track, newpath, UpdatedTracks_, data):
 
@@ -255,7 +281,7 @@ def UpdateAndMergeTrack(curr_track,conn_track, newpath, UpdatedTracks_, data):
     Primary = {"id":primary_id, "start":newpath[0], "end":newpath[-1], "nodes":newpath, "length":length, "energy":energy,"label":"track","c":"black"}
     UpdatedTracks_.append(Primary)
 
-
+# ---------------------------------------------------------------------------------------------------
 def GetUniqueTrackID(Tracks_):
 
     temp_track_id = -1
@@ -268,6 +294,7 @@ def GetUniqueTrackID(Tracks_):
 
     return temp_track_id+1
 
+# ---------------------------------------------------------------------------------------------------
 # Any nodes without a connection can be re-added as a track
 def AddConnectionlessNodes(connection_count, UpdatedTracks, data):
 
@@ -278,7 +305,7 @@ def AddConnectionlessNodes(connection_count, UpdatedTracks, data):
             Gamma = {"id":GetUniqueTrackID(UpdatedTracks), "start":index, "end":index, "nodes":[index], "length":0, "energy":hit_energy,"label":"gamma","c":"y"}
             UpdatedTracks.append(Gamma)
 
-
+# ---------------------------------------------------------------------------------------------------
 def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, dist_matrix, dist_threshold, data):
 
 
@@ -437,6 +464,7 @@ def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, di
 
     return True, Tracks_, connected_nodes_, connections_, connection_count_
 
+# ---------------------------------------------------------------------------------------------------
 # Function to walk along a track segment till we get to an end
 def GetNodePath(graph_, start_node, forward_node):
     
@@ -485,7 +513,7 @@ def GetNodePath(graph_, start_node, forward_node):
             prev_node = query
             query = con_nodes[1]
 
-
+# ---------------------------------------------------------------------------------------------------
 # Function to calculate the angle between two vectors
 def angle_between_vectors(v1, v2):
     cos_theta = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
@@ -494,7 +522,7 @@ def angle_between_vectors(v1, v2):
     angle = np.arccos(cos_theta)
     return np.degrees(angle)
 
-
+# ---------------------------------------------------------------------------------------------------
 def CategorizeTracks(Tracks_):
 
     temp_length = 0
@@ -538,7 +566,7 @@ def CategorizeTracks(Tracks_):
 
     return Tracks_
 
-
+# ---------------------------------------------------------------------------------------------------
 def GetAnglesDF(df, all_visited, primary, trkid):
 
     # Take the mean every ten rows
@@ -595,7 +623,7 @@ def GetAnglesDF(df, all_visited, primary, trkid):
 
     return df
 
-
+# ---------------------------------------------------------------------------------------------------
 def GetMinima(index, all_visited_, input_data, temp_dist_matrix, R):
 
 
@@ -619,7 +647,7 @@ def GetMinima(index, all_visited_, input_data, temp_dist_matrix, R):
 
     return mean_point, all_visited
 
-
+# ---------------------------------------------------------------------------------------------------
 def Cluster(input_data, R):
 
     node_centers = []
@@ -647,8 +675,7 @@ def Cluster(input_data, R):
 
     return pd.DataFrame(node_centers, columns=['x', 'y', 'z', 'energy'])
 
-
-
+# ---------------------------------------------------------------------------------------------------
 def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
 
     Diff_smear = 0.0
@@ -825,7 +852,7 @@ def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
 
     return databin
 
-
+# ---------------------------------------------------------------------------------------------------
 # Function to plot connections
 def plot_tracks(ax, x, y, connection_count, x_label, y_label, Tracks_):
     # Filter data for markers with count 1 or 0
@@ -863,7 +890,7 @@ def plot_tracks(ax, x, y, connection_count, x_label, y_label, Tracks_):
     ax.set_ylabel(y_label)
     ax.set_title(f'{x_label}-{y_label} Projection')
 
-
+# ---------------------------------------------------------------------------------------------------
 def MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes, data, iteration, trk_ids, RebuiltTrack_):
 
     Track_arrays = []
@@ -944,7 +971,7 @@ def MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes,
 
     return RebuiltTrack_, remaining_nodes, trk_ids
 
-
+# ---------------------------------------------------------------------------------------------------
 def RebuildTracks(connected_nodes_, connection_count_, data):
 
     RebuiltTrack_ = []
@@ -984,7 +1011,7 @@ def RebuildTracks(connected_nodes_, connection_count_, data):
 
     return RebuiltTrack_, True
 
-
+# ---------------------------------------------------------------------------------------------------
 # Function to walk along a track segment till we get to an end
 def GetDeltaPath(graph_, start_node, forward_node, trkidx):
     
@@ -1041,7 +1068,7 @@ def GetDeltaPath(graph_, start_node, forward_node, trkidx):
 
     return paths
 
-
+# ---------------------------------------------------------------------------------------------------
 def GetLongestPath(graph_, node):
 
     graph = copy.deepcopy(graph_)
@@ -1089,8 +1116,7 @@ def GetLongestPath(graph_, node):
 
     return path
 
-
-
+# ---------------------------------------------------------------------------------------------------
 # Get the length and energy of a track
 def GetTrackLength(path, data):
     total_length = 0
@@ -1108,7 +1134,7 @@ def GetTrackLength(path, data):
 
     return round(total_length, 3)
 
-
+# ---------------------------------------------------------------------------------------------------
 # Get the length and energy of a track
 def GetTrackEnergy(path, data, daughter):
     
@@ -1127,7 +1153,7 @@ def GetTrackEnergy(path, data, daughter):
     
     return total_energy
 
-
+# ---------------------------------------------------------------------------------------------------
 # Get the mean distances between nodes:
 def GetMeanNodeDistances(df):
 
@@ -1150,6 +1176,7 @@ def GetMeanNodeDistances(df):
 
     return median_distance
 
+# ---------------------------------------------------------------------------------------------------
 # Calculate the tortuosity and add it to the dataframe
 def CalcTortuosity(df_angles):
 
@@ -1201,6 +1228,7 @@ def CalcTortuosity(df_angles):
 
     return df_angles
 
+# ---------------------------------------------------------------------------------------------------
 def SortEnergy(blob1, blob2):
 
     # Extra flag to indicate the ends were swapped
@@ -1209,7 +1237,7 @@ def SortEnergy(blob1, blob2):
     else:
         return blob2, blob1, True
 
-
+# ---------------------------------------------------------------------------------------------------
 def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_threshold, T_threshold):
 
     counter = 0
@@ -1253,7 +1281,7 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
 
     return properties_df
 
-
+# ---------------------------------------------------------------------------------------------------
 def GetEndTortuosity(df, T_threshold):
     df_T1 = df[df.cumulative_distance < T_threshold]
     T1 = df_T1["Tortuosity"].mean()
@@ -1269,7 +1297,7 @@ def GetEndTortuosity(df, T_threshold):
 
     return T1, T2
 
-
+# ---------------------------------------------------------------------------------------------------
 def GetEnergyinRange(df, p_start, distance_threshold):
     # Get coordinates where id is p_start
     start_coord = df[df['id'] == p_start][['x', 'y', 'z']].values
@@ -1282,6 +1310,7 @@ def GetEnergyinRange(df, p_start, distance_threshold):
     result = df[mask]
     return result.energy.sum()
 
+# ---------------------------------------------------------------------------------------------------
 def GetEndEnergy(df, distance_threshold):
     df_E1 = df[df.cumulative_distance < distance_threshold]
     E1 = df_E1["energy"].sum()
@@ -1291,7 +1320,7 @@ def GetEndEnergy(df, distance_threshold):
     E2 = df_E2["energy"].sum()
     return E1, E2
 
-
+# ---------------------------------------------------------------------------------------------------
 # Get the track metadata
 def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
     Track_df = []
@@ -1320,7 +1349,7 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
     Track_df = pd.concat(Track_df)
     return Track_df
 
-
+# ---------------------------------------------------------------------------------------------------
 # If a delta/brem has an position to close to the blob ends, then combine that info into energy and tortuosity.
 def UpdateTrackMeta(Track_df, df_angles, distance):
 
@@ -1367,7 +1396,7 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
 
     return df
 
-
+# ---------------------------------------------------------------------------------------------------
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
     # There seems to be a duplicate row sometimes
