@@ -915,6 +915,68 @@ def plot_tracks(ax, x, y, connection_count, x_label, y_label, Tracks_):
     ax.set_ylabel(y_label)
     ax.set_title(f'{x_label}-{y_label} Projection')
 
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+# Function to plot 2D and 3D tracks
+def plot_tracks(ax, x, y, connection_count, x_label, y_label, Tracks_):
+    # Filter data for markers with count 1, 0, or 3
+    filtered_indices = [i for i, count in enumerate(connection_count) if count in [0, 1, 3]]
+    filtered_x = [x[i] for i in filtered_indices]
+    filtered_y = [y[i] for i in filtered_indices]
+
+    # Define colors for filtered data
+    colors = ["r" if connection_count[i] == 1 else 
+              "orange" if connection_count[i] == 0 else 
+              "darkgreen" for i in filtered_indices]
+
+    # Scatter plot of selected points
+    ax.scatter(filtered_x, filtered_y, c=colors, marker='o')
+
+    # Plot connections
+    for Track in Tracks_:
+        for i in range(len(Track["nodes"]) - 1):
+            start_node, end_node = Track["nodes"][i], Track["nodes"][i + 1]
+            ax.plot([x[start_node], x[end_node]], [y[start_node], y[end_node]], 
+                    color=Track["c"], linestyle="-")
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(f'{x_label}-{y_label} Projection')
+
+# Function to plot 3D tracks
+def plot_tracks_3D(ax, x, y, z, connection_count, Tracks_):
+    # ax.set_facecolor("black")
+
+    # Filter data for markers with count 1, 0, or 3
+    filtered_indices = [i for i, count in enumerate(connection_count) if count in [0, 1, 3]]
+    filtered_x = [x[i] for i in filtered_indices]
+    filtered_y = [y[i] for i in filtered_indices]
+    filtered_z = [z[i] for i in filtered_indices]
+
+    # Define colors for filtered data
+    colors = ["r" if connection_count[i] == 1 else 
+              "orange" if connection_count[i] == 0 else 
+              "darkgreen" for i in filtered_indices]
+
+    # Scatter plot of selected points
+    ax.scatter(filtered_x, filtered_y, filtered_z, c=colors, marker='o')
+
+    # Plot connections
+    for Track in Tracks_:
+        for i in range(len(Track["nodes"]) - 1):
+            start_node, end_node = Track["nodes"][i], Track["nodes"][i + 1]
+            ax.plot([x[start_node], x[end_node]], 
+                    [y[start_node], y[end_node]], 
+                    [z[start_node], z[end_node]], 
+                    color=Track["c"], linestyle="-")
+
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    ax.set_title("3D Track Projection")
+
 # ---------------------------------------------------------------------------------------------------
 def MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes, data, iteration, trk_ids, RebuiltTrack_):
 
@@ -1254,6 +1316,67 @@ def CalcTortuosity(df_angles):
     return df_angles
 
 # ---------------------------------------------------------------------------------------------------
+# Function to calculate perpendicular distances from SVD decomp of a set of points
+# used in Squiglicity Calculation
+def point_to_line_distance(P, A, D):
+    return np.linalg.norm(np.cross(P - A, D)) / np.linalg.norm(D)
+# ---------------------------------------------------------------------------------------------------
+def CalcSquiglicity(df_angles):
+
+    df_angles["Squiglicity"] = 1.0
+
+    Squiglicity = []
+
+    window = 10
+
+    for trkID in df_angles.trkID.unique():
+
+        # Get the track
+        trk_df = df_angles[df_angles.trkID == trkID]
+
+        # Try to dynamically calculate the window size by splitting into 100 pieces
+        window = int(len(trk_df)/100 + 1)
+        if window < 5:
+            window = 5
+
+        # Loop over the nodes in the track
+        for index in range(len(trk_df)):
+
+            start = max(0, index - window)  # Prevent going below index 0
+            end = min(len(trk_df), index + window + 1)  # Prevent exceeding last index
+            
+            temp_df = trk_df.iloc[start:end]
+
+            point1 = temp_df.iloc[0]
+            point2 = temp_df.iloc[-1]
+            segment_length = calculate_distance(point1, point2)
+
+            # Avoids division by zero
+            if (segment_length == 0):
+                segment_length = 1
+
+
+            points = temp_df[['x', 'y', 'z']].values # Get the points
+            
+            # Step 1: Compute centroid (a point on the best-fit line)
+            A = np.mean(points, axis=0)
+           
+            # Step 2: Compute best-fit direction vector using SVD
+            U, S, Vt = np.linalg.svd(points - A)
+            D = Vt[0]  # First right-singular vector (best-fit direction)
+
+            temp_df['distance_to_line'] = [point_to_line_distance(P, A, D) for P in points]
+
+            # Step 4: Sum of distances
+            cum_distance = temp_df['distance_to_line'].sum()
+
+            Squiglicity.append(cum_distance/segment_length)
+
+    df_angles["Squiglicity"] = Squiglicity
+
+    return df_angles
+
+# ---------------------------------------------------------------------------------------------------
 # Function to return the blob with the biggest energy
 # will swap if blob1 and blob2 are the otherway round
 # blob1: blob1 energy
@@ -1288,7 +1411,10 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
     blob1, blob2 = GetBlobEnergyLength(df, distance_threshold) # Uses cumulative distance
     
     # Get the tortuosity
-    T1, T2 = GetEndTortuosity(df, T_threshold, pressure)
+    T1, T2 = GetEndVariable(df, T_threshold, pressure, "Tortuosity")
+
+    # Get the squiglicity
+    S1, S2 = GetEndVariable(df, T_threshold, pressure, "Squiglicity")
     
     # Create a new DataFrame to append
     properties_df = pd.DataFrame({
@@ -1302,7 +1428,9 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
         "blob1R"         : [blob1R],
         "blob2R"         : [blob2R],
         "Tortuosity1"    : [T1], 
-        "Tortuosity2"    : [T2]
+        "Tortuosity2"    : [T2],
+        "Squiglicity1"   : [S1],
+        "Squiglicity2"   : [S2]
     })
 
     properties_df["trkID"] = properties_df["trkID"].astype(int)
@@ -1315,24 +1443,32 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
 # df          : the dataframe containing the tortuosity and cumulative distance
 # T_threshold : the cumulative distance threshold at the ends to calculate from
 # pressure           : (int) the gas pressure
-def GetEndTortuosity(df, T_threshold, pressure):
-    df_T1 = df[df.cumulative_distance < T_threshold]
-    T1 = np.trapz(df_T1["Tortuosity"], df_T1["cumulative_distance"]*pressure)
+def GetEndVariable(df, T_threshold, pressure, var_name):
+    df_var1 = df[df.cumulative_distance < T_threshold]
+    if len(df_var1) <= 1:
+        df_var1 = df.head(2)
+
+    var1 = np.trapz(df_var1[f"{var_name}"], df_var1["cumulative_distance"]*pressure)
 
     end_threshold = max(df.cumulative_distance) - T_threshold
-    df_T2 = df[df['cumulative_distance'] > end_threshold]
-    print("end_tresh:", end_threshold, max(df.cumulative_distance), T_threshold, pressure, len(df_T2))
-    print(df_T2)
-    T2 = np.trapz(df_T2["Tortuosity"], (df_T2["cumulative_distance"]- end_threshold)*pressure ) # get the area
+    df_var2 = df[df['cumulative_distance'] > end_threshold]
+    
+    # Extend if there was only 1 or zero rows 
+    if len(df_var2) <= 1:
+        df_var2 = df.tail(2)
 
-    if T1 == 0:
-        print("T1 was zero, setting to 1")
-        T1 = 1.0
-    if T2 == 0:
-        print("T2 was zero, setting to 1")
-        T2 = 1.0
+    print("end_tresh:", end_threshold, max(df.cumulative_distance), T_threshold, pressure, len(df_var2))
+    print(df_var2)
+    var2 = np.trapz(df_var2[f"{var_name}"], (df_var2["cumulative_distance"] - end_threshold)*pressure ) # get the area
 
-    return T1, T2
+    if var1 == 0:
+        print(f"{var_name}1 was zero, setting to 1")
+        var1 = 1.0
+    if var2 == 0:
+        print(f"{var_name}2 was zero, setting to 1")
+        var2 = 1.0
+
+    return var1, var2
 
 # ---------------------------------------------------------------------------------------------------
 # Function gets the energy based on a sphere of radius radius_threshold
@@ -1390,7 +1526,7 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, radius_threshold, T_
         df = pd.DataFrame([filtered_data])
         df.rename(columns={'id': 'trkID'}, inplace=True)
         df = properties_df.merge(df, on='trkID', how='inner')
-        df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "blob1R", "blob2R", "Tortuosity1", "Tortuosity2", "label"]]
+        df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "blob1R", "blob2R", "Tortuosity1", "Tortuosity2", "Squiglicity1","Squiglicity2", "label"]]
 
         Track_df.append(df)
 
@@ -1412,6 +1548,8 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
     blob2R_energy = [prim_df.blob2R.iloc[0]]
     Tortuosity1   = [prim_df.Tortuosity1.iloc[0]]
     Tortuosity2   = [prim_df.Tortuosity2.iloc[0]]
+    Squiglicity1  = [prim_df.Squiglicity1.iloc[0]]
+    Squiglicity2  = [prim_df.Squiglicity2.iloc[0]]
     
     
     prim_start = df_angles[df_angles['id'] == prim_df.start.iloc[0]][['x', 'y', 'z']].values
@@ -1433,6 +1571,7 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
             blob1_energy.append(trk_df.energy.iloc[0])
             blob1R_energy.append(trk_df.energy.iloc[0])
             Tortuosity1.append(trk_df.Tortuosity1.iloc[0])
+            Squiglicity1.append(trk_df.Squiglicity1.iloc[0])
             continue
 
         # Check delta/brem to the blob2 pos
@@ -1442,16 +1581,19 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
             blob2_energy.append(trk_df.energy.iloc[0])
             blob2R_energy.append(trk_df.energy.iloc[0])
             Tortuosity2.append(trk_df.Tortuosity2.iloc[0])
+            Squiglicity2.append(trk_df.Squiglicity2.iloc[0])
             continue
 
     # remove any nan from the variables e.g. if there was bad delta information
-    blob1_energy = [x for x in blob1_energy  if not np.isnan(x)]
-    blob2_energy = [x for x in blob2_energy  if not np.isnan(x)]
-    blobR_energy = [x for x in blob1R_energy if not np.isnan(x)]
-    blobR_energy = [x for x in blob2R_energy if not np.isnan(x)]
-    blobR_energy = [x for x in blob2R_energy if not np.isnan(x)]
-    Tortuosity1  = [x for x in Tortuosity1   if not np.isnan(x)]
-    Tortuosity2  = [x for x in Tortuosity2   if not np.isnan(x)]
+    blob1_energy  = [x for x in blob1_energy  if not np.isnan(x)]
+    blob2_energy  = [x for x in blob2_energy  if not np.isnan(x)]
+    blobR_energy  = [x for x in blob1R_energy if not np.isnan(x)]
+    blobR_energy  = [x for x in blob2R_energy if not np.isnan(x)]
+    blobR_energy  = [x for x in blob2R_energy if not np.isnan(x)]
+    Tortuosity1   = [x for x in Tortuosity1   if not np.isnan(x)]
+    Tortuosity2   = [x for x in Tortuosity2   if not np.isnan(x)]
+    Squiglicity1  = [x for x in Squiglicity1   if not np.isnan(x)]
+    Squiglicity2  = [x for x in Squiglicity2   if not np.isnan(x)]
 
     # Here we need to add an additional check to see which blob energy was greater and then swap the columns accordingly
     blob1_energy_sum = np.float32(sum(blob1_energy))
@@ -1467,6 +1609,8 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
         df.loc[df['primary'] == 1, 'blob2R'] = np.float32(sum(blob2R_energy))
         df.loc[df['primary'] == 1, 'Tortuosity1'] = sum(Tortuosity1)
         df.loc[df['primary'] == 1, 'Tortuosity2'] = sum(Tortuosity2)
+        df.loc[df['primary'] == 1, 'Squiglicity1'] = sum(Squiglicity1)
+        df.loc[df['primary'] == 1, 'Squiglicity2'] = sum(Squiglicity2)
     else:
         print("Swapping the blob names")
         df.loc[df['primary'] == 1, 'blob1']  = blob1_energy_sum # these have already been swapped so keep
@@ -1475,6 +1619,8 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
         df.loc[df['primary'] == 1, 'blob2R'] = np.float32(sum(blob1R_energy))
         df.loc[df['primary'] == 1, 'Tortuosity1'] = sum(Tortuosity2) # swap the tortosity
         df.loc[df['primary'] == 1, 'Tortuosity2'] = sum(Tortuosity1)
+        df.loc[df['primary'] == 1, 'Squiglicity1'] = sum(Squiglicity2) # swap the squiglicity
+        df.loc[df['primary'] == 1, 'Squiglicity2'] = sum(Squiglicity1)
 
         # Swap the ends too
         temp_start = df.loc[df['primary'] == 1, 'start']
@@ -1678,5 +1824,6 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
 
     df_angles = CalcTortuosity(df_angles) # Add the tortuosity variable to the tracks
+    df_angles = CalcSquiglicity(df_angles) # Add the squiglicity variable to the tracks too
     print(df_angles)
     return df_angles, Tracks, connected_nodes, connection_count, pass_flag
