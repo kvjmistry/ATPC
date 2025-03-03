@@ -696,25 +696,28 @@ def RunClustering(node_centers_df, pressure, diffusion):
     diff_scale_factor=7 # this scales the radius size in clustering
 
     # The percentage 0 is actually a small amount
-    if (diffusion == "0.05percent"):
+    if (diffusion == "0.05percent"): # - good
         Diff_smear = 0.05 # mm / sqrt(cm)
-    elif (diffusion == "0.1percent"):
+        energy_threshold  = 0.0
+        diff_scale_factor = 7
+    elif (diffusion == "0.1percent"): # - good
         Diff_smear = 0.95 # mm / sqrt(cm)
-        energy_threshold=0.0004
-        diff_scale_factor=5
-    elif (diffusion == "0.25percent"):
+        energy_threshold  = 0.0004
+        diff_scale_factor = 4
+    elif (diffusion == "0.25percent"): # - good
         Diff_smear = 0.703 # mm / sqrt(cm)
         energy_threshold=0.0004
-        diff_scale_factor=5
-    elif (diffusion == "0.5percent"):
+        diff_scale_factor=4
+    elif (diffusion == "0.5percent"): # - good
         Diff_smear = 0.507 # mm / sqrt(cm)
         energy_threshold=0.0004
-        diff_scale_factor=5
-    elif (diffusion == "5percent"):
+        diff_scale_factor=4
+    elif (diffusion == "5percent"): 
 
-        if (pressure == 1):
+        if (pressure == 1): # - good
             Diff_smear = 0.290 # mm / sqrt(cm)
-            diff_scale_factor=7
+            energy_threshold=0.0004
+            diff_scale_factor=4
         elif (pressure == 5):
             Diff_smear = 0.270
             diff_scale_factor=5
@@ -1672,12 +1675,34 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     # median node distance. Here we adjust it a little
     # The diffusion files are clustered so we can relax this
     # condition a bit more
-    radius_sf = 5
+    radius_sf = 7
 
-    if (diffusion != "nodiff"):
-        radius_sf=3
+    # The percentage 0 is actually a small amount
+    if (diffusion == "0.05percent"): # - good
+        radius_sf=7
+    elif (diffusion == "nodiff"): # - good
+        radius_sf=7
+    elif (diffusion == "0.1percent"): # - good
+        radius_sf=2
+    elif (diffusion == "0.25percent"): # - good
+        radius_sf=2
+    elif (diffusion == "0.5percent"): # - good
+        radius_sf=2
+    elif (diffusion == "5.0percent"):
+        if (pressure == 1): # - good
+            radius_sf=2
+        elif (pressure == 5):
+            radius_sf=2
+        elif (pressure == 10):
+            radius_sf=2
+        elif (pressure == 15):
+            radius_sf=2
+        else:
+            print("Error pressure not found")
+    else:
+        print("Error CO2 percentage not defined at 75 V/cm field")
 
-    print("Track Building Radius Scale factor is:", radius_sf)
+        print("Track Building Radius Scale factor is:", radius_sf)
 
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
