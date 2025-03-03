@@ -467,26 +467,34 @@ def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, di
 
 # ---------------------------------------------------------------------------------------------------
 # Function to walk along a track segment till we get to an end
+# Accounts for forks in the track
+# For this function to work, we must begin at an end e.g. 1 node connected
+# this is so we can walk along and get the longest track from this point
 def GetNodePath(graph_, start_node, forward_node):
     
+    # Copy the dictionary of the connections
     graph = copy.deepcopy(graph_)
     
+    # start the path at the first node
     path = [start_node]
-    
-    query = forward_node
-    prev_node = start_node 
 
-    for index,n in enumerate(range(len(graph))):
+    query     = forward_node # This is the node the next node in the track
+    prev_node = start_node # set the start node (so first step doesnt go backwards)
 
+    while(True):
+
+        # Add the new node to the total path
         path.append(query)
         
-        # Get the connected nodes
+        # Get the connected nodes to the current node
         con_nodes = graph[query]
 
         # We hit a end-point and it didnt loop
         if (len(con_nodes) == 1):
             return path
         
+        # The node has three connections, so need to walk along each segment
+        # give back the longest segment path
         if (len(con_nodes) == 3 ):
             con_nodes.remove(prev_node)
             len1 = len(GetNodePath(graph, query, con_nodes[0]))
@@ -498,21 +506,25 @@ def GetNodePath(graph_, start_node, forward_node):
             else:
                 prev_node = query
                 query = con_nodes[1]
-            
-            continue
 
-            print("help!!")
+            continue
 
         if (len(con_nodes) > 3 ):
             print("Error too many nodes in pathing that I was anticipating...")
+            return path
 
-        # Get the node that went in the query before
+        # Get the node that went in the query before so we can continue walking along
         if con_nodes[1] == prev_node:
             prev_node = query
             query = con_nodes[0]
         else:
             prev_node = query
             query = con_nodes[1]
+
+        # Keep going,...
+
+    print("Well, we shouldnt get here now, should we,...")
+    return path
 
 # ---------------------------------------------------------------------------------------------------
 # Function to calculate the angle between two vectors
@@ -677,22 +689,28 @@ def Cluster(input_data, R):
     return pd.DataFrame(node_centers, columns=['x', 'y', 'z', 'energy'])
 
 # ---------------------------------------------------------------------------------------------------
-def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
+def RunClustering(node_centers_df, pressure, diffusion):
 
     Diff_smear = 0.0
     energy_threshold=0
-    diff_scale_factor=7 # this scales the radius size
+    diff_scale_factor=7 # this scales the radius size in clustering
 
     # The percentage 0 is actually a small amount
     if (diffusion == "0.05percent"):
         Diff_smear = 0.05 # mm / sqrt(cm)
     elif (diffusion == "0.1percent"):
         Diff_smear = 0.95 # mm / sqrt(cm)
+        energy_threshold=0.0004
+        diff_scale_factor=5
     elif (diffusion == "0.25percent"):
         Diff_smear = 0.703 # mm / sqrt(cm)
+        energy_threshold=0.0004
+        diff_scale_factor=5
     elif (diffusion == "0.5percent"):
         Diff_smear = 0.507 # mm / sqrt(cm)
-    elif (diffusion == "5.0percent"):
+        energy_threshold=0.0004
+        diff_scale_factor=5
+    elif (diffusion == "5percent"):
 
         if (pressure == 1):
             Diff_smear = 0.290 # mm / sqrt(cm)
@@ -717,13 +735,20 @@ def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
     if (Diff_smear == 0.0):
         print("Error diffusion value not configured properly")
 
+    print("Energy Threshold is: ",  energy_threshold)
+    print("diff_scale_factor is: ",  diff_scale_factor)
+
+
     event_id = node_centers_df.event_id.iloc[0]
 
     # define the radius to cluster by
     mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
+    print("Mean Sigma is:", mean_sigma)
 
     # apply energy threshold and redistribute energy
     node_centers_df = CutandRedistibuteEnergy(node_centers_df, energy_threshold)
+
+    print(node_centers_df)
 
     # Overwrite cluster radii for now based on a diffusion value
     cluster_radii = [mean_sigma]
@@ -876,6 +901,9 @@ def CutandRedistibuteEnergy(data, energy_threshold):
     # Redistribute removed energy proportionally
     cut_data["energy"] += cut_data["energy"] / cut_data["energy"].sum() * removed_energy
 
+    # Reset the index otherwise this messes up the tracking algorithm,...
+    cut_data = cut_data.reset_index(drop=True)
+
     return cut_data
 
 # ---------------------------------------------------------------------------------------------------
@@ -938,19 +966,26 @@ def plot_tracks_3D(ax, x, y, z, connection_count, Tracks_):
     ax.set_title("3D Track Projection")
 
 # ---------------------------------------------------------------------------------------------------
+# Function to make track objects from connected nodes in the previous stages
+# It creates the primary track e.g. the primary electron. Then makes delta rays on top of that
+# sometimes there can be deltas on the deltas and this is taken care of. 
 def MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes, data, iteration, trk_ids, RebuiltTrack_):
 
     Track_arrays = []
-
     prim_track_id = -1
     prim_len = 0
     prim_track_arr = []
     prim_energy = 0
 
     # Get all nodes with single connections
+    # These indicate the beginning of the track
     end_points = np.where(connection_count_ == 1)[0]
+
+    # Here we remove the nodes from the list we have already considered
     end_points = [x for x in end_points if x in remaining_nodes]
 
+    # In iteration zero, we should be considering the primary track
+    # else its treated as a brem
     if (iteration == 0):
         primary_label = "Primary"
         delta_label = "Delta"
@@ -960,28 +995,32 @@ def MakeTracks(connection_count_, connected_nodes_, data_nodes, remaining_nodes,
         delta_label = "BremDelta"
         color = next(color_cycle)
 
+    # Loop over the end points and get the track path
     for index, end_point in enumerate(end_points):
-        trkpath = GetLongestPath(connected_nodes_, end_point)
+        trkpath = GetNodePath(connected_nodes_, end_point, connected_nodes_[end_point][0])
         Track_arrays.append(trkpath)
 
         trk_length = GetTrackLength(trkpath, data)
 
+        # When we get the longest track this info gets overwritten
         if (trk_length > prim_len):
             prim_len = trk_length
             prim_track_id = index
             prim_track_arr = trkpath
             prim_energy = GetTrackEnergy(trkpath, data, False)
     
-    # Create the primary track
-    RebuiltTrack_.append({"id":trk_ids, "start":prim_track_arr[0], "end":prim_track_arr[-1], "length":trk_length, "energy":prim_energy, "label":primary_label, "c":color, "nodes":prim_track_arr})
+    # Now we are ready to create the primary track
+    RebuiltTrack_.append({"id":trk_ids, "start":prim_track_arr[0], "end":prim_track_arr[-1], "length":prim_len, "energy":prim_energy, "label":primary_label, "c":color, "nodes":prim_track_arr})
     trk_ids = trk_ids + 1
 
     # Get all nodes with three connections in the primary track
+    # These are the delta rays connected to the main track
     multi_connections = np.where(connection_count_ == 3)[0]
     prim_track_multi_connections = [x for x in multi_connections if x in prim_track_arr]
 
     for node in prim_track_multi_connections:
-        delta_node = [x for x in connected_nodes_[node] if x not in prim_track_arr]
+        # Need to remember what this does
+        delta_node = [x for x in connected_nodes_[node] if x not in prim_track_arr] 
 
         if (len(delta_node) == 0):
             print("Error no delta node after filtering")
@@ -1069,7 +1108,8 @@ def GetDeltaPath(graph_, start_node, forward_node, trkidx):
     query = forward_node
     prev_node = start_node 
 
-    for index,n in enumerate(range(len(graph))):
+    # for index,n in enumerate(range(len(graph))):
+    while(True):
 
         paths[trkidx].append(query)
         
@@ -1113,55 +1153,8 @@ def GetDeltaPath(graph_, start_node, forward_node, trkidx):
             prev_node = query
             query = con_nodes[1]
 
+    print("We should not be here,...")
     return paths
-
-# ---------------------------------------------------------------------------------------------------
-def GetLongestPath(graph_, node):
-
-    graph = copy.deepcopy(graph_)
-
-    path = [node]
-    
-    query = graph[node][0] # The node should only have 1 connection
-    prev_node = node 
-
-    for index,n in enumerate(range(len(graph))):
-
-        path.append(query)
-        
-        # Get the connected nodes
-        con_nodes = graph[query]
-
-        # We hit a end-point and it didnt loop
-        if (len(con_nodes) == 1):
-            return path
-        
-        if (len(con_nodes) == 3 ):
-            con_nodes.remove(prev_node)
-            len1 = len(GetNodePath(graph, query, con_nodes[0]))
-            len2 = len(GetNodePath(graph, query, con_nodes[1]))
-
-            if (len1 > len2):
-                prev_node = query
-                query = con_nodes[0]
-            else:
-                prev_node = query
-                query = con_nodes[1]
-            
-            continue
-
-        if (len(con_nodes) > 3 ):
-            print("Error too many nodes in pathing that I was anticipating...")
-
-        # Get the node that went in the query before
-        if con_nodes[1] == prev_node:
-            prev_node = query
-            query = con_nodes[0]
-        else:
-            prev_node = query
-            query = con_nodes[1]
-
-    return path
 
 # ---------------------------------------------------------------------------------------------------
 # Get the length and energy of a track
@@ -1415,6 +1408,10 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
 # T_threshold : the cumulative distance threshold at the ends to calculate from
 # pressure           : (int) the gas pressure
 def GetEndVariableArea(df, T_threshold, pressure, var_name):
+
+    if len(df) == 1:
+        return 0, 0
+
     df_var1 = df[df.cumulative_distance < T_threshold]
     
     # Extend if there was only 1 or zero rows 
@@ -1434,12 +1431,12 @@ def GetEndVariableArea(df, T_threshold, pressure, var_name):
     print(df_var2)
     var2 = np.trapz(df_var2[f"{var_name}"], (df_var2["cumulative_distance"] - end_threshold)*pressure ) # get the area
 
-    if var1 == 0:
-        print(f"{var_name}1 was zero, setting to 1")
-        var1 = 1.0
-    if var2 == 0:
-        print(f"{var_name}2 was zero, setting to 1")
-        var2 = 1.0
+    if var1 < 0:
+        print(f"{var_name}1 was less than zero, setting to 0")
+        var1 = 0.0
+    if var2 < 0:
+        print(f"{var_name}2 was less than zero, setting to 0")
+        var2 = 0.0
 
     return var1, var2
 # ---------------------------------------------------------------------------------------------------
@@ -1448,6 +1445,9 @@ def GetEndVariableArea(df, T_threshold, pressure, var_name):
 # T_threshold : the cumulative distance threshold at the ends to calculate from
 def GetEndVariableMean(df, T_threshold, var_name):
     
+    if len(df) == 1:
+        return 0, 0
+
     df_var1 = df[df.cumulative_distance < T_threshold]
     
     # Extend if there was only 1 or zero rows 
@@ -1465,10 +1465,12 @@ def GetEndVariableMean(df, T_threshold, var_name):
 
     var2 = df_var2[f"{var_name}"].mean()
 
-    if var1 == 0:
-        var1 = 1.0
-    if var2 == 0:
-        var2 = 1.0
+    if var1 < 0:
+        print(f"{var_name}1 was less than zero, setting to 0")
+        var1 = 0.0
+    if var2 < 0:
+        print(f"{var_name}2 was less than zero, setting to 0")
+        var2 = 0.0
 
     return var1, var2
 
@@ -1666,6 +1668,17 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
 #            which will help the algorithm converge better
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
+    # The no diffusion files have a lot of nodes so skew the 
+    # median node distance. Here we adjust it a little
+    # The diffusion files are clustered so we can relax this
+    # condition a bit more
+    radius_sf = 5
+
+    if (diffusion != "nodiff"):
+        radius_sf=3
+
+    print("Track Building Radius Scale factor is:", radius_sf)
+
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
 
@@ -1676,6 +1689,10 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     # shuffle the data to ensure we dont use g4 ordering
     data = data.sample(frac=1).reset_index(drop=True)
 
+    # Cluster the data if required
+    if (cluster):
+        data =  RunClustering(data, pressure, diffusion)
+
     # then sort it based on the x,y,z
     if (sort_flag == 0):
         data = data.sort_values(by=['x', "y", "z"]).reset_index(drop=True)
@@ -1683,12 +1700,6 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
         data = data.sort_values(by=['y', "z", "x"]).reset_index(drop=True)
     else:
         data = data.sort_values(by=['z', "x", "y"]).reset_index(drop=True)
-
-    # Cluster the data if required
-    if (cluster):
-        data =  RunClustering(data, [10], 30, pressure, diffusion)
-        # then re-sort sort it based on the x,y,z
-        data = data.sort_values(by=['y', "z", "x"]).reset_index(drop=True)
 
     # Calculate the distance matrix
     dist_matrix = distance_matrix(data[['x', 'y', 'z']], data[['x', 'y', 'z']])
@@ -1702,9 +1713,9 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     connections = []
 
     # Tunable parameters
-    Mean_dist = GetMedianNodeDistances(data) # Median distance between nodes
-    init_dist_thresh = Mean_dist*2 # max distance for initial connections [mm]
-    incr_dist_thresh = np.linspace(1, Mean_dist*2, 15, dtype=int) # Second stage, look for closest nodes, then slowly increase threshold [mm]
+    Median_dist = GetMedianNodeDistances(data) # Median distance between nodes
+    init_dist_thresh = Median_dist*2 # max distance for initial connections [mm]
+    incr_dist_thresh = np.linspace(1, Median_dist*radius_sf, 15, dtype=int) # Second stage, look for closest nodes, then slowly increase threshold [mm]
     incr_dist_thresh = np.unique(incr_dist_thresh)
     print("Distances to iterate over", incr_dist_thresh)
 

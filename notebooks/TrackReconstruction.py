@@ -8,18 +8,33 @@ from TrackReconstruction_functions import *
 import sys
 import pickle
 import os
+import re
 
 pd.options.mode.chained_assignment = None  # Disable the warning
 
 
-# USAGE: python TrackReconstruction.py <infile> <JOBID> <pressure> <diffusion amount>
-# python TrackReconstruction.py "ATPC_0nubb_15bar_smear_144.h5" 0 1 "nodiff"
+# USAGE: python TrackReconstruction.py <infile> <pressure> <diffusion amount> <plot>
+# python TrackReconstruction.py "ATPC_0nubb_15bar_smear_144.h5" 1 "nodiff" 0
 
 # Input file
 infile     = sys.argv[1]
-jobid    = int(sys.argv[2])
-pressure = int(sys.argv[3])
-diffusion= sys.argv[4]
+print("Input file is:", infile)
+
+# Extract the jobid from the filename
+match = re.search(r"_(\d+)\.h5", infile)
+
+if match:
+    jobid = int(match.group(1))
+    print("JOBID: ", jobid) 
+else:
+    print("Error could not find jobid, setting to 999999")
+    jobid = 999999
+
+
+pressure = int(sys.argv[2])
+print("Pressure:", pressure, "bar")
+diffusion= sys.argv[3]
+print("diffusion:",diffusion)
 
 if (diffusion != "nodiff"):
     print("Including Clustering!")
@@ -30,7 +45,8 @@ else:
 
 
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
-plot=False
+plot=int(sys.argv[4])
+print("Plotting mode:", plot)
 
 hits = pd.read_hdf(infile,"MC/hits")
 # parts = pd.read_hdf(infile,"MC/particles")
@@ -46,8 +62,8 @@ print("Total events to process:", len(hits.event_id.unique()))
 for index, event_num in enumerate(hits.event_id.unique()):
     print("On index, Event:", index, event_num)
 
-    # if (event_num != 11300):
-        # continue
+    # if (index > 2):
+    #     continue
 
     hit = hits[hits.event_id == event_num]
 
@@ -122,3 +138,5 @@ if plot:
             plt.savefig(f"plots/TrackingAlgoOut/event_{evt}_{diffusion}.pdf")
         else:
             plt.savefig(f"plots/TrackingAlgoOut/event_{evt}.pdf")
+
+        plt.close()
