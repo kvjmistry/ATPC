@@ -679,6 +679,8 @@ def Cluster(input_data, R):
 def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
 
     Diff_smear = 0.0
+    energy_threshold=0
+    diff_scale_factor=7 # this scales the radius size
 
     # The percentage 0 is actually a small amount
     if (diffusion == "0.05percent"):
@@ -689,16 +691,23 @@ def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
         Diff_smear = 0.703 # mm / sqrt(cm)
     elif (diffusion == "0.5percent"):
         Diff_smear = 0.507 # mm / sqrt(cm)
-    elif (diffusion == "5percent"):
+    elif (diffusion == "5.0percent"):
 
         if (pressure == 1):
             Diff_smear = 0.290 # mm / sqrt(cm)
+            diff_scale_factor=7
         elif (pressure == 5):
             Diff_smear = 0.270
+            diff_scale_factor=5
+            energy_threshold=0.001
         elif (pressure == 10):
             Diff_smear = 0.251
+            diff_scale_factor=5
+            energy_threshold=0.001
         elif (pressure == 15):
             Diff_smear = 0.258
+            diff_scale_factor=5
+            energy_threshold=0.001
         else:
             print("Error pressure not found")
     else:
@@ -709,7 +718,11 @@ def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
 
     event_id = node_centers_df.event_id.iloc[0]
 
-    mean_sigma = round(7*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
+    # define the radius to cluster by
+    mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
+
+    # apply energy threshold and redistribute energy
+    node_centers_df = CutandRedistibuteEnergy(node_centers_df, energy_threshold)
 
     # Overwrite cluster radii for now based on a diffusion value
     cluster_radii = [mean_sigma]
@@ -851,6 +864,18 @@ def RunClustering(node_centers_df, cluster_radii, binsize, pressure, diffusion):
     databin["event_id"] = databin["event_id"].astype('int')
 
     return databin
+# ---------------------------------------------------------------------------------------------------
+# Function to apply an energy threshold then redistibute the removed energy proportionally based
+# on the fraction of the energy each hit has of the total remaining energy
+def CutandRedistibuteEnergy(data, energy_threshold):
+    # Filter out rows where energy <= energy_threshold
+    removed_energy = data[data.energy <= energy_threshold]["energy"].sum()
+    cut_data = data[data.energy > energy_threshold]
+
+    # Redistribute removed energy proportionally
+    cut_data["energy"] += cut_data["energy"] / cut_data["energy"].sum() * removed_energy
+
+    return cut_data
 
 # ---------------------------------------------------------------------------------------------------
 # Function to plot connections
@@ -1229,6 +1254,10 @@ def CalcTortuosity(df_angles):
     return df_angles
 
 # ---------------------------------------------------------------------------------------------------
+# Function to return the blob with the biggest energy
+# will swap if blob1 and blob2 are the otherway round
+# blob1: blob1 energy
+# blob2: blob2 energy
 def SortEnergy(blob1, blob2):
 
     # Extra flag to indicate the ends were swapped
@@ -1238,67 +1267,76 @@ def SortEnergy(blob1, blob2):
         return blob2, blob1, True
 
 # ---------------------------------------------------------------------------------------------------
-def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_threshold, T_threshold):
+# Function calculates overall track properties such as the blob energies and end tortuosities
+# df                 : dataframe containing angles
+# trkID              : the id of the track 
+# primary            : (bool 1 or 0) to indicate if the track is the primary
+# p_start            : the start id node
+# p_end              : the end id node
+# eventid            : the event id
+# distance_threshold : the distance to calculate the blob energy
+# radius_threshold   : the radius of sphere to calculate blob energy
+# T_threshold        : the distance along the track to calculate the tortuosity
+# pressure           : (int) the gas pressure
+def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_threshold, radius_threshold, T_threshold, pressure):
 
-    counter = 0
-
-    # Now Get the energy of the primary end points
-    # start_energy = GetEnergyinRange(df, p_start, distance_threshold)
-    # end_energy   = GetEnergyinRange(df, p_end,   distance_threshold)
+    # Now Get the energy of the primary end points radius method
+    blob1R   = GetBlobEnergyRadius(df, p_start, radius_threshold)
+    blob2R   = GetBlobEnergyRadius(df, p_end,   radius_threshold)
     
-    start_energy, end_energy = GetEndEnergy(df, distance_threshold) # Uses cumulative distance
-
-    blob1, blob2, swapped_flag = SortEnergy(start_energy, end_energy)
-
-    if (not swapped_flag):
-        T1, T2 = GetEndTortuosity(df, T_threshold)
-    else:
-        print("Swapping blob names")
-        # Swap the starts and ends too
-        temp_start = p_end
-        temp_end   = p_start
-        p_start = temp_end
-        p_end   = temp_start
-        T2, T1 = GetEndTortuosity(df, T_threshold)
-
-
+    # Now Get the energy of the primary end points length method
+    blob1, blob2 = GetBlobEnergyLength(df, distance_threshold) # Uses cumulative distance
+    
+    # Get the tortuosity
+    T1, T2 = GetEndTortuosity(df, T_threshold, pressure)
+    
     # Create a new DataFrame to append
     properties_df = pd.DataFrame({
-        "event_id": [eventid],
-        "trkID"   : [trkID],
-        "primary" : [primary],
-        "start"   : [p_start],
-        "end"     : [p_end],
-        "blob1"   : [blob1],
-        "blob2"   : [blob2],
+        "event_id"       : [eventid],
+        "trkID"          : [trkID],
+        "primary"        : [primary],
+        "start"          : [p_start],
+        "end"            : [p_end],
+        "blob1"          : [blob1],
+        "blob2"          : [blob2],
+        "blob1R"         : [blob1R],
+        "blob2R"         : [blob2R],
         "Tortuosity1"    : [T1], 
         "Tortuosity2"    : [T2]
     })
 
     properties_df["trkID"] = properties_df["trkID"].astype(int)
 
-    counter = counter+1
-
     return properties_df
 
 # ---------------------------------------------------------------------------------------------------
-def GetEndTortuosity(df, T_threshold):
+# Function that gets the area of the tortuosity near the ends of the track
+# we multiply by pressure to make the value simular for what it is at 1bar
+# df          : the dataframe containing the tortuosity and cumulative distance
+# T_threshold : the cumulative distance threshold at the ends to calculate from
+# pressure           : (int) the gas pressure
+def GetEndTortuosity(df, T_threshold, pressure):
     df_T1 = df[df.cumulative_distance < T_threshold]
-    T1 = df_T1["Tortuosity"].mean()
+    T1 = np.trapz(df_T1["Tortuosity"], df_T1["cumulative_distance"]*pressure)
 
     end_threshold = max(df.cumulative_distance) - T_threshold
     df_T2 = df[df['cumulative_distance'] > end_threshold]
-    T2 = df_T2["Tortuosity"].mean()
+    print("end_tresh:", end_threshold, max(df.cumulative_distance), T_threshold, pressure, len(df_T2))
+    print(df_T2)
+    T2 = np.trapz(df_T2["Tortuosity"], (df_T2["cumulative_distance"]- end_threshold)*pressure ) # get the area
 
     if T1 == 0:
+        print("T1 was zero, setting to 1")
         T1 = 1.0
     if T2 == 0:
+        print("T2 was zero, setting to 1")
         T2 = 1.0
 
     return T1, T2
 
 # ---------------------------------------------------------------------------------------------------
-def GetEnergyinRange(df, p_start, distance_threshold):
+# Function gets the energy based on a sphere of radius radius_threshold
+def GetBlobEnergyRadius(df, p_start, radius_threshold):
     # Get coordinates where id is p_start
     start_coord = df[df['id'] == p_start][['x', 'y', 'z']].values
 
@@ -1306,12 +1344,13 @@ def GetEnergyinRange(df, p_start, distance_threshold):
     distances = np.sqrt(((df[['x', 'y', 'z']].values[:, None] - start_coord) ** 2).sum(axis=2))
 
     # Find rows where any distance to id == p_start rows is less than the threshold
-    mask = (distances < distance_threshold).any(axis=1)
+    mask = (distances < radius_threshold).any(axis=1)
     result = df[mask]
     return result.energy.sum()
 
 # ---------------------------------------------------------------------------------------------------
-def GetEndEnergy(df, distance_threshold):
+# Gets the blob energy walking along the track length of distance distance_threshold
+def GetBlobEnergyLength(df, distance_threshold):
     df_E1 = df[df.cumulative_distance < distance_threshold]
     E1 = df_E1["energy"].sum()
 
@@ -1321,10 +1360,19 @@ def GetEndEnergy(df, distance_threshold):
     return E1, E2
 
 # ---------------------------------------------------------------------------------------------------
-# Get the track metadata
-def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
+# Function call to get the track metadata
+# df_angles          : the dataframe containing track angles
+# RebuiltTrack       : the dict containing overall track infomation
+# distance_threshold : the distance to calculate the blob energy
+# radius_threshold   : the radius of sphere to calculate blob energy
+# T_threshold        : the distance along the track to calculate the tortuosity
+# pressure           : (int) the gas pressure
+def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, radius_threshold, T_threshold, pressure):
     Track_df = []
 
+    print("distance_threshold, radius_threshold, T_threshold, pressure: ", distance_threshold, radius_threshold, T_threshold, pressure)
+    
+    # loop over the tracks
     for t in RebuiltTrack:
 
         p_start = t["start"]
@@ -1336,13 +1384,13 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
         eventid = df_angles.event_id.iloc[0]
         primary_id = df_angles[df_angles.trkID == t["id"]]["primary"].iloc[0]
 
-        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], primary_id, p_start, p_end, eventid, distance_threshold, T_threshold)
+        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], primary_id, p_start, p_end, eventid, distance_threshold, radius_threshold, T_threshold, pressure)
 
         # Convert to DataFrame
         df = pd.DataFrame([filtered_data])
         df.rename(columns={'id': 'trkID'}, inplace=True)
         df = properties_df.merge(df, on='trkID', how='inner')
-        df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "Tortuosity1", "Tortuosity2", "label"]]
+        df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "blob1R", "blob2R", "Tortuosity1", "Tortuosity2", "label"]]
 
         Track_df.append(df)
 
@@ -1351,23 +1399,28 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, T_threshold):
 
 # ---------------------------------------------------------------------------------------------------
 # If a delta/brem has an position to close to the blob ends, then combine that info into energy and tortuosity.
+# we add the total energy of the secondary
 def UpdateTrackMeta(Track_df, df_angles, distance):
 
     df = Track_df.copy()
 
     prim_df = df[df.primary == 1]
 
-    blob1_energy = [prim_df.blob1.iloc[0]]
-    blob2_energy = [prim_df.blob2.iloc[0]]
-    Tortuosity1 = [prim_df.Tortuosity1.iloc[0]]
-    Tortuosity2 = [prim_df.Tortuosity2.iloc[0]]
+    blob1_energy  = [prim_df.blob1.iloc[0]]
+    blob2_energy  = [prim_df.blob2.iloc[0]]
+    blob1R_energy = [prim_df.blob1R.iloc[0]]
+    blob2R_energy = [prim_df.blob2R.iloc[0]]
+    Tortuosity1   = [prim_df.Tortuosity1.iloc[0]]
+    Tortuosity2   = [prim_df.Tortuosity2.iloc[0]]
     
     
     prim_start = df_angles[df_angles['id'] == prim_df.start.iloc[0]][['x', 'y', 'z']].values
     prim_end   = df_angles[df_angles['id'] == prim_df.end.iloc[0]][['x', 'y', 'z']].values
 
+    # Loop over the secondary tracks
     for t in df[df.primary == 0].trkID.unique():
 
+        # The secondary track
         trk_df = df[df.trkID == t]
 
         trk_start = df_angles[df_angles['id'] == trk_df.start.iloc[0]][['x', 'y', 'z']].values
@@ -1378,6 +1431,7 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
         if (dist_blob1 < distance):
             print(f"Adding {trk_df.label.iloc[0]} energy to blob1 as dist was {dist_blob1}")
             blob1_energy.append(trk_df.energy.iloc[0])
+            blob1R_energy.append(trk_df.energy.iloc[0])
             Tortuosity1.append(trk_df.Tortuosity1.iloc[0])
             continue
 
@@ -1386,17 +1440,62 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
         if (dist_blob2 < distance):
             print(f"Adding trk {t} {trk_df.label.iloc[0]} energy to blob2 as dist was {dist_blob2}")
             blob2_energy.append(trk_df.energy.iloc[0])
+            blob2R_energy.append(trk_df.energy.iloc[0])
             Tortuosity2.append(trk_df.Tortuosity2.iloc[0])
             continue
 
-    df.loc[df['primary'] == 1, 'blob1'] = np.float32(sum(blob1_energy))
-    df.loc[df['primary'] == 1, 'blob2'] = np.float32(sum(blob2_energy))
-    df.loc[df['primary'] == 1, 'Tortuosity1'] = sum(Tortuosity1)/len(Tortuosity1)
-    df.loc[df['primary'] == 1, 'Tortuosity2'] = sum(Tortuosity2)/len(Tortuosity1)
+    # remove any nan from the variables e.g. if there was bad delta information
+    blob1_energy = [x for x in blob1_energy  if not np.isnan(x)]
+    blob2_energy = [x for x in blob2_energy  if not np.isnan(x)]
+    blobR_energy = [x for x in blob1R_energy if not np.isnan(x)]
+    blobR_energy = [x for x in blob2R_energy if not np.isnan(x)]
+    blobR_energy = [x for x in blob2R_energy if not np.isnan(x)]
+    Tortuosity1  = [x for x in Tortuosity1   if not np.isnan(x)]
+    Tortuosity2  = [x for x in Tortuosity2   if not np.isnan(x)]
+
+    # Here we need to add an additional check to see which blob energy was greater and then swap the columns accordingly
+    blob1_energy_sum = np.float32(sum(blob1_energy))
+    blob2_energy_sum = np.float32(sum(blob2_energy))
+    
+    # See if we swap
+    blob1_energy_sum, blob2_energy_sum, swapped_flag = SortEnergy(blob1_energy_sum, blob2_energy_sum)
+
+    if (not swapped_flag):
+        df.loc[df['primary'] == 1, 'blob1']  = blob1_energy_sum
+        df.loc[df['primary'] == 1, 'blob2']  = blob2_energy_sum
+        df.loc[df['primary'] == 1, 'blob1R'] = np.float32(sum(blob1R_energy))
+        df.loc[df['primary'] == 1, 'blob2R'] = np.float32(sum(blob2R_energy))
+        df.loc[df['primary'] == 1, 'Tortuosity1'] = sum(Tortuosity1)
+        df.loc[df['primary'] == 1, 'Tortuosity2'] = sum(Tortuosity2)
+    else:
+        print("Swapping the blob names")
+        df.loc[df['primary'] == 1, 'blob1']  = blob1_energy_sum # these have already been swapped so keep
+        df.loc[df['primary'] == 1, 'blob2']  = blob2_energy_sum
+        df.loc[df['primary'] == 1, 'blob1R'] = np.float32(sum(blob2R_energy)) # swap the blob E radius method
+        df.loc[df['primary'] == 1, 'blob2R'] = np.float32(sum(blob1R_energy))
+        df.loc[df['primary'] == 1, 'Tortuosity1'] = sum(Tortuosity2) # swap the tortosity
+        df.loc[df['primary'] == 1, 'Tortuosity2'] = sum(Tortuosity1)
+
+        # Swap the ends too
+        temp_start = df.loc[df['primary'] == 1, 'start']
+        temp_end   = df.loc[df['primary'] == 1, 'end']
+        df.loc[df['primary'] == 1, 'start'] = temp_end
+        df.loc[df['primary'] == 1, 'end']   = temp_start
 
     return df
 
 # ---------------------------------------------------------------------------------------------------
+# Master function to run the tracking algorithm
+# the new dataframe will contain the following new columns:
+# id, primary, trkID, cumulative_distance, angle
+# data     : the input dataframe containig x,y,z,energy
+# cluster  : (int 1 or 0) if running over diffused files then this clusters the track
+#          so that we can run over the tracking algorithm over the trunk of the track
+# pressure : the pressure of the track (integer in bar). Cuts are scaled from 1 bar to this pressure
+# diffusion: "nodiff", "5percent", "0.5percent", "0.25percent". "0.1percent", "0.05percent"
+#            this is the diffusion amount of the tracks. This tunes the clustering amount. 
+# sort flag: sometimes the tracking algorithm fails. This changes how the hits are ordered
+#            which will help the algorithm converge better
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
     # There seems to be a duplicate row sometimes
