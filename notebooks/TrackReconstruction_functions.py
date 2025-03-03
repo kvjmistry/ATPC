@@ -1265,6 +1265,8 @@ def GetMeanNodeDistances(df):
 
 # ---------------------------------------------------------------------------------------------------
 # Calculate the tortuosity and add it to the dataframe
+# defined as the total path length along actual track
+# divided by the straight line distance
 def CalcTortuosity(df_angles):
 
     # df_angles['distance_diff'] = df_angles.groupby(['event_id', 'trkID'])['cumulative_distance'].diff().fillna(0)
@@ -1321,6 +1323,9 @@ def CalcTortuosity(df_angles):
 def point_to_line_distance(P, A, D):
     return np.linalg.norm(np.cross(P - A, D)) / np.linalg.norm(D)
 # ---------------------------------------------------------------------------------------------------
+# Calculate the squiglicity and add it to the dataframe
+# defined as the sum of the normal distances to the best
+# straight line fit to the nodes divided by the straight line distance
 def CalcSquiglicity(df_angles):
 
     df_angles["Squiglicity"] = 1.0
@@ -1680,13 +1685,11 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     connections = []
 
     # Tunable parameters
-    # init_dist_thresh = 15 # max distance for initial connections [mm]
-    # incr_dist_thresh = [2,4,6,8,10,12,14,16,18,20] # Second stage, look for closest nodes, then slowly increase threshold [mm]
-
     Mean_dist = GetMeanNodeDistances(data) # Mean distance between nodes
     init_dist_thresh = Mean_dist*2 # max distance for initial connections [mm]
-    incr_dist_thresh = np.linspace(1, Mean_dist*5, 15, dtype=int) # Second stage, look for closest nodes, then slowly increase threshold [mm]
+    incr_dist_thresh = np.linspace(1, Mean_dist*2, 15, dtype=int) # Second stage, look for closest nodes, then slowly increase threshold [mm]
     incr_dist_thresh = np.unique(incr_dist_thresh)
+    print("Distances to iterate over", incr_dist_thresh)
 
     for i in range(len(data)):
         # Find the index of the closest node (excluding itself)
