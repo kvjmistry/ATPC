@@ -9,6 +9,8 @@ import sys
 import pickle
 import os
 
+pd.options.mode.chained_assignment = None  # Disable the warning
+
 
 # USAGE: python TrackReconstruction.py <infile> <JOBID> <pressure> <diffusion amount>
 # python TrackReconstruction.py "ATPC_0nubb_15bar_smear_144.h5" 0 1 "nodiff"
@@ -63,7 +65,7 @@ for index, event_num in enumerate(hits.event_id.unique()):
     connected_nodes_dict[event_num] = connected_nodes
     connections_count_dict[event_num] = connection_count
     df_list.append(df)
-    temp_meta = GetTrackdf(df, Tracks, 500/pressure, 200/pressure) # scale these params inversely with the pressure
+    temp_meta = GetTrackdf(df, Tracks, 500/pressure, 180/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
     temp_meta = UpdateTrackMeta(temp_meta, df, 100/pressure) # Merge deltas and brems that are near the blobs in the metadata
     df_meta.append(temp_meta)
 
