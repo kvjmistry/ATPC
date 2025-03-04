@@ -751,7 +751,7 @@ def RunClustering(node_centers_df, pressure, diffusion):
     # apply energy threshold and redistribute energy
     node_centers_df = CutandRedistibuteEnergy(node_centers_df, energy_threshold)
 
-    print(node_centers_df)
+    # print(node_centers_df)
 
     # Overwrite cluster radii for now based on a diffusion value
     cluster_radii = [mean_sigma]
@@ -1430,8 +1430,7 @@ def GetEndVariableArea(df, T_threshold, pressure, var_name):
     if len(df_var2) <= 1:
         df_var2 = df.tail(2)
 
-    print("end_tresh:", end_threshold, max(df.cumulative_distance), T_threshold, pressure, len(df_var2))
-    print(df_var2)
+    # print("end_tresh:", end_threshold, max(df.cumulative_distance), T_threshold, pressure, len(df_var2))
     var2 = np.trapz(df_var2[f"{var_name}"], (df_var2["cumulative_distance"] - end_threshold)*pressure ) # get the area
 
     if var1 < 0:
@@ -1513,7 +1512,7 @@ def GetBlobEnergyLength(df, distance_threshold):
 def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, radius_threshold, T_threshold, pressure):
     Track_df = []
 
-    print("distance_threshold, radius_threshold, T_threshold, pressure: ", distance_threshold, radius_threshold, T_threshold, pressure)
+    # print("distance_threshold, radius_threshold, T_threshold, pressure: ", distance_threshold, radius_threshold, T_threshold, pressure)
     
     # loop over the tracks
     for t in RebuiltTrack:
@@ -1702,7 +1701,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     else:
         print("Error CO2 percentage not defined at 75 V/cm field")
 
-        print("Track Building Radius Scale factor is:", radius_sf)
+    print("Track Building Radius Scale factor is:", radius_sf)
 
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
