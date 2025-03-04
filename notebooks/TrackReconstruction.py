@@ -92,13 +92,13 @@ for index, event_num in enumerate(hits.event_id.unique()):
 df = pd.concat(df_list)
 df_meta = pd.concat(df_meta)
 
-with pd.HDFStore(f"{file_out_seg}_{jobid}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
+with pd.HDFStore(f"{file_out_seg}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
     store.put('data', df, format='table')
     store.put('meta', df_meta, format='table')
 
 
-with open(f"{file_out_seg}_{jobid}_trackinfo.pkl", 'wb') as pickle_file:
+with open(f"{file_out_seg}_trackinfo.pkl", 'wb') as pickle_file:
     pickle.dump(Track_dict, pickle_file)
     pickle.dump(connected_nodes_dict, pickle_file)
     pickle.dump(connections_count_dict, pickle_file)
