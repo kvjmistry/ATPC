@@ -26,6 +26,8 @@ df_meta = pd.concat(df_meta)
 
 print(df_meta)
 
+# ------------------------------------------------------------------------------------------
+
 # Apply some cuts to remove events
 df_primary = df_meta[ (df_meta.label == "Primary") & (df_meta.primary == 1)]
 cuts = (df_primary.blob2R > 0.4) & \
@@ -39,6 +41,8 @@ cuts = (df_primary.blob2R > 0.4) & \
 df_primary = df_primary[ cuts ]
 filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))].event_id.unique()
 
+# ------------------------------------------------------------------------------------------
+
 for i, f in enumerate(files):
     if i %50 ==0:
         print(f"{i} /", len(files))
@@ -51,7 +55,7 @@ for i, f in enumerate(files):
 dfs = pd.concat(dfs)
 
 print(dfs)
-print("Tot saved events:", dfs.event_id.unique())
+print("Tot saved events:", len(dfs.event_id.unique()))
 
 with pd.HDFStore(f"{file_out}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
@@ -62,6 +66,8 @@ with pd.HDFStore(f"{file_out}_reco.h5", mode='w', complevel=5, complib='zlib') a
 del dfs
 del df_meta
 
+# ------------------------------------------------------------------------------------------
+
 Tracks = []
 connections = []
 connection_counts = []
@@ -69,6 +75,10 @@ connection_counts = []
 files = sorted(glob.glob(f"{file_path}/pkl/*.pkl"))
 
 for index, f in enumerate(files):
+
+    if index %50 ==0:
+        print(f"{index} /", len(files))
+
     with open(f, 'rb') as pickle_file:  # Use 'rb' for reading in binary
 
         # Load data from file
