@@ -13,10 +13,12 @@ diffusion=sys.argv[3]
 true_folder=sys.argv[4] # can also set 5percent here to get the diffused track
 
 file_path = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{diffusion}_reco.h5"
-file_out = f"/home/krishan.mistry/code/ATPC/merged/ATPC_0nubb_{pressure}_{true_folder}_filtered"
+file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{true_folder}_filtered"
 
 hits = pd.read_hdf(f"{file_path}", "data")
 filtered_events = hits.event_id.unique()
+
+print("Total events to filter:", len(filtered_events))
 
 # ------------------------------------------------------------------------------------------
 
