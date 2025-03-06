@@ -21,8 +21,7 @@ filtered_events = hits.event_id.unique()
 # ------------------------------------------------------------------------------------------
 
 # Now load in the nexus files
-
-files = f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/{mode}/{pressure}/{true_folder}"
+files = sorted(glob.glob(f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/{mode}/{pressure}/{true_folder}/*.h5"))
 
 df_hits_all = []
 df_parts_all = []
