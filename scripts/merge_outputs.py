@@ -51,6 +51,7 @@ for i, f in enumerate(files):
 dfs = pd.concat(dfs)
 
 print(dfs)
+print("Tot saved events:", dfs.event_id.unique())
 
 with pd.HDFStore(f"{file_out}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
@@ -70,25 +71,25 @@ files = sorted(glob.glob(f"{file_path}/pkl/*.pkl"))
 for index, f in enumerate(files):
     with open(f, 'rb') as pickle_file:  # Use 'rb' for reading in binary
 
-    # Load data from file
-    track_data = pickle.load(pickle_file)
-    conn_data = pickle.load(pickle_file)
-    conn_count_data = pickle.load(pickle_file)
+        # Load data from file
+        track_data = pickle.load(pickle_file)
+        conn_data = pickle.load(pickle_file)
+        conn_count_data = pickle.load(pickle_file)
 
-    # Filter during loading
-    track_data = {k: v for k, v in track_data.items() if k in filtered_events}
-    conn_data = {k: v for k, v in conn_data.items() if k in filtered_events}
-    conn_count_data = {k: v for k, v in conn_count_data.items() if k in filtered_events}
+        # Filter during loading
+        track_data = {k: v for k, v in track_data.items() if k in filtered_events}
+        conn_data = {k: v for k, v in conn_data.items() if k in filtered_events}
+        conn_count_data = {k: v for k, v in conn_count_data.items() if k in filtered_events}
 
-    # Initialize or update dictionaries
-    if index == 0:
-        Tracks = track_data
-        connections = conn_data
-        connection_counts = conn_count_data
-    else:
-        Tracks.update(track_data)
-        connections.update(conn_data)
-        connection_counts.update(conn_count_data)
+        # Initialize or update dictionaries
+        if index == 0:
+            Tracks = track_data
+            connections = conn_data
+            connection_counts = conn_count_data
+        else:
+            Tracks.update(track_data)
+            connections.update(conn_data)
+            connection_counts.update(conn_count_data)
 
 with open(f"{file_out}_trackreco.pkl", 'wb') as pickle_file:
     pickle.dump(Tracks, pickle_file)
