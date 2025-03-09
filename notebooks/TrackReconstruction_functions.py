@@ -1277,7 +1277,7 @@ def CalcTortuosity(df_angles):
 # Function to calculate perpendicular distances from SVD decomp of a set of points
 # used in Squiglicity Calculation
 def point_to_line_distance(P, A, D):
-    return np.linalg.norm(np.cross(P - A, D)) / np.linalg.norm(D)
+    return np.abs(np.linalg.norm(np.cross(P - A, D)) / np.linalg.norm(D))
 # ---------------------------------------------------------------------------------------------------
 # Calculate the squiglicity and add it to the dataframe
 # defined as the sum of the normal distances to the best
@@ -1882,3 +1882,100 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     df_angles = CalcSquiglicity(df_angles) # Add the squiglicity variable to the tracks too
     print(df_angles)
     return df_angles, Tracks, connected_nodes, connection_count, pass_flag
+# ---------------------------------------------------------------------------------------------------
+# A class for grouping hits
+class Voxel:
+    def __init__(self, x, y, z, energy, voxel_id):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.energy   = energy
+        self.voxel_id = voxel_id # Each hit has a unique id which we can match to
+
+    def is_close_to(self, other, threshold):
+        distance = np.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2)
+        return distance < threshold
+
+# ---------------------------------------------------------------------------------------------------
+# Function to get a list of voxels that are near by
+# voxels    : a list of unique voxels
+# threshold : distance to which we assign a new voxel to
+# returns a list of voxels in each unique group and the number
+# of uniuque groups
+def group_voxels(voxels, threshold):
+    
+    groups = []
+
+    # Loop over voxels
+    for voxel in voxels:
+        
+        close_groups = []
+
+        # Look in the existing group and find voxels that are near it
+        # then add to the same group if it is
+        for group in groups:
+            if any(voxel.is_close_to(other, threshold) for other in group):
+                close_groups.append(group)
+        
+        # Put voxels in corresponding group
+        if not close_groups:
+            groups.append([voxel])
+        elif len(close_groups) == 1:
+            close_groups[0].append(voxel)
+        else:
+            merged_group = sum(close_groups, [voxel])
+            groups = [g for g in groups if g not in close_groups]
+            groups.append(merged_group)
+    
+    return groups, len(groups)
+# ---------------------------------------------------------------------------------------------------
+# Function to group hits based on proximity, returns a new row to the dataframe based on the hit group
+# df: input dataframe
+# voxel_size: apply voxelization of hits which helps with the grouping
+# threshold: a maximum distance which hits can be separated from before categorizing to a new group
+# x/y/zmin : the minimum value of x,y,z in the dataframe
+def GroupHits(df, xmin, ymin, zmin, voxel_size, threshold):
+
+    # Step 1: Voxelization 
+    df['voxel_x'] = ((df.x - xmin) // voxel_size).astype(int)
+    df['voxel_y'] = ((df.y - ymin) // voxel_size).astype(int)
+    df['voxel_z'] = ((df.z - zmin) // voxel_size).astype(int)
+
+    # Step 2: Create voxelized groups
+    voxel_groups_df = df.groupby(['voxel_x', 'voxel_y', 'voxel_z']).agg(
+        centroid_x=('x', 'mean'),
+        centroid_y=('y', 'mean'),
+        centroid_z=('z', 'mean'),
+        total_energy=('energy', 'sum')
+    ).reset_index()
+
+    # Step 3: Assign unique voxel ID
+    voxel_groups_df['voxel_id'] = voxel_groups_df.index  # Unique ID for each voxel
+
+    # Step 4: Merge back to create a mapping as a column in reco_DE_event
+    df = df.merge(
+        voxel_groups_df[['voxel_x', 'voxel_y', 'voxel_z', 'voxel_id']],
+        on=['voxel_x', 'voxel_y', 'voxel_z'],
+        how='left'
+    )
+
+    voxels = [Voxel(row['centroid_x'], row['centroid_y'], row['centroid_z'], row['total_energy'], row['voxel_id']) for _, row in voxel_groups_df.iterrows()]
+    voxel_groups, total_groups = group_voxels(voxels, threshold)
+
+    df_group = pd.DataFrame(columns=['voxel_id', 'group_id'])
+
+    # Collect data in a list first (much faster than appending to a DataFrame)
+    data = []
+
+    for index, group in enumerate(voxel_groups):
+        for voxel in group:
+            data.append({'voxel_id': int(voxel.voxel_id), 'group_id': index})
+
+    # Convert list to DataFrame in one step
+    df_group = pd.DataFrame(data)
+
+    df_merged = df.merge(df_group, on='voxel_id', how='left')
+    df_merged = df_merged[["event_id", "x", "y", "z", "energy", "group_id"]]
+
+    return df_merged
+# ---------------------------------------------------------------------------------------------------
