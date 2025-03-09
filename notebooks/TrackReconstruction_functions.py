@@ -661,239 +661,6 @@ def GetMinima(index, all_visited_, input_data, temp_dist_matrix, R):
     return mean_point, all_visited
 
 # ---------------------------------------------------------------------------------------------------
-def Cluster(input_data, R):
-
-    node_centers = []
-    all_visited = []
-    indexes = input_data.index.values
-    indexes_set = set(indexes)
-
-    temp_dist_matrix = distance_matrix(input_data[['x', 'y', 'z']], input_data[['x', 'y', 'z']])
-
-    for i in range(len(input_data)):
-
-        all_visited_set = set(all_visited)
-
-        # Convert arrays to sets and perform the difference
-        filtered_indexes = list(indexes_set - all_visited_set)
-
-        if not filtered_indexes:
-            break
-
-        # random_index = np.random.choice(filtered_indexes)
-        random_index = filtered_indexes[0]
-        median, all_visited = GetMinima(random_index, all_visited, input_data, temp_dist_matrix, R)
-
-        node_centers.append(median)
-
-    return pd.DataFrame(node_centers, columns=['x', 'y', 'z', 'energy'])
-
-# ---------------------------------------------------------------------------------------------------
-def RunClustering(node_centers_df, pressure, diffusion):
-
-    Diff_smear = 0.0
-    energy_threshold=0
-    diff_scale_factor=7 # this scales the radius size in clustering
-
-    # The percentage 0 is actually a small amount
-    if (diffusion == "0.05percent"): # - good
-        Diff_smear = 0.05 # mm / sqrt(cm)
-        energy_threshold  = 0.0
-        diff_scale_factor = 7
-    elif (diffusion == "0.1percent"): # - good
-        Diff_smear = 0.95 # mm / sqrt(cm)
-        energy_threshold  = 0.0004
-        diff_scale_factor = 4
-    elif (diffusion == "0.25percent"): # - good
-        Diff_smear = 0.703 # mm / sqrt(cm)
-        energy_threshold=0.0004
-        diff_scale_factor=4
-    elif (diffusion == "0.5percent"): # - good
-        Diff_smear = 0.507 # mm / sqrt(cm)
-        energy_threshold=0.0004
-        diff_scale_factor=4
-    elif (diffusion == "5percent"): 
-
-        if (pressure == 1): # - good
-            Diff_smear = 0.290 # mm / sqrt(cm)
-            energy_threshold=0.0004
-            diff_scale_factor=4
-        elif (pressure == 5):
-            Diff_smear = 0.270
-            diff_scale_factor=5
-            energy_threshold=0.001
-        elif (pressure == 10):
-            Diff_smear = 0.251
-            diff_scale_factor=5
-            energy_threshold=0.001
-        elif (pressure == 15):
-            Diff_smear = 0.258
-            diff_scale_factor=5
-            energy_threshold=0.001
-        else:
-            print("Error pressure not found")
-    else:
-        print("Error CO2 percentage not defined at 75 V/cm field")
-
-    if (Diff_smear == 0.0):
-        print("Error diffusion value not configured properly")
-
-    print("Energy Threshold is: ",  energy_threshold)
-    print("diff_scale_factor is: ",  diff_scale_factor)
-
-
-    event_id = node_centers_df.event_id.iloc[0]
-
-    # define the radius to cluster by
-    mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
-    print("Mean Sigma is:", mean_sigma)
-
-    # apply energy threshold and redistribute energy
-    node_centers_df = CutandRedistibuteEnergy(node_centers_df, energy_threshold)
-
-    # print(node_centers_df)
-
-    # Overwrite cluster radii for now based on a diffusion value
-    cluster_radii = [mean_sigma]
-
-    for R in cluster_radii:
-        node_centers_df = Cluster(node_centers_df, R)
-
-    node_centers_df["event_id"] = event_id
-
-
-    # Calculate the detector half-length
-    det_size = int(np.cbrt(6000**3/pressure)/2.0) 
-
-    # Create the bins ---- 
-    xbw=mean_sigma
-    xmin=-det_size - mean_sigma/2 
-    xmax=det_size + mean_sigma/2
-
-    ybw=mean_sigma
-    ymin=-det_size - mean_sigma/2 
-    ymax=det_size + mean_sigma/2
-
-    # This shifts the z pos of the events so 0 is at anode
-    # can set this to zero
-    z_shift = det_size
-    # z_shift = 0
-
-    zbw=mean_sigma
-    zmin=-det_size + z_shift - mean_sigma/2 
-    zmax=det_size + z_shift + mean_sigma/2
-    
-    xbw=mean_sigma
-    xmin=-det_size - mean_sigma/2 
-    xmax=det_size + mean_sigma/2
-
-    ybw=mean_sigma
-    ymin=-det_size - mean_sigma/2 
-    ymax=det_size + mean_sigma/2
-
-    # bins for x, y, z
-    xbins = np.arange(xmin, xmax+xbw, xbw)
-    ybins = np.arange(ymin, ymax+ybw, ybw)
-    zbins = np.arange(zmin, zmax+zbw, zbw)
-
-    # center bins for x, y, z
-    xbin_c = xbins[:-1] + xbw / 2
-    ybin_c = ybins[:-1] + ybw / 2
-    zbin_c = zbins[:-1] + zbw / 2
-
-
-    databin = node_centers_df.copy()
-
-    # Now lets bin the data
-    databin['x_smear'] = pd.cut(x=databin['x'], bins=xbins,labels=xbin_c, include_lowest=True)
-    databin['y_smear'] = pd.cut(x=databin['y'], bins=ybins,labels=ybin_c, include_lowest=True)
-    databin['z_smear'] = pd.cut(x=databin['z'], bins=zbins,labels=zbin_c, include_lowest=True)
-
-    #Loop over the rows in the dataframe and merge the energies. Also change the bin center to use the mean x,y,z position
-    x_mean_arr = []
-    y_mean_arr = []
-    z_mean_arr = []
-    energy_mean_arr = []
-    x_mean_arr_temp = np.array([])
-    y_mean_arr_temp = np.array([])
-    z_mean_arr_temp = np.array([])
-    summed_energy = 0
-
-    counter = 0
-
-    # test_df = test_df.reset_index()
-    databin = databin.sort_values(by=['x_smear', 'y_smear', 'z_smear'])
-
-
-    for index, row in databin.iterrows():
-
-        # First row
-        if (counter == 0):
-            temp_x = row["x_smear"]
-            temp_y = row["y_smear"]
-            temp_z = row["z_smear"]
-            summed_energy +=row["energy"]
-            event_id = row["event_id"]
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            counter+=1
-            continue
-
-        # Same bin
-        if (row["x_smear"] == temp_x and row["y_smear"] == temp_y and row["z_smear"] == temp_z):
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            summed_energy +=row["energy"]
-
-            # Final row
-            if index == databin.index[-1]:
-                if (summed_energy != 0): 
-                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                    energy_mean_arr.append(summed_energy)
-
-        # Aggregate and store for next 
-        else:
-            if (summed_energy != 0): 
-                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                energy_mean_arr.append(summed_energy)
-            
-            temp_x = row["x_smear"]
-            temp_y = row["y_smear"]
-            temp_z = row["z_smear"]
-            summed_energy = 0
-            x_mean_arr_temp = np.array([])
-            y_mean_arr_temp = np.array([])
-            z_mean_arr_temp = np.array([])
-            
-            
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            summed_energy +=row["energy"]
-
-            # Final row
-            if index == databin.index[-1]:
-                if (summed_energy != 0): 
-                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                    energy_mean_arr.append(summed_energy)
-
-        counter+=1
-
-    # Make the dataframe again
-    databin = pd.DataFrame({  "event_id" : event_id, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
-
-    databin["event_id"] = databin["event_id"].astype('int')
-
-    return databin
-# ---------------------------------------------------------------------------------------------------
 # Function to apply an energy threshold then redistibute the removed energy proportionally based
 # on the fraction of the energy each hit has of the total remaining energy
 def CutandRedistibuteEnergy(data, energy_threshold):
@@ -1882,6 +1649,241 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     df_angles = CalcSquiglicity(df_angles) # Add the squiglicity variable to the tracks too
     print(df_angles)
     return df_angles, Tracks, connected_nodes, connection_count, pass_flag
+# ---------------------------------------------------------------------------------------------------
+def Cluster(input_data, R):
+
+    node_centers = []
+    all_visited = []
+    indexes = input_data.index.values
+    indexes_set = set(indexes)
+
+    temp_dist_matrix = distance_matrix(input_data[['x', 'y', 'z']], input_data[['x', 'y', 'z']])
+
+    for i in range(len(input_data)):
+
+        all_visited_set = set(all_visited)
+
+        # Convert arrays to sets and perform the difference
+        filtered_indexes = list(indexes_set - all_visited_set)
+
+        if not filtered_indexes:
+            break
+
+        # random_index = np.random.choice(filtered_indexes)
+        random_index = filtered_indexes[0]
+        median, all_visited = GetMinima(random_index, all_visited, input_data, temp_dist_matrix, R)
+
+        node_centers.append(median)
+
+    return pd.DataFrame(node_centers, columns=['x', 'y', 'z', 'energy'])
+
+# ---------------------------------------------------------------------------------------------------
+def RunClustering(node_centers_df, pressure, diffusion):
+
+    Diff_smear = 0.0
+    energy_threshold=0
+    diff_scale_factor=7 # this scales the radius size in clustering
+
+    # The percentage 0 is actually a small amount
+    if (diffusion == "0.05percent"): # - good
+        Diff_smear = 0.05 # mm / sqrt(cm)
+        energy_threshold  = 0.0
+        diff_scale_factor = 7
+    elif (diffusion == "0.1percent"): # - good
+        Diff_smear = 0.95 # mm / sqrt(cm)
+        energy_threshold  = 0.0004
+        diff_scale_factor = 4
+    elif (diffusion == "0.25percent"): # - good
+        Diff_smear = 0.703 # mm / sqrt(cm)
+        energy_threshold=0.0004
+        diff_scale_factor=4
+    elif (diffusion == "0.5percent"): # - good
+        Diff_smear = 0.507 # mm / sqrt(cm)
+        energy_threshold=0.0004
+        diff_scale_factor=4
+    elif (diffusion == "5percent"): 
+
+        if (pressure == 1): # - good
+            Diff_smear = 0.290 # mm / sqrt(cm)
+            energy_threshold=0.0004
+            diff_scale_factor=4
+        elif (pressure == 5):
+            Diff_smear = 0.270
+            diff_scale_factor=5
+            energy_threshold=0.001
+        elif (pressure == 10):
+            Diff_smear = 0.251
+            diff_scale_factor=5
+            energy_threshold=0.001
+        elif (pressure == 15):
+            Diff_smear = 0.258
+            diff_scale_factor=5
+            energy_threshold=0.001
+        else:
+            print("Error pressure not found")
+    else:
+        print("Error CO2 percentage not defined at 75 V/cm field")
+
+    if (Diff_smear == 0.0):
+        print("Error diffusion value not configured properly")
+
+    print("Energy Threshold is: ",  energy_threshold)
+    print("diff_scale_factor is: ",  diff_scale_factor)
+
+
+    event_id = node_centers_df.event_id.iloc[0]
+
+    # define the radius to cluster by
+    mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
+    print("Mean Sigma is:", mean_sigma)
+
+    # apply energy threshold and redistribute energy
+    node_centers_df = CutandRedistibuteEnergy(node_centers_df, energy_threshold)
+
+    # print(node_centers_df)
+
+    # Overwrite cluster radii for now based on a diffusion value
+    cluster_radii = [mean_sigma]
+
+    for R in cluster_radii:
+        node_centers_df = Cluster(node_centers_df, R)
+
+    node_centers_df["event_id"] = event_id
+
+
+    # Calculate the detector half-length
+    det_size = int(np.cbrt(6000**3/pressure)/2.0) 
+
+    # Create the bins ---- 
+    xbw=mean_sigma
+    xmin=-det_size - mean_sigma/2 
+    xmax=det_size + mean_sigma/2
+
+    ybw=mean_sigma
+    ymin=-det_size - mean_sigma/2 
+    ymax=det_size + mean_sigma/2
+
+    # This shifts the z pos of the events so 0 is at anode
+    # can set this to zero
+    z_shift = det_size
+    # z_shift = 0
+
+    zbw=mean_sigma
+    zmin=-det_size + z_shift - mean_sigma/2 
+    zmax=det_size + z_shift + mean_sigma/2
+    
+    xbw=mean_sigma
+    xmin=-det_size - mean_sigma/2 
+    xmax=det_size + mean_sigma/2
+
+    ybw=mean_sigma
+    ymin=-det_size - mean_sigma/2 
+    ymax=det_size + mean_sigma/2
+
+    # bins for x, y, z
+    xbins = np.arange(xmin, xmax+xbw, xbw)
+    ybins = np.arange(ymin, ymax+ybw, ybw)
+    zbins = np.arange(zmin, zmax+zbw, zbw)
+
+    # center bins for x, y, z
+    xbin_c = xbins[:-1] + xbw / 2
+    ybin_c = ybins[:-1] + ybw / 2
+    zbin_c = zbins[:-1] + zbw / 2
+
+
+    databin = node_centers_df.copy()
+
+    # Now lets bin the data
+    databin['x_smear'] = pd.cut(x=databin['x'], bins=xbins,labels=xbin_c, include_lowest=True)
+    databin['y_smear'] = pd.cut(x=databin['y'], bins=ybins,labels=ybin_c, include_lowest=True)
+    databin['z_smear'] = pd.cut(x=databin['z'], bins=zbins,labels=zbin_c, include_lowest=True)
+
+    #Loop over the rows in the dataframe and merge the energies. Also change the bin center to use the mean x,y,z position
+    x_mean_arr = []
+    y_mean_arr = []
+    z_mean_arr = []
+    energy_mean_arr = []
+    x_mean_arr_temp = np.array([])
+    y_mean_arr_temp = np.array([])
+    z_mean_arr_temp = np.array([])
+    summed_energy = 0
+
+    counter = 0
+
+    # test_df = test_df.reset_index()
+    databin = databin.sort_values(by=['x_smear', 'y_smear', 'z_smear'])
+
+
+    for index, row in databin.iterrows():
+
+        # First row
+        if (counter == 0):
+            temp_x = row["x_smear"]
+            temp_y = row["y_smear"]
+            temp_z = row["z_smear"]
+            summed_energy +=row["energy"]
+            event_id = row["event_id"]
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            counter+=1
+            continue
+
+        # Same bin
+        if (row["x_smear"] == temp_x and row["y_smear"] == temp_y and row["z_smear"] == temp_z):
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            summed_energy +=row["energy"]
+
+            # Final row
+            if index == databin.index[-1]:
+                if (summed_energy != 0): 
+                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                    energy_mean_arr.append(summed_energy)
+
+        # Aggregate and store for next 
+        else:
+            if (summed_energy != 0): 
+                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                energy_mean_arr.append(summed_energy)
+            
+            temp_x = row["x_smear"]
+            temp_y = row["y_smear"]
+            temp_z = row["z_smear"]
+            summed_energy = 0
+            x_mean_arr_temp = np.array([])
+            y_mean_arr_temp = np.array([])
+            z_mean_arr_temp = np.array([])
+            
+            
+            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
+            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
+            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
+            summed_energy +=row["energy"]
+
+            # Final row
+            if index == databin.index[-1]:
+                if (summed_energy != 0): 
+                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
+                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
+                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
+                    energy_mean_arr.append(summed_energy)
+
+        counter+=1
+
+    # Make the dataframe again
+    databin = pd.DataFrame({  "event_id" : event_id, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
+
+    databin["event_id"] = databin["event_id"].astype('int')
+
+    return databin
+
+
 # ---------------------------------------------------------------------------------------------------
 # A class for grouping hits
 class Voxel:
