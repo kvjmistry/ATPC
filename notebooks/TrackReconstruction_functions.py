@@ -1700,6 +1700,11 @@ def RunClustering(node_centers_df, pressure, diffusion):
     zmin       = -det_size + z_shift - mean_sigma/2 
 
     df_merged = GroupHits(node_centers_df, xmin, ymin, zmin, voxel_size, threshold)
+    
+    # If we have too many groups then bump up the voxel size since the track was broken too much
+    if (len(df_merged.group_id.unique()) > 10):
+        print("Running grouping again")
+        df_merged = GroupHits(node_centers_df, xmin, ymin, zmin, voxel_size, voxel_size*(voxel_sf+1))
 
     # Apply energy threshold and redistribute energy
     df_merged = CutandRedistibuteEnergy(df_merged, energy_threshold)
