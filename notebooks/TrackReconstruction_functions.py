@@ -399,7 +399,9 @@ def ConnectTracks(Tracks_, connected_nodes_, connections_, connection_count_, di
             # print("the trying to connect both ends of track to the same track")
             continue
 
-
+        # If we are proposing to connect tracks in different groups, then skip
+        if (not CheckSameGroup(data, end_conn_node, closest_idx)):
+            continue
 
         # if node-node then merge nodes and update track in Tracks
         if (closest_idx == con_track_dict["start"] or closest_idx == con_track_dict["end"]):
@@ -654,7 +656,8 @@ def GetMinima(index, all_visited_, input_data, temp_dist_matrix, R):
     mean_y = selected_rows['y'].median()
     mean_z = selected_rows['z'].median()
     energy_sum = selected_rows['energy'].sum()
-    mean_point = np.array([mean_x, mean_y, mean_z, energy_sum])
+    group_id   = int(selected_rows["group_id"].iloc[0])
+    mean_point = np.array([mean_x, mean_y, mean_z, energy_sum, group_id])
 
     all_visited = all_visited_ + list(closest_nodes)
 
@@ -1437,52 +1440,48 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
 #            which will help the algorithm converge better
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
-    # The no diffusion files have a lot of nodes so skew the 
-    # median node distance. Here we adjust it a little
-    # The diffusion files are clustered so we can relax this
-    # condition a bit more
-    radius_sf = 7
-
-    # The percentage 0 is actually a small amount
-    if (diffusion == "0.05percent"): # - good
-        radius_sf=7
-    elif (diffusion == "nodiff"): # - good
-        radius_sf=7
-    elif (diffusion == "0.1percent"): # - good
-        radius_sf=2
-    elif (diffusion == "0.25percent"): # - good
-        radius_sf=2
-    elif (diffusion == "0.5percent"): # - good
-        radius_sf=2
-    elif (diffusion == "5.0percent"):
-        if (pressure == 1): # - good
-            radius_sf=2
-        elif (pressure == 5):
-            radius_sf=2
-        elif (pressure == 10):
-            radius_sf=2
-        elif (pressure == 15):
-            radius_sf=2
-        else:
-            print("Error pressure not found")
-    else:
-        print("Error CO2 percentage not defined at 75 V/cm field")
-
-    print("Track Building Radius Scale factor is:", radius_sf)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf = InitializeParams(pressure, diffusion)
+    print("Diffussion smear is: ",        Diff_smear,            "mm/sqrt(cm)")
+    print("Energy threshold is: ",        1000*energy_threshold, "keV")
+    print("diffision scale factor is: ",  diff_scale_factor)
+    print("Radius scale factor is: ",     radius_sf)
+    print("Voxel scale factor is: ",      voxel_sf)
 
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
-
     # display(data)
-    # eid = data.event_id.item()
-    data = data[['event_id', 'x', 'y', 'z',"energy"]]
 
-    # shuffle the data to ensure we dont use g4 ordering
-    data = data.sample(frac=1).reset_index(drop=True)
+    if ("group_id" in data.columns):
+        data = data[['event_id', 'x', 'y', 'z',"energy", "group_id"]]
+    else:
+        data = data[['event_id', 'x', 'y', 'z',"energy"]]
+
+
+    # Sort this way as input always
+    data = data.sort_values(by=['x', "y", "z"]).reset_index(drop=True) 
 
     # Cluster the data if required
     if (cluster):
         data =  RunClustering(data, pressure, diffusion)
+    
+    # If clustering has not been applied then we assume it was nodiff sample
+    # in this case apply grouping to generate the column
+    if ("group_id" not in data.columns):
+        print("Grouping has not been applied yet so run grouping function,...")
+        mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*data.z.mean()))
+        det_size = int(np.cbrt(6000**3/pressure)/2.0) 
+        z_shift = det_size
+
+        xmin=-det_size - mean_sigma/2 
+        ymin=-det_size - mean_sigma/2 
+        zmin=-det_size + z_shift - mean_sigma/2 
+
+        # voxel size and parameters
+        voxel_size = mean_sigma  # mm
+        threshold = voxel_size*voxel_sf
+
+        data = GroupHits(data, xmin, ymin, zmin, voxel_size, threshold)
+
 
     # then sort it based on the x,y,z
     if (sort_flag == 0):
@@ -1518,8 +1517,8 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
         # Check if the connection already exists 
         if closest_idx not in connected_nodes.get(i, []) and i not in connected_nodes.get(closest_idx, []):
 
-            # Check the proposed node has 0 or 1 connection
-            if (connection_count[closest_idx] <= 1 and connection_count[i] <= 1 and dist_matrix[i][closest_idx] < init_dist_thresh):
+            # Check the proposed node has 0 or 1 connection, the connection is within the dist threshold and is within the same group
+            if (connection_count[closest_idx] <= 1 and connection_count[i] <= 1 and dist_matrix[i][closest_idx] < init_dist_thresh and CheckSameGroup(data, i, closest_idx)):
                 
                 cycle  = Testcycle(i, closest_idx ,connected_nodes, connections, connection_count)
                 
@@ -1545,8 +1544,8 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
                 
                 for closest_idx in sorted_indices[:dist]:
 
-                    # Check if the index is not itelf and the connection count of the closest index is 1
-                    if closest_idx != i and connection_count[closest_idx] <= 1 and connection_count[i] <= 1 and closest_idx not in connected_nodes.get(i, []) and i not in connected_nodes.get(closest_idx, []): 
+                    # Check if the index is not itelf and the connection count of the closest index is 1, also that the proposed node is in the same group
+                    if closest_idx != i and connection_count[closest_idx] <= 1 and connection_count[i] <= 1 and closest_idx not in connected_nodes.get(i, []) and i not in connected_nodes.get(closest_idx, []) and CheckSameGroup(data, i, closest_idx): 
                         
                         if dist_matrix[i][closest_idx] < dist:
 
@@ -1675,61 +1674,15 @@ def Cluster(input_data, R):
 
         node_centers.append(median)
 
-    return pd.DataFrame(node_centers, columns=['x', 'y', 'z', 'energy'])
+    node_centers_df  = pd.DataFrame(node_centers, columns=['x', 'y', 'z', 'energy', "group_id"])
+    node_centers_df["group_id"] = node_centers_df["group_id"].astype(int)
+
+    return node_centers_df
 
 # ---------------------------------------------------------------------------------------------------
 def RunClustering(node_centers_df, pressure, diffusion):
 
-    Diff_smear = 0.0
-    energy_threshold=0
-    diff_scale_factor=7 # this scales the radius size in clustering
-
-    # The percentage 0 is actually a small amount
-    if (diffusion == "0.05percent"): # - good
-        Diff_smear = 0.05 # mm / sqrt(cm)
-        energy_threshold  = 0.0
-        diff_scale_factor = 7
-    elif (diffusion == "0.1percent"): # - good
-        Diff_smear = 0.95 # mm / sqrt(cm)
-        energy_threshold  = 0.0004
-        diff_scale_factor = 4
-    elif (diffusion == "0.25percent"): # - good
-        Diff_smear = 0.703 # mm / sqrt(cm)
-        energy_threshold=0.0004
-        diff_scale_factor=4
-    elif (diffusion == "0.5percent"): # - good
-        Diff_smear = 0.507 # mm / sqrt(cm)
-        energy_threshold=0.0004
-        diff_scale_factor=4
-    elif (diffusion == "5percent"): 
-
-        if (pressure == 1): # - good
-            Diff_smear = 0.290 # mm / sqrt(cm)
-            energy_threshold=0.0004
-            diff_scale_factor=4
-        elif (pressure == 5):
-            Diff_smear = 0.270
-            diff_scale_factor=5
-            energy_threshold=0.001
-        elif (pressure == 10):
-            Diff_smear = 0.251
-            diff_scale_factor=5
-            energy_threshold=0.001
-        elif (pressure == 15):
-            Diff_smear = 0.258
-            diff_scale_factor=5
-            energy_threshold=0.001
-        else:
-            print("Error pressure not found")
-    else:
-        print("Error CO2 percentage not defined at 75 V/cm field")
-
-    if (Diff_smear == 0.0):
-        print("Error diffusion value not configured properly")
-
-    print("Energy Threshold is: ",  energy_threshold)
-    print("diff_scale_factor is: ",  diff_scale_factor)
-
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf = InitializeParams(pressure, diffusion)
 
     event_id = node_centers_df.event_id.iloc[0]
 
@@ -1737,31 +1690,46 @@ def RunClustering(node_centers_df, pressure, diffusion):
     mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
     print("Mean Sigma is:", mean_sigma)
 
-    # apply energy threshold and redistribute energy
-    node_centers_df = CutandRedistibuteEnergy(node_centers_df, energy_threshold)
+    # Apply hit grouping
+    voxel_size =  mean_sigma
+    threshold  =  voxel_size*voxel_sf
+    det_size   =  int(np.cbrt(6000**3/pressure)/2.0) 
+    z_shift    =  det_size
+    xmin       = -det_size - mean_sigma/2 
+    ymin       = -det_size - mean_sigma/2 
+    zmin       = -det_size + z_shift - mean_sigma/2 
 
-    # print(node_centers_df)
+    df_merged = GroupHits(node_centers_df, xmin, ymin, zmin, voxel_size, threshold)
 
-    # Overwrite cluster radii for now based on a diffusion value
-    cluster_radii = [mean_sigma]
+    # Apply energy threshold and redistribute energy
+    df_merged = CutandRedistibuteEnergy(df_merged, energy_threshold)
+    # print(df_merged)
 
-    for R in cluster_radii:
-        node_centers_df = Cluster(node_centers_df, R)
 
+    # Run the clustering
+    node_centers_df = []
+
+    for gid in sorted(df_merged.group_id.unique()):
+        temp_df = df_merged[df_merged.group_id == gid]
+        temp_df.reset_index(drop=True, inplace=True)
+        node_centers_df.append(Cluster(temp_df, mean_sigma))
+
+    node_centers_df = pd.concat(node_centers_df, ignore_index=True)
     node_centers_df["event_id"] = event_id
 
+    # Bin the data
 
     # Calculate the detector half-length
     det_size = int(np.cbrt(6000**3/pressure)/2.0) 
 
     # Create the bins ---- 
-    xbw=mean_sigma
-    xmin=-det_size - mean_sigma/2 
-    xmax=det_size + mean_sigma/2
+    xbw  = mean_sigma
+    xmin = -det_size - mean_sigma/2 
+    xmax = det_size  + mean_sigma/2
 
-    ybw=mean_sigma
-    ymin=-det_size - mean_sigma/2 
-    ymax=det_size + mean_sigma/2
+    ybw  = mean_sigma
+    ymin = -det_size - mean_sigma/2 
+    ymax = det_size  + mean_sigma/2
 
     # This shifts the z pos of the events so 0 is at anode
     # can set this to zero
@@ -1771,14 +1739,6 @@ def RunClustering(node_centers_df, pressure, diffusion):
     zbw=mean_sigma
     zmin=-det_size + z_shift - mean_sigma/2 
     zmax=det_size + z_shift + mean_sigma/2
-    
-    xbw=mean_sigma
-    xmin=-det_size - mean_sigma/2 
-    xmax=det_size + mean_sigma/2
-
-    ybw=mean_sigma
-    ymin=-det_size - mean_sigma/2 
-    ymax=det_size + mean_sigma/2
 
     # bins for x, y, z
     xbins = np.arange(xmin, xmax+xbw, xbw)
@@ -1790,94 +1750,59 @@ def RunClustering(node_centers_df, pressure, diffusion):
     ybin_c = ybins[:-1] + ybw / 2
     zbin_c = zbins[:-1] + zbw / 2
 
-
     databin = node_centers_df.copy()
+
+    databin["event_id"] = event_id
 
     # Now lets bin the data
     databin['x_smear'] = pd.cut(x=databin['x'], bins=xbins,labels=xbin_c, include_lowest=True)
     databin['y_smear'] = pd.cut(x=databin['y'], bins=ybins,labels=ybin_c, include_lowest=True)
     databin['z_smear'] = pd.cut(x=databin['z'], bins=zbins,labels=zbin_c, include_lowest=True)
 
-    #Loop over the rows in the dataframe and merge the energies. Also change the bin center to use the mean x,y,z position
-    x_mean_arr = []
-    y_mean_arr = []
-    z_mean_arr = []
-    energy_mean_arr = []
-    x_mean_arr_temp = np.array([])
-    y_mean_arr_temp = np.array([])
-    z_mean_arr_temp = np.array([])
-    summed_energy = 0
+    # Drop rows with any NaN values
+    databin = databin.dropna()
 
-    counter = 0
+    # Dictionary to store results
+    aggregated_data = {}
 
-    # test_df = test_df.reset_index()
-    databin = databin.sort_values(by=['x_smear', 'y_smear', 'z_smear'])
-
-
-    for index, row in databin.iterrows():
-
-        # First row
-        if (counter == 0):
-            temp_x = row["x_smear"]
-            temp_y = row["y_smear"]
-            temp_z = row["z_smear"]
-            summed_energy +=row["energy"]
-            event_id = row["event_id"]
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            counter+=1
-            continue
-
-        # Same bin
-        if (row["x_smear"] == temp_x and row["y_smear"] == temp_y and row["z_smear"] == temp_z):
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            summed_energy +=row["energy"]
-
-            # Final row
-            if index == databin.index[-1]:
-                if (summed_energy != 0): 
-                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                    energy_mean_arr.append(summed_energy)
-
-        # Aggregate and store for next 
+    # Iterate through the DataFrame row by row
+    for _, row in databin.iterrows():
+        key = (row['event_id'], row['x_smear'], row['y_smear'], row['z_smear'], row['group_id'])
+        
+        if key not in aggregated_data:
+            # Initialize the aggregation for a new group
+            aggregated_data[key] = {
+                'x_sum': row['x'],
+                'y_sum': row['y'],
+                'z_sum': row['z'],
+                'energy_sum': row['energy'],
+                'group_id' : row['group_id'],
+                'count': 1
+            }
         else:
-            if (summed_energy != 0): 
-                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                energy_mean_arr.append(summed_energy)
-            
-            temp_x = row["x_smear"]
-            temp_y = row["y_smear"]
-            temp_z = row["z_smear"]
-            summed_energy = 0
-            x_mean_arr_temp = np.array([])
-            y_mean_arr_temp = np.array([])
-            z_mean_arr_temp = np.array([])
-            
-            
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            summed_energy +=row["energy"]
+            # Update existing group values
+            aggregated_data[key]['x_sum'] += row['x']
+            aggregated_data[key]['y_sum'] += row['y']
+            aggregated_data[key]['z_sum'] += row['z']
+            aggregated_data[key]['energy_sum'] += row['energy']
+            aggregated_data[key]['group_id'] = row['group_id']
+            aggregated_data[key]['count'] += 1
 
-            # Final row
-            if index == databin.index[-1]:
-                if (summed_energy != 0): 
-                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                    energy_mean_arr.append(summed_energy)
-
-        counter+=1
-
-    # Make the dataframe again
-    databin = pd.DataFrame({  "event_id" : event_id, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
+    # Convert aggregated data into a DataFrame
+    result = []
+    for key, values in aggregated_data.items():
+        event_id, x_smear, y_smear, z_smear, group_id = key
+        result.append({
+            'event_id': event_id,
+            'x_smear': x_smear,
+            'y_smear': y_smear,
+            'z_smear': z_smear,
+            'x': values['x_sum'] / values['count'],   # Mean x
+            'y': values['y_sum'] / values['count'],   # Mean y
+            'z': values['z_sum'] / values['count'],   # Mean z
+            'energy': values['energy_sum'],           # Sum energy
+            'group_id' : int(group_id)
+        })
 
     databin["event_id"] = databin["event_id"].astype('int')
 
@@ -1929,6 +1854,7 @@ def group_voxels(voxels, threshold):
             groups = [g for g in groups if g not in close_groups]
             groups.append(merged_group)
     
+    print("Total groups created:", len(groups))
     return groups, len(groups)
 # ---------------------------------------------------------------------------------------------------
 # Function to group hits based on proximity, returns a new row to the dataframe based on the hit group
@@ -1980,4 +1906,110 @@ def GroupHits(df, xmin, ymin, zmin, voxel_size, threshold):
     df_merged = df_merged[["event_id", "x", "y", "z", "energy", "group_id"]]
 
     return df_merged
+# ---------------------------------------------------------------------------------------------------
+# Function checks if the nodes are in the same group. 
+# df: the input dataframe, should contain the group_id
+# node1/2: the index in the dataframe to check 
+def CheckSameGroup(df, node1, node2):
+    group1 = df.group_id.iloc[node1]
+    group2 = df.group_id.iloc[node2]
+
+    return group1 == group2
+
+# ---------------------------------------------------------------------------------------------------
+# Function to initalize parameter cuts
+# inputs: pressure and diffusion amount
+# outputs: Diff_smear - The amont of diffusion that was applied for given pressure/CO2 mix
+#                       this is used to calculate clustering size estimation
+#         energy_threshold - this removes hits with an energy below this val and redistibutes its
+#                            energy amongst the remaining hits proportationally
+#         diff_scale_factor - This addtional adjustment scales the radius in clustering by this amount
+#         radius_sf - The no diffusion files have a lot of nodes so skew the median node distance.
+#                     factor helps to adjust that
+#         voxel_sf -  This scales the distance used to group hit clusters together
+def InitializeParams(pressure, diffusion):
+
+    Diff_smear        = 0.0 # mm / sqrt(cm)
+    energy_threshold  = 0   # MeV
+    diff_scale_factor = 7
+    radius_sf         = 7 
+    voxel_sf          = 1.1
+
+    # This is acutally 0.05 mm/sqrt diffusion not CO2 percentage
+    if (diffusion == "0.05percent"):
+        Diff_smear        = 0.05
+        energy_threshold  = 0.0
+        diff_scale_factor = 7
+        radius_sf         = 7
+        voxel_sf          = 2.1
+    
+    elif (diffusion == "nodiff"):
+        Diff_smear        = 0.1
+        energy_threshold  = 0.0
+        diff_scale_factor = 7
+        radius_sf         = 7
+        voxel_sf          = 2.1
+    
+    elif (diffusion == "0.1percent"):
+        Diff_smear        = 0.95
+        energy_threshold  = 0.0004
+        diff_scale_factor = 4
+        radius_sf         = 2
+        voxel_sf          = 2.1
+    
+    elif (diffusion == "0.25percent"):
+        Diff_smear        = 0.703 
+        energy_threshold  = 0.0004
+        diff_scale_factor = 4
+        radius_sf         = 2
+        voxel_sf          = 2.1
+    
+    elif (diffusion == "0.5percent"):
+        Diff_smear        = 0.507 
+        energy_threshold  = 0.0004
+        diff_scale_factor = 4
+        radius_sf         = 2
+        voxel_sf          = 2.1
+
+    elif (diffusion == "5percent" or diffusion == "5.0percent"): # because I messed up naming conventions
+
+        if (pressure == 1):
+            Diff_smear        = 0.290 
+            energy_threshold  = 0.0004
+            diff_scale_factor = 4
+            radius_sf         = 2
+            voxel_sf          = 2.1
+
+        elif (pressure == 5):
+            Diff_smear        = 0.270
+            diff_scale_factor = 5
+            energy_threshold  = 0.001
+            radius_sf         = 2
+            voxel_sf          = 2.1
+
+        elif (pressure == 10):
+            Diff_smear        = 0.251
+            diff_scale_factor = 5
+            energy_threshold  = 0.001
+            radius_sf         = 2
+            voxel_sf          = 2.1
+        elif (pressure == 15):
+            Diff_smear        = 0.258
+            diff_scale_factor = 5
+            energy_threshold  = 0.001
+            radius_sf         = 2
+            voxel_sf          = 2.1
+
+        else:
+            print("Error pressure not found")
+    else:
+        print("Error CO2 percentage not defined at 75 V/cm field")
+
+    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
