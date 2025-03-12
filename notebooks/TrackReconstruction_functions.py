@@ -1003,6 +1003,8 @@ def CalcAngularVars(df_angles, Tortuosity_dist):
     Tortuosity = []
     df_angles["Squiglicity"] = 1.0
     Squiglicity = []
+    # df_angles["RMS"] = 0.0
+    # RMS = []
 
     for trkID in df_angles.trkID.unique():
 
@@ -1092,8 +1094,14 @@ def CalcAngularVars(df_angles, Tortuosity_dist):
 
             Squiglicity.append(cum_distance/segment_length)
 
-    df_angles["Tortuosity"] = Tortuosity
+            # RMS
+            # temp_df['distance_to_line2']= temp_df['distance_to_line']*temp_df['distance_to_line']
+            # RMS.append(np.sqrt(temp_df['distance_to_line2'].mean()))
+
+    df_angles["Tortuosity"]  = Tortuosity
     df_angles["Squiglicity"] = Squiglicity
+    # df_angles["RMS"]         = RMS
+
 
     return df_angles
 
