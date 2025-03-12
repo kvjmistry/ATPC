@@ -990,36 +990,67 @@ def GetMedianNodeDistances(df):
     return median_distance
 
 # ---------------------------------------------------------------------------------------------------
-# Calculate the tortuosity and add it to the dataframe
-# defined as the total path length along actual track
+# Calculate the angular variables averaged along track
+# Tortuosity: defined as the total path length along actual track
 # divided by the straight line distance
-def CalcTortuosity(df_angles):
+# Squiglicity: defined as the sum of the normal distances to the best
+# straight line fit to the nodes divided by the straight line distance
+def CalcAngularVars(df_angles, Tortuosity_dist):
 
     # df_angles['distance_diff'] = df_angles.groupby(['event_id', 'trkID'])['cumulative_distance'].diff().fillna(0)
 
     df_angles["Tortuosity"] = 1.0
-
     Tortuosity = []
-
-    window = 10
+    df_angles["Squiglicity"] = 1.0
+    Squiglicity = []
 
     for trkID in df_angles.trkID.unique():
 
-        # Get the track
-        trk_df = df_angles[df_angles.trkID == trkID]
-
-        # Try to dynamically calculate the window size by splitting into 100 pieces
-        window = int(len(trk_df)/100 + 1)
-        if window < 5:
-            window = 5
+        # Get the track -- should be fine to reset the index as long as the ordering is preserved to df_angles
+        trk_df = df_angles[df_angles.trkID == trkID].reset_index(drop=True) 
 
         # Loop over the nodes in the track
         for index in range(len(trk_df)):
 
-            start = max(0, index - window)  # Prevent going below index 0
-            end = min(len(trk_df), index + window + 1)  # Prevent exceeding last index
-            
-            temp_df = trk_df.iloc[start:end]
+            # Start with the current index
+            valid_rows = [index]  
+            cumulative_distance = 0.0  
+
+            # Iterate forward and compute cumulative distance
+            for i in range(index + 1, len(trk_df)):
+                prev_row = trk_df.iloc[valid_rows[-1]]
+                curr_row = trk_df.iloc[i]
+
+                step_distance = ((curr_row.x - prev_row.x) ** 2 +
+                                (curr_row.y - prev_row.y) ** 2 +
+                                (curr_row.z - prev_row.z) ** 2) ** 0.5
+
+                if cumulative_distance + step_distance > Tortuosity_dist:
+                    break  # Stop once threshold is exceeded
+
+                cumulative_distance += step_distance
+                valid_rows.append(i) # add the rows to calculate tortuosity
+
+            # Reset for backward direction
+            cumulative_distance = 0.0  
+
+            # Iterate backward
+            for i in range(index - 1, -1, -1):  # Iterate to the first row (index 0)
+                prev_row = trk_df.iloc[valid_rows[0]]  # First row in valid list
+                curr_row = trk_df.iloc[i]
+
+                step_distance = ((curr_row.x - prev_row.x) ** 2 +
+                                (curr_row.y - prev_row.y) ** 2 +
+                                (curr_row.z - prev_row.z) ** 2) ** 0.5
+
+                if cumulative_distance + step_distance > Tortuosity_dist:
+                    break
+
+                cumulative_distance += step_distance
+                valid_rows.insert(0, i)  # Add at the beginning to maintain order
+
+            # Select only the valid rows
+            temp_df = trk_df.loc[valid_rows]
 
             point1 = temp_df.iloc[0]
             point2 = temp_df.iloc[-1]
@@ -1029,6 +1060,7 @@ def CalcTortuosity(df_angles):
             if (segment_length == 0):
                 segment_length = 1
 
+            # Tortuosity
             # Get the diff between each row
             cum_distance = 0
             for i in range(1, len(temp_df)):
@@ -1037,61 +1069,18 @@ def CalcTortuosity(df_angles):
                 curr_point = temp_df.iloc[i][['x', 'y', 'z']].to_numpy()
                 cum_distance+=euclidean_distance(curr_point,prev_point)
 
-            Tortuosity.append(cum_distance/segment_length)
-
-    df_angles["Tortuosity"] = Tortuosity
-
-    return df_angles
-
-# ---------------------------------------------------------------------------------------------------
-# Function to calculate perpendicular distances from SVD decomp of a set of points
-# used in Squiglicity Calculation
-def point_to_line_distance(P, A, D):
-    return np.abs(np.linalg.norm(np.cross(P - A, D)) / np.linalg.norm(D))
-# ---------------------------------------------------------------------------------------------------
-# Calculate the squiglicity and add it to the dataframe
-# defined as the sum of the normal distances to the best
-# straight line fit to the nodes divided by the straight line distance
-def CalcSquiglicity(df_angles):
-
-    df_angles["Squiglicity"] = 1.0
-
-    Squiglicity = []
-
-    window = 10
-
-    for trkID in df_angles.trkID.unique():
-
-        # Get the track
-        trk_df = df_angles[df_angles.trkID == trkID]
-
-        # Try to dynamically calculate the window size by splitting into 100 pieces
-        window = int(len(trk_df)/100 + 1)
-        if window < 5:
-            window = 5
-
-        # Loop over the nodes in the track
-        for index in range(len(trk_df)):
-
-            start = max(0, index - window)  # Prevent going below index 0
-            end = min(len(trk_df), index + window + 1)  # Prevent exceeding last index
-            
-            temp_df = trk_df.iloc[start:end]
-
-            point1 = temp_df.iloc[0]
-            point2 = temp_df.iloc[-1]
-            segment_length = calculate_distance(point1, point2)
-
-            # Avoids division by zero
-            if (segment_length == 0):
-                segment_length = 1
+            temp_tortuoisty = cum_distance/segment_length
+            if (temp_tortuoisty) == 0:
+                temp_tortuoisty = 1.0
+            Tortuosity.append(temp_tortuoisty)
 
 
+            # Squiglicity
             points = temp_df[['x', 'y', 'z']].values # Get the points
             
             # Step 1: Compute centroid (a point on the best-fit line)
             A = np.mean(points, axis=0)
-           
+            
             # Step 2: Compute best-fit direction vector using SVD
             U, S, Vt = np.linalg.svd(points - A)
             D = Vt[0]  # First right-singular vector (best-fit direction)
@@ -1103,10 +1092,16 @@ def CalcSquiglicity(df_angles):
 
             Squiglicity.append(cum_distance/segment_length)
 
+    df_angles["Tortuosity"] = Tortuosity
     df_angles["Squiglicity"] = Squiglicity
 
     return df_angles
 
+# ---------------------------------------------------------------------------------------------------
+# Function to calculate perpendicular distances from SVD decomp of a set of points
+# used in Squiglicity Calculation
+def point_to_line_distance(P, A, D):
+    return np.abs(np.linalg.norm(np.cross(P - A, D)) / np.linalg.norm(D))
 # ---------------------------------------------------------------------------------------------------
 # Function to return the blob with the biggest energy
 # will swap if blob1 and blob2 are the otherway round
@@ -1440,12 +1435,13 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
 #            which will help the algorithm converge better
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf = InitializeParams(pressure, diffusion)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf, Tortuosity_dist = InitializeParams(pressure, diffusion)
     print("Diffussion smear is: ",        Diff_smear,            "mm/sqrt(cm)")
     print("Energy threshold is: ",        1000*energy_threshold, "keV")
     print("diffision scale factor is: ",  diff_scale_factor)
     print("Radius scale factor is: ",     radius_sf)
     print("Voxel scale factor is: ",      voxel_sf)
+    print("Tortuosity distance scale is:", Tortuosity_dist)
 
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
@@ -1644,8 +1640,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
             df_angles = pd.concat([df_angles, trk], ignore_index=True)
 
 
-    df_angles = CalcTortuosity(df_angles) # Add the tortuosity variable to the tracks
-    df_angles = CalcSquiglicity(df_angles) # Add the squiglicity variable to the tracks too
+    df_angles = CalcAngularVars(df_angles, Tortuosity_dist)  # Add the tortuosity and squiglicity
     print(df_angles)
     return df_angles, Tracks, connected_nodes, connection_count, pass_flag
 # ---------------------------------------------------------------------------------------------------
@@ -1682,7 +1677,7 @@ def Cluster(input_data, R):
 # ---------------------------------------------------------------------------------------------------
 def RunClustering(node_centers_df, pressure, diffusion):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf = InitializeParams(pressure, diffusion)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf, Tortuosity_dist = InitializeParams(pressure, diffusion)
 
     event_id = node_centers_df.event_id.iloc[0]
 
@@ -1932,6 +1927,7 @@ def CheckSameGroup(df, node1, node2):
 #         radius_sf - The no diffusion files have a lot of nodes so skew the median node distance.
 #                     factor helps to adjust that
 #         voxel_sf -  This scales the distance used to group hit clusters together
+#         Tortuosity_dist - this is the length scale to calculate tortuosity
 def InitializeParams(pressure, diffusion):
 
     Diff_smear        = 0.0 # mm / sqrt(cm)
@@ -1939,6 +1935,7 @@ def InitializeParams(pressure, diffusion):
     diff_scale_factor = 7
     radius_sf         = 7 
     voxel_sf          = 1.1
+    Tortuosity_dist   = 70
 
     # This is acutally 0.05 mm/sqrt diffusion not CO2 percentage
     if (diffusion == "0.05percent"):
@@ -1947,6 +1944,7 @@ def InitializeParams(pressure, diffusion):
         diff_scale_factor = 7
         radius_sf         = 7
         voxel_sf          = 2.1
+        Tortuosity_dist   = 0.02*3500/pressure
     
     elif (diffusion == "nodiff"):
         Diff_smear        = 0.1
@@ -1954,6 +1952,7 @@ def InitializeParams(pressure, diffusion):
         diff_scale_factor = 7
         radius_sf         = 7
         voxel_sf          = 2.1
+        Tortuosity_dist   = 0.02*3500/pressure
     
     elif (diffusion == "0.1percent"):
         Diff_smear        = 0.95
@@ -1961,6 +1960,7 @@ def InitializeParams(pressure, diffusion):
         diff_scale_factor = 4
         radius_sf         = 2
         voxel_sf          = 2.1
+        Tortuosity_dist   = 0.05*3500/pressure
     
     elif (diffusion == "0.25percent"):
         Diff_smear        = 0.703 
@@ -1968,6 +1968,7 @@ def InitializeParams(pressure, diffusion):
         diff_scale_factor = 4
         radius_sf         = 2
         voxel_sf          = 2.1
+        Tortuosity_dist   = 0.03*3500/pressure
     
     elif (diffusion == "0.5percent"):
         Diff_smear        = 0.507 
@@ -1975,6 +1976,7 @@ def InitializeParams(pressure, diffusion):
         diff_scale_factor = 4
         radius_sf         = 2
         voxel_sf          = 2.1
+        Tortuosity_dist   = 0.03*3500/pressure
 
     elif (diffusion == "5percent" or diffusion == "5.0percent"): # because I messed up naming conventions
 
@@ -1984,6 +1986,7 @@ def InitializeParams(pressure, diffusion):
             diff_scale_factor = 4
             radius_sf         = 2
             voxel_sf          = 2.1
+            Tortuosity_dist   = 0.03*3500/pressure
 
         elif (pressure == 5):
             Diff_smear        = 0.270
@@ -1991,6 +1994,7 @@ def InitializeParams(pressure, diffusion):
             energy_threshold  = 0.001
             radius_sf         = 2
             voxel_sf          = 2.1
+            Tortuosity_dist   = 0.1*3500/pressure
 
         elif (pressure == 10):
             Diff_smear        = 0.251
@@ -1998,19 +2002,22 @@ def InitializeParams(pressure, diffusion):
             energy_threshold  = 0.001
             radius_sf         = 2
             voxel_sf          = 2.1
+            Tortuosity_dist   = 0.1*3500/pressure
+
         elif (pressure == 15):
             Diff_smear        = 0.258
             diff_scale_factor = 5
             energy_threshold  = 0.001
             radius_sf         = 2
             voxel_sf          = 2.1
+            Tortuosity_dist   = 0.1*3500/pressure
 
         else:
             print("Error pressure not found")
     else:
         print("Error CO2 percentage not defined at 75 V/cm field")
 
-    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf
+    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf, Tortuosity_dist
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
