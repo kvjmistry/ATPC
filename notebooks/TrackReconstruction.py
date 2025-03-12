@@ -68,7 +68,7 @@ for index, event_num in enumerate(hits.event_id.unique()):
     hit = hits[hits.event_id == event_num]
 
     # These different function calls allow for different sorting if there is soeme kind of failure
-    df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 0)
+    df, Tracks, connected_nodes, connection_count, pass_flag     = RunTracking(hit, cluster, pressure, diffusion, 0)
     if (not pass_flag):
         print("Error in track reco, try resorting hits")
         df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 1)
@@ -77,8 +77,8 @@ for index, event_num in enumerate(hits.event_id.unique()):
         df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 2)
 
 
-    Track_dict[event_num] = Tracks
-    connected_nodes_dict[event_num] = connected_nodes
+    Track_dict[event_num]             = Tracks
+    connected_nodes_dict[event_num]   = connected_nodes
     connections_count_dict[event_num] = connection_count
     df_list.append(df)
     temp_meta = GetTrackdf(df, Tracks, 500/pressure, 180/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
