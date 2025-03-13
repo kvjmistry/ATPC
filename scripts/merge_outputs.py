@@ -55,7 +55,7 @@ if (mode == "ATPC_0nubb"):
 print("Total events to filter:", len(filtered_events))
 
 # ------------------------------------------------------------------------------------------
-
+counter = 0
 for i, f in enumerate(files):
     if i %50 ==0:
         print(f"{i} /", len(files))
@@ -63,7 +63,11 @@ for i, f in enumerate(files):
     df_hits = pd.read_hdf(f, "data")
     df_hits = df_hits[df_hits.event_id.isin(filtered_events)]
     if (len(df_hits) > 0):
+        counter+=len(df_hits.event_id.unique())
         dfs.append(df_hits)
+
+    if (len(filtered_events) >= counter):
+        break
 
 dfs = pd.concat(dfs)
 
