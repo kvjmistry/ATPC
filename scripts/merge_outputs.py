@@ -66,7 +66,7 @@ for i, f in enumerate(files):
         counter+=len(df_hits.event_id.unique())
         dfs.append(df_hits)
 
-    if (len(filtered_events) >= counter):
+    if (counter >= len(filtered_events)):
         break
 
 dfs = pd.concat(dfs)
