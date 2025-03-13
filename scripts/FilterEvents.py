@@ -28,6 +28,7 @@ files = sorted(glob.glob(f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/{m
 df_hits_all = []
 df_parts_all = []
 
+counter = 0
 for i, f in enumerate(files):
     if i %50 ==0:
         print(f"{i} /", len(files))
@@ -36,10 +37,15 @@ for i, f in enumerate(files):
     df_parts = pd.read_hdf(f, "MC/particles")
     df_hits  = df_hits[df_hits.event_id.isin(filtered_events)]
     df_parts = df_parts[df_parts.event_id.isin(filtered_events)]
+    counter+=len(df_hits.event_id.unique())
     
     if (len(df_hits) > 0):
         df_hits_all.append(df_hits)
         df_parts_all.append(df_parts)
+
+    # If we got all the events already then we can stop here!
+    if (counter >= len(filtered_events)):
+        break
 
 df_hits_all  = pd.concat(df_hits_all)
 df_parts_all = pd.concat(df_parts_all)
