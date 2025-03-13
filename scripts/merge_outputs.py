@@ -5,7 +5,7 @@ import sys
 
 # Example
 
-# python3 merge_outputs ATPC_Bi 1bar 5percent
+# python3 merge_outputs.py ATPC_Bi 1bar 5percent
 
 
 mode=sys.argv[1]
