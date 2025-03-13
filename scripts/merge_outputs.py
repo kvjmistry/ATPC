@@ -123,6 +123,8 @@ for index, f in enumerate(files):
         if (counter >= len(filtered_events)):
             break
 
+print("Tot saved events:", counter)
+
 with open(f"{file_out}_trackreco.pkl", 'wb') as pickle_file:
     pickle.dump(Tracks, pickle_file)
     pickle.dump(connections, pickle_file)
