@@ -91,6 +91,7 @@ connection_counts = []
 
 files = sorted(glob.glob(f"{file_path}/pkl/*.pkl"))
 
+counter = 0
 for index, f in enumerate(files):
 
     if index %50 ==0:
@@ -107,6 +108,7 @@ for index, f in enumerate(files):
         track_data = {k: v for k, v in track_data.items() if k in filtered_events}
         conn_data = {k: v for k, v in conn_data.items() if k in filtered_events}
         conn_count_data = {k: v for k, v in conn_count_data.items() if k in filtered_events}
+        counter+=len(track_data)
 
         # Initialize or update dictionaries
         if index == 0:
@@ -117,6 +119,9 @@ for index, f in enumerate(files):
             Tracks.update(track_data)
             connections.update(conn_data)
             connection_counts.update(conn_count_data)
+
+        if (counter >= len(filtered_events)):
+            break
 
 with open(f"{file_out}_trackreco.pkl", 'wb') as pickle_file:
     pickle.dump(Tracks, pickle_file)
