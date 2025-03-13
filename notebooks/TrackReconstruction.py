@@ -76,6 +76,9 @@ for index, event_num in enumerate(hits.event_id.unique()):
         print("Error in track reco, try resorting hits")
         df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 2)
 
+    if (not pass_flag):
+        print("Track still failed, skipping,...")
+        continue
 
     Track_dict[event_num]             = Tracks
     connected_nodes_dict[event_num]   = connected_nodes

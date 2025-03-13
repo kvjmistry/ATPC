@@ -485,6 +485,10 @@ def GetNodePath(graph_, start_node, forward_node):
 
     while(True):
 
+        if (query in path):
+            print("Error the path has looped, breaking,...")
+            return path
+
         # Add the new node to the total path
         path.append(query)
         
@@ -1967,7 +1971,7 @@ def InitializeParams(pressure, diffusion):
         Diff_smear        = 0.95
         energy_threshold  = 0.0004
         diff_scale_factor = 4
-        radius_sf         = 2
+        radius_sf         = 7
         voxel_sf          = 2.1
         Tortuosity_dist   = 0.05*3500/pressure
     
@@ -1975,7 +1979,7 @@ def InitializeParams(pressure, diffusion):
         Diff_smear        = 0.703 
         energy_threshold  = 0.0004
         diff_scale_factor = 4
-        radius_sf         = 2
+        radius_sf         = 7
         voxel_sf          = 2.1
         Tortuosity_dist   = 0.03*3500/pressure
     
@@ -1983,7 +1987,7 @@ def InitializeParams(pressure, diffusion):
         Diff_smear        = 0.507 
         energy_threshold  = 0.0004
         diff_scale_factor = 4
-        radius_sf         = 2
+        radius_sf         = 7
         voxel_sf          = 2.1
         Tortuosity_dist   = 0.03*3500/pressure
 
@@ -1993,7 +1997,7 @@ def InitializeParams(pressure, diffusion):
             Diff_smear        = 0.290 
             energy_threshold  = 0.0004
             diff_scale_factor = 4
-            radius_sf         = 2
+            radius_sf         = 7
             voxel_sf          = 2.1
             Tortuosity_dist   = 0.03*3500/pressure
 
@@ -2001,7 +2005,7 @@ def InitializeParams(pressure, diffusion):
             Diff_smear        = 0.270
             diff_scale_factor = 5
             energy_threshold  = 0.001
-            radius_sf         = 2
+            radius_sf         = 7
             voxel_sf          = 2.1
             Tortuosity_dist   = 0.1*3500/pressure
 
@@ -2009,7 +2013,7 @@ def InitializeParams(pressure, diffusion):
             Diff_smear        = 0.251
             diff_scale_factor = 5
             energy_threshold  = 0.001
-            radius_sf         = 2
+            radius_sf         = 7
             voxel_sf          = 2.1
             Tortuosity_dist   = 0.1*3500/pressure
 
@@ -2017,7 +2021,7 @@ def InitializeParams(pressure, diffusion):
             Diff_smear        = 0.258
             diff_scale_factor = 5
             energy_threshold  = 0.001
-            radius_sf         = 2
+            radius_sf         = 7
             voxel_sf          = 2.1
             Tortuosity_dist   = 0.1*3500/pressure
 
