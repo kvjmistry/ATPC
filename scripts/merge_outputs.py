@@ -4,10 +4,17 @@ import pickle
 import sys
 
 # Example
-# python3 merge_outputs.py /ospool/ap40/data/krishan.mistry/job/ATPC/trackreco/ATPC_0nubb/1bar/nodiff/ /home/krishan.mistry/code/ATPC/merged/ATPC_0nubb_1bar_nodiff
 
-file_path = sys.argv[1]
-file_out = sys.argv[2]
+# python3 merge_outputs ATPC_Bi 1bar 5percent
+
+
+mode=sys.argv[1]
+pressure=sys.argv[2]
+diffusion=sys.argv[3]
+
+file_path = f"/ospool/ap40/data/krishan.mistry/job/ATPC/trackreco/{mode}/{pressure}/{diffusion}/"
+file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{diffusion}"
+
 
 files = sorted(glob.glob(f"{file_path}/reco/*.h5"))
 
@@ -40,6 +47,12 @@ cuts = (df_primary.blob2R > 0.4) & \
 
 df_primary = df_primary[ cuts ]
 filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))].event_id.unique()
+
+# Only filter 100 events for signal
+if (mode == "ATPC_0nubb"):
+    filtered_events = filtered_events[0:100]
+
+print("Total events to filter:", len(filtered_events))
 
 # ------------------------------------------------------------------------------------------
 
