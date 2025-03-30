@@ -5,7 +5,6 @@
 #SBATCH -t 0-1:00 # Maximum execution time (D-HH:MM)
 #SBATCH -o log/NEXUSTRUE_%A_%a.out # Standard output
 #SBATCH -e log/NEXUSTRUE_%A_%a.err # Standard error
-#SBATCH --array=1-3000
 
 start=`date +%s`
 
