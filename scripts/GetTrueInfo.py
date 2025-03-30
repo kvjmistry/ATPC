@@ -181,16 +181,15 @@ parts = pd.read_hdf(infile, "MC/particles")
 hits  = pd.read_hdf(infile, "MC/hits")
 
 if (mode == "0nubb"):
-    df = GetTrueInfoSignal(parts, hits, p)
+    df = GetTrueInfoSignal(parts, hits, pressure)
 else:
-    df = GetTrueInfoBackground(parts, hits, p)
+    df = GetTrueInfoBackground(parts, hits, pressure)
 
-df["pressure"] = p
+df["pressure"] = pressure
 
 dfs.append(df)
 
 dfs = pd.concat(dfs)
-
 
 with pd.HDFStore(f"{file_out}", mode='w', complevel=5, complib='zlib') as store:
     store.put('trueinfo', dfs, format='table')
