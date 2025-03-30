@@ -170,7 +170,7 @@ for p in pressures:
 
     print("On Pressure:", p, "bar")
 
-    files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/ATPC_{mode}/{pressure}bar/nexus/*.h5"))
+    files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/ATPC_{mode}/{p}bar/nexus/*.h5"))
 
     for i, infile in enumerate(files):
 
