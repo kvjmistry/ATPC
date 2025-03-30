@@ -168,9 +168,11 @@ dfs = []
 
 for p in pressures:
 
+    print("On Pressure:", p, "bar")
+
     files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/ATPC_{mode}/{pressure}bar/nexus/*.h5"))
 
-    for i, f in enumerate(files):
+    for i, infile in enumerate(files):
 
         if i %50 ==0:
             print(f"{i} /", len(files))
