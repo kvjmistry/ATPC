@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import glob
+import sys
+import os
 
 # Function gets the energy based on a sphere of radius radius_threshold
 def GetBlobEnergyRadius(parts_elec, hits_all, end, radius_threshold):
@@ -161,38 +163,34 @@ def GetTrueInfoBackground(parts, hits, pressure):
 
 # load in the particles table
 
-pressures = [1, 5, 10, 15]
-mode = "0nubb"
+pressure = sys.argv[1]
+mode     = sys.argv[2]
+infile   = sys.argv[3]
+file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
+file_out = f"{file_out_seg}_properties.h5"
+
+print("Mode:", mode)
+print("infile:", infile)
+print("output_file:", file_out)
 
 dfs = []
 
-for p in pressures:
+print("Pressure:", pressure, "bar")
 
-    print("On Pressure:", p, "bar")
+parts = pd.read_hdf(infile, "MC/particles")
+hits  = pd.read_hdf(infile, "MC/hits")
 
-    files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/ATPC_{mode}/{p}bar/nexus/*.h5"))
+if (mode == "0nubb"):
+    df = GetTrueInfoSignal(parts, hits, p)
+else:
+    df = GetTrueInfoBackground(parts, hits, p)
 
-    for i, infile in enumerate(files):
+df["pressure"] = p
 
-        if i %50 ==0:
-            print(f"{i} /", len(files))
-
-        parts = pd.read_hdf(infile, "MC/particles")
-        hits  = pd.read_hdf(infile, "MC/hits")
-
-        if (mode == "0nubb"):
-            df = GetTrueInfoSignal(parts, hits, p)
-        else:
-            df = GetTrueInfoBackground(parts, hits, p)
-        
-        df["pressure"] = p
-
-        dfs.append(df)
+dfs.append(df)
 
 dfs = pd.concat(dfs)
 
 
-file_out = f"nexus_true_pressures_{mode}.h5"
-
-with pd.HDFStore(f"{file_out}.h5", mode='w', complevel=5, complib='zlib') as store:
+with pd.HDFStore(f"{file_out}", mode='w', complevel=5, complib='zlib') as store:
     store.put('trueinfo', dfs, format='table')
