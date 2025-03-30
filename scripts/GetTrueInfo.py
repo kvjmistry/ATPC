@@ -170,7 +170,10 @@ for p in pressures:
 
     files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/ATPC_{mode}/{pressure}bar/nexus/*.h5"))
 
-    for infile in files:
+    for i, f in enumerate(files):
+
+        if i %50 ==0:
+            print(f"{i} /", len(files))
 
         parts = pd.read_hdf(infile, "MC/particles")
         hits  = pd.read_hdf(infile, "MC/hits")
