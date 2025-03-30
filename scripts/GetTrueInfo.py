@@ -59,7 +59,7 @@ def CalcTrackExtent(hits):
 
 
 
-def GetTrueInfoSignal(parts, hits):
+def GetTrueInfoSignal(parts, hits, pressure):
 
     lengths  = []
     energies = []
@@ -106,7 +106,7 @@ def GetTrueInfoSignal(parts, hits):
     return pd.DataFrame({ "event_id": event_ids, "TrackLength" : lengths, "TrackEnergy" : energies, "Blob1E" : blob1_Es, "Blob2E" :blob2_Es, "TrackDiam" :TrackDiam, "CreatorProc" :creator_procs})
 
 
-def GetTrueInfoBackground(parts, hits):
+def GetTrueInfoBackground(parts, hits, pressure):
 
     lengths  = []
     energies = []
@@ -181,9 +181,9 @@ for p in pressures:
         hits  = pd.read_hdf(infile, "MC/hits")
 
         if (mode == "0nubb"):
-            df = GetTrueInfoSignal(parts, hits)
+            df = GetTrueInfoSignal(parts, hits, p)
         else:
-            df = GetTrueInfoBackground(parts, hits)
+            df = GetTrueInfoBackground(parts, hits, p)
         
         df["pressure"] = p
 
