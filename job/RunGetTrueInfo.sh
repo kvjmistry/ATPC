@@ -8,7 +8,11 @@
 
 start=`date +%s`
 
-echo "The TASK ID IS ${SLURM_ARRAY_TASK_ID}"
+SHIFT=$3
+echo "The SHIFT is $SHIFT"
+
+JOBINDEX=$((SLURM_ARRAY_TASK_ID + SHIFT))
+echo "The JOBINDEX IS ${JOBINDEX}"
 
 # Setup nexus and run
 echo "Setting up IC"
@@ -20,7 +24,7 @@ MODE=$2
 mkdir -p /media/argon/HardDrive_8TB/Krishan/ATPC/NEXUSTRUE/${MODE}/${PRESSURE}bar/
 cd       /media/argon/HardDrive_8TB/Krishan/ATPC/NEXUSTRUE/${MODE}/${PRESSURE}bar/
 
-input_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" /home/argon/Projects/Krishan/ATPC/eventlists/ATPC_${MODE}_${PRESSURE}bar_nexusfiles.txt)
+input_file=$(sed -n "${JOBINDEX}p" /home/argon/Projects/Krishan/ATPC/eventlists/ATPC_${MODE}_${PRESSURE}bar_nexusfiles.txt)
 echo "Input File: $input_file"
 
 
