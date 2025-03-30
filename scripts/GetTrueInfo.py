@@ -190,3 +190,9 @@ for p in pressures:
         dfs.append(df)
 
 dfs = pd.concat(dfs)
+
+
+file_out = f"nexus_true_pressures_{mode}.h5"
+
+with pd.HDFStore(f"{file_out}.h5", mode='w', complevel=5, complib='zlib') as store:
+    store.put('trueinfo', dfs, format='table')
