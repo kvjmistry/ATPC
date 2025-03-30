@@ -12,7 +12,7 @@
 /Generator/Decay0Interface/Ba136FinalState 0
 
 ##### ACTIONS #####
-/Actions/DefaultEventAction/min_energy 2.44 MeV
+/Actions/DefaultEventAction/min_energy 2.3 MeV
 /Actions/DefaultEventAction/max_energy 2.6 MeV
 
 ## Nexus Physics List
