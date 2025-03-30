@@ -8,12 +8,14 @@
 
 start=`date +%s`
 
+echo "The TASK ID IS ${SLURM_ARRAY_TASK_ID}"
+
 # Setup nexus and run
 echo "Setting up IC"
 source /home/argon/Projects/Krishan/IC/setup_IC.sh
 
-PRESSURE=1
-MODE=0nubb
+PRESSURE=$1
+MODE=$2
 
 mkdir -p /media/argon/HardDrive_8TB/Krishan/ATPC/NEXUSTRUE/${MODE}/${PRESSURE}/
 cd       /media/argon/HardDrive_8TB/Krishan/ATPC/NEXUSTRUE/${MODE}/${PRESSURE}/
