@@ -191,5 +191,7 @@ dfs.append(df)
 
 dfs = pd.concat(dfs)
 
+print(dfs)
+
 with pd.HDFStore(f"{file_out}", mode='w', complevel=5, complib='zlib') as store:
     store.put('trueinfo', dfs, format='table')
