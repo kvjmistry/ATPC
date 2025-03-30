@@ -70,7 +70,7 @@ def GetTrueInfoSignal(parts, hits, pressure):
 
     for eid in parts.event_id.unique():
 
-        print("\n\n On event:", eid)
+        # print("\n\n On event:", eid)
 
         part_event = parts[parts.event_id == eid]
         hits_event = hits[hits.event_id == eid]
@@ -118,7 +118,7 @@ def GetTrueInfoBackground(parts, hits, pressure):
 
     for eid in parts.event_id.unique():
 
-        print("\n\n On event:", eid)
+        # print("\n\n On event:", eid)
 
         part_event = parts[parts.event_id == eid]
 
