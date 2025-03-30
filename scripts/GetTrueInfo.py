@@ -163,7 +163,7 @@ def GetTrueInfoBackground(parts, hits, pressure):
 
 # load in the particles table
 
-pressure = sys.argv[1]
+pressure = int(sys.argv[1])
 mode     = sys.argv[2]
 infile   = sys.argv[3]
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
