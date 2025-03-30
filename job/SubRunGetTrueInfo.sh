@@ -14,6 +14,10 @@ echo "Number of extra lines to process $EXTRALINES"
 sbatch --array=1-1000 RunGetTrueInfo.sh $PRESSURE $MODE 0
 sbatch --array=1-1000 RunGetTrueInfo.sh $PRESSURE $MODE 1000
 sbatch --array=1-1000 RunGetTrueInfo.sh $PRESSURE $MODE 2000
-sbatch --array=1-"$EXTRALINES" RunGetTrueInfo.sh $PRESSURE $MODE 3000
+
+# Only submit if we have more than 3k files
+if (( EXTRALINES > 0 )); then
+    sbatch --array=1-"$EXTRALINES" RunGetTrueInfo.sh $PRESSURE $MODE 3000
+fi
 
 
