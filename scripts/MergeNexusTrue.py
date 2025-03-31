@@ -26,7 +26,7 @@ for m in modes:
 
     print(dfs)
 
-    with pd.HDFStore(f"NEXUS_True_ATPC_{m}", mode='w', complevel=5, complib='zlib') as store:
+    with pd.HDFStore(f"merged/NEXUS_True_ATPC_{m}.h5", mode='w', complevel=5, complib='zlib') as store:
         store.put('trueinfo', dfs, format='table')
 
 

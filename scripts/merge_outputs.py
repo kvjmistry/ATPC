@@ -52,6 +52,9 @@ filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))]
 if (mode == "ATPC_0nubb"):
     filtered_events = filtered_events[0:100]
 
+if (len(filtered_events) ==0):
+    filtered_events = df_meta.event_id.unique()[0:100]
+
 print("Total events to filter:", len(filtered_events))
 
 # ------------------------------------------------------------------------------------------

@@ -4,6 +4,7 @@
 jobname=ATPC_0nubb
 #jobname=ATPC_Tl
 # jobname=ATPC_Bi
+jobname=ATPC_single
 
 PRESSURE=1bar
 #PRESSURE=5bar
