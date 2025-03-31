@@ -16,7 +16,7 @@ for m in modes:
     for p in pressures:
         print("On Pressure:", p)
 
-        files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/NEXUSTRUE/${m}/${p}bar/*.h5"))
+        files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/NEXUSTRUE/{m}/{p}bar/*.h5"))
 
         for f in files:
             df = pd.read_hdf(f, "trueinfo")
