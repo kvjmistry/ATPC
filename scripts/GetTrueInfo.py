@@ -30,18 +30,32 @@ def SortBlobs(blob1_E, blob2_E):
         return blob2_E, blob1_E
 
 
-def GetPrimaryKE(parts, hits, particle_id):
+# Get the primary track kinetic energy and all the daughters if they are electrons
+def GetPrimaryKE(parts, hits, particle_id, delta_thresh):
 
-    primary_E = hits[hits.particle_id == particle_id].energy.sum()
+    # Get the energy of the parent particle
+    tot_E = hits[hits.particle_id == particle_id].energy.sum()
 
-    daugter_pids = parts[ (parts.mother_id == particle_id) & (parts.kin_energy < 0.1)].particle_id.unique()
-    # display(parts)
+    # Get all the daughters of the particle
+    daughter_pids = parts[ (parts.mother_id == particle_id) & (parts.kin_energy <= delta_thresh) & (parts.particle_name == "e-")].particle_id.unique()
 
-    for daughter in daugter_pids:
-        daugher_E = hits[hits.particle_id == daughter].energy.sum()
-        primary_E = primary_E+daugher_E
+    # Loop over daughters
+    for daughter in daughter_pids:
 
-    return primary_E
+        # Get any particles who have a mother that is the daughter and is in threshold
+        daughter_part = parts[ (parts.mother_id == daughter) & (parts.kin_energy <= delta_thresh) & (parts.particle_name == "e-")].particle_id.unique()
+
+        # If there are daughers to the daughter then cycle
+        if (len(daughter_part) > 0):
+            daughter_E = GetPrimaryKE(parts, hits, daughter, delta_thresh)
+        # Otherwise we can add the energy as is
+        else:
+            daughter_E = hits[hits.particle_id == daughter].energy.sum()
+        
+        tot_E = tot_E+daughter_E
+
+    return tot_E
+
 
 
 def CalcTrackExtent(hits):
@@ -65,6 +79,9 @@ def GetTrueInfoSignal(parts, hits, pressure):
 
     lengths  = []
     energies = []
+    energies1 = [] # 0.1 MeV Delta thresh
+    energies2 = [] # 0.2 MeV Delta thresh
+    energies3 = [] # 0.5 MeV Delta thresh
     blob1_Es = []
     blob2_Es = []
     creator_procs = []
@@ -84,7 +101,10 @@ def GetTrueInfoSignal(parts, hits, pressure):
 
         length = electron1.length.iloc[0]     + electron2.length.iloc[0] # total length
 
-        tot_KE = GetPrimaryKE(part_event, hits_event, 1) +  GetPrimaryKE(part_event, hits_event, 2)
+        tot_KE  = GetPrimaryKE(part_event, hits_event, 1, 2.6) +  GetPrimaryKE(part_event, hits_event, 2, 2.6)
+        tot_KE1 = GetPrimaryKE(part_event, hits_event, 1, 0.1) +  GetPrimaryKE(part_event, hits_event, 2, 0.1)
+        tot_KE2 = GetPrimaryKE(part_event, hits_event, 1, 0.2) +  GetPrimaryKE(part_event, hits_event, 2, 0.2)
+        tot_KE3 = GetPrimaryKE(part_event, hits_event, 1, 0.5) +  GetPrimaryKE(part_event, hits_event, 2, 0.5)
         # tot_KE = electron1_E + electron2_E # total energy
 
         blob1_E =  GetBlobEnergyRadius(electron1, hits_event, "end", 180/pressure)
@@ -98,6 +118,9 @@ def GetTrueInfoSignal(parts, hits, pressure):
 
         lengths.append(length)
         energies.append(tot_KE)
+        energies1.append(tot_KE1)
+        energies2.append(tot_KE2)
+        energies3.append(tot_KE3)
         blob1_Es.append(blob1_E)
         blob2_Es.append(blob2_E)
         creator_procs.append("DBD")
@@ -105,13 +128,16 @@ def GetTrueInfoSignal(parts, hits, pressure):
 
     TrackDiam = CalcTrackExtent(hits[ (hits.particle_id == 1) | (hits.particle_id == 2) ] )
 
-    return pd.DataFrame({ "event_id": event_ids, "TrackLength" : lengths, "TrackEnergy" : energies, "Blob1E" : blob1_Es, "Blob2E" :blob2_Es, "TrackDiam" :TrackDiam, "CreatorProc" :creator_procs})
+    return pd.DataFrame({ "event_id": event_ids, "TrackLength" : lengths, "TrackEnergy" : energies, "TrackEnergy1" : energies1,  "TrackEnergy2" : energies2, "TrackEnergy3" : energies3,  "Blob1E" : blob1_Es, "Blob2E" :blob2_Es, "TrackDiam" :TrackDiam, "CreatorProc" :creator_procs})
 
 
 def GetTrueInfoBackground(parts, hits, pressure):
 
     lengths  = []
     energies = []
+    energies1 = [] # 0.1 MeV Delta thresh
+    energies2 = [] # 0.2 MeV Delta thresh
+    energies3 = [] # 0.5 MeV Delta thresh
     blob1_Es = []
     blob2_Es = []
     creator_procs = []
@@ -134,7 +160,10 @@ def GetTrueInfoBackground(parts, hits, pressure):
         creator_proc = electron1.creator_proc.iloc[0]
 
 
-        tot_KE = GetPrimaryKE(part_event, hits_event, primary_part_id)
+        tot_KE  = GetPrimaryKE(part_event, hits_event, primary_part_id, 2.6)
+        tot_KE1 = GetPrimaryKE(part_event, hits_event, primary_part_id, 0.1)
+        tot_KE2 = GetPrimaryKE(part_event, hits_event, primary_part_id, 0.2)
+        tot_KE3 = GetPrimaryKE(part_event, hits_event, primary_part_id, 0.5)
         # tot_KE = hits_event[hits_event.particle_id == primary_part_id].energy.sum()
 
         length = electron1.length.iloc[0] # total length
@@ -150,6 +179,9 @@ def GetTrueInfoBackground(parts, hits, pressure):
 
         lengths.append(length)
         energies.append(tot_KE)
+        energies1.append(tot_KE1)
+        energies2.append(tot_KE2)
+        energies3.append(tot_KE3)
         blob1_Es.append(blob1_E)
         blob2_Es.append(blob2_E)
         creator_procs.append(creator_proc)
@@ -157,7 +189,7 @@ def GetTrueInfoBackground(parts, hits, pressure):
 
     TrackDiam = CalcTrackExtent(hits[ hits.particle_id == primary_part_id])
 
-    return pd.DataFrame({ "event_id": event_ids, "TrackLength" : lengths, "TrackEnergy" : energies, "Blob1E" : blob1_Es, "Blob2E" :blob2_Es, "TrackDiam" :TrackDiam, "CreatorProc" :creator_procs})
+    return pd.DataFrame({ "event_id": event_ids, "TrackLength" : lengths, "TrackEnergy" : energies, "TrackEnergy1" : energies1,  "TrackEnergy2" : energies2, "TrackEnergy3" : energies3, "Blob1E" : blob1_Es, "Blob2E" :blob2_Es, "TrackDiam" :TrackDiam, "CreatorProc" :creator_procs})
 
 
 
