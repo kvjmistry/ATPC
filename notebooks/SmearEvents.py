@@ -35,6 +35,9 @@ pressure =  float(sys.argv[5])
 if (percentage == 0.05):
     DL = 0.05 # mm / sqrt(cm)
     DT = 0.05 # mm / sqrt(cm)
+elif (percentage == 0.0):
+    DL = 0.82 # mm / sqrt(cm)
+    DT = 2.61 # mm / sqrt(cm)
 elif (percentage == 0.1):
     DL = 0.940 # mm / sqrt(cm)
     DT = 0.974 # mm / sqrt(cm)
@@ -58,6 +61,9 @@ elif (percentage == 5):
     elif (pressure == 15.0):
         DL = 0.258
         DT = 0.255
+    elif (pressure == 25.0):
+        DL = 0.253
+        DT = 0.251
     else:
         print("Error pressure not found")
 else:
