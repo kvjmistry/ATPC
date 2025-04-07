@@ -138,6 +138,13 @@ def generate_random(row):
     # Apply diffusion if scaling is nonzero
     if diff_scaling != 0.0:
         z = new_r[2]  # mm
+        
+        # If we smeared to something negative then apply no diffusion
+        # This should only be an edge effted
+        if (z < 0):
+            print("Negative z value! This should be uncommon...")
+            z = 0
+        
         sigma_DL = diff_scaling * DL * np.sqrt(z / 10.0)  # mm  
         sigma_DT = diff_scaling * DT * np.sqrt(z / 10.0)  # mm  
 

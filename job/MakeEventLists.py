@@ -27,7 +27,7 @@ for m in modes:
         if (p != "1bar"):
             diffs = ["5percent", "nodiff"]
         else:
-            diffs = ["0.05percent", "0.1percent", "0.25percent", "0.5percent", "5percent", "nodiff"]
+            diffs = ["0.1percent", "0.25percent", "5percent", "nodiff"]
         
         for d in diffs:
             MakeList(m, p, d)
