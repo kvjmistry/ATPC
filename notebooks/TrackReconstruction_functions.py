@@ -1991,6 +1991,14 @@ def InitializeParams(pressure, diffusion):
         voxel_sf          = 2.1
         Tortuosity_dist   = 0.03*3500/pressure
 
+    elif (diffusion == "0.0percent"):
+        Diff_smear        = 2.6
+        energy_threshold  = 0.0004
+        diff_scale_factor = 4
+        radius_sf         = 7
+        voxel_sf          = 2.1
+        Tortuosity_dist   = 0.05*3500/pressure
+
     elif (diffusion == "5percent" or diffusion == "5.0percent"): # because I messed up naming conventions
 
         if (pressure == 1):
@@ -2018,6 +2026,14 @@ def InitializeParams(pressure, diffusion):
             Tortuosity_dist   = 0.1*3500/pressure
 
         elif (pressure == 15):
+            Diff_smear        = 0.258
+            diff_scale_factor = 5
+            energy_threshold  = 0.001
+            radius_sf         = 7
+            voxel_sf          = 2.1
+            Tortuosity_dist   = 0.1*3500/pressure
+
+        elif (pressure == 25):
             Diff_smear        = 0.258
             diff_scale_factor = 5
             energy_threshold  = 0.001
