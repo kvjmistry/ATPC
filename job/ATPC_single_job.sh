@@ -48,17 +48,21 @@ echo "Running NEXUS"
 
 if [ "$MODE" == "CO2" ]; then
     # 1 bar
+    N_EVENTS=5000
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 1. bar#" ${CONFIG}
     sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_single_1bar#" ${CONFIG}
+    sed -i "s#.*DefaultEventAction/min_energy.*#/Actions/DefaultEventAction/min_energy 2.454 MeV#" ${CONFIG}
+    sed -i "s#.*DefaultEventAction/max_energy.*#/Actions/DefaultEventAction/max_energy 2.471 MeV#" ${CONFIG}
+
     nexus -n $N_EVENTS ${INIT}
     python3 CompressEvents.py ${JOBNAME}_1bar ${JOBNAME}_1bar # also filters 60 events
     # <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
-    # python3 ${SCRIPT} ${JOBNAME}_1bar 0 0.05  5 1.0 ${JOBID} # Just smearing 
-    # python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.05  5 1.0 ${JOBID} # close to zero diffusion
-    # python3 ${SCRIPT} ${JOBNAME}_1bar 1  0.1 20 1.0 ${JOBID} # 0.1 % CO2
-    # python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.25 15 1.0 ${JOBID} # 0.25 % CO2
-    # python3 ${SCRIPT} ${JOBNAME}_1bar 1  0.5 12 1.0 ${JOBID} # 0.5 % CO2
-    # python3 ${SCRIPT} ${JOBNAME}_1bar 1    5 10 1.0 ${JOBID} # 5.0 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 0 0.05  5 1.0 ${JOBID} # Just smearing 
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.05  5 1.0 ${JOBID} # close to zero diffusion
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1  0.1 20 1.0 ${JOBID} # 0.1 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1 0.25 15 1.0 ${JOBID} # 0.25 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1  0.5 12 1.0 ${JOBID} # 0.5 % CO2
+    python3 ${SCRIPT} ${JOBNAME}_1bar 1    5 10 1.0 ${JOBID} # 5.0 % CO2
     python3 ${SCRIPT} ${JOBNAME}_1bar 1    0 40 1.0 ${JOBID}   # Pure Xe
     mv ${JOBNAME}_1bar.h5 ${JOBNAME}_1bar_nexus_${JOBID}.h5
 
