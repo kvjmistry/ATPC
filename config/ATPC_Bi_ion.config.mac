@@ -32,4 +32,4 @@
 #/nexus/persistency/eventType background
 /nexus/random_seed            9800
 /nexus/persistency/start_id   9800
-/nexus/persistency/output_file ATPC_Bi
+/nexus/persistency/output_file ATPC_Bi_ion

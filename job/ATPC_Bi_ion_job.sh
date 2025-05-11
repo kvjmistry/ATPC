@@ -38,7 +38,7 @@ echo "The seed number is: ${SEED}"
 sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
 sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
 sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
-sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_15bar#" ${CONFIG}
+sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion#" ${CONFIG}
 sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.432 m#" ${CONFIG}
 
 cat ${INIT}
