@@ -45,7 +45,7 @@ cat ${INIT}
 cat ${CONFIG}
 
 nexus -n $N_EVENTS ${INIT}
-python3 CompressEvents.py ${JOBNAME} ${JOBID}
+python3 ${SCRIPT} ${JOBNAME} ${JOBID}
 
 ls -ltrh
 
