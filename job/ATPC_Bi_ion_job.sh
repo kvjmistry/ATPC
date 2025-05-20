@@ -31,21 +31,100 @@ INIT=${JOBNAME}.init.mac
 # NEXUS
 echo "Running NEXUS" 
 
-N_EVENTS=1000000
-echo "N_EVENTS: ${N_EVENTS}"
-SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
-echo "The seed number is: ${SEED}" 
-sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
-sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
-sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
-sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion#" ${CONFIG}
-sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.432 m#" ${CONFIG}
+if [ "$MODE" == "CO2" ]; then
+    # 1 bar
 
-cat ${INIT}
-cat ${CONFIG}
+    N_EVENTS=100000000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 1. bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_1bar#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 6 m#" ${CONFIG}
 
-nexus -n $N_EVENTS ${INIT}
-python3 ${SCRIPT} ${JOBNAME} ${JOBID}
+    cat ${INIT}
+    cat ${CONFIG}
+
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME}_1bar ${JOBID}
+    mv ${JOBNAME}_1bar.h5 ${JOBNAME}_1bar_nexus_${JOBID}.h5
+
+else
+    # 5 bar
+    N_EVENTS=10000000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_5bar#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 3.508 m#" ${CONFIG}
+
+    cat ${INIT}
+    cat ${CONFIG}
+
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME}_5bar ${JOBID}
+    mv ${JOBNAME}_5bar.h5 ${JOBNAME}_5bar_nexus_${JOBID}.h5
+
+    # 10 bar ------------------------------------------------------------------
+    N_EVENTS=10000000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 10. bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_10bar#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.784 m#" ${CONFIG}
+
+    cat ${INIT}
+    cat ${CONFIG}
+
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME}_10bar ${JOBID}
+    mv ${JOBNAME}_10bar.h5 ${JOBNAME}_10bar_nexus_${JOBID}.h5
+
+    # 15 bar ------------------------------------------------------------------
+    N_EVENTS=10000000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_15bar#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.432 m#" ${CONFIG}
+
+    cat ${INIT}
+    cat ${CONFIG}
+
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME}_15bar ${JOBID}
+    mv ${JOBNAME}_15bar.h5 ${JOBNAME}_15bar_nexus_${JOBID}.h5
+
+
+    # 25 bar ------------------------------------------------------------------
+    N_EVENTS=10000000
+    echo "N_EVENTS: ${N_EVENTS}"
+    SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
+    echo "The seed number is: ${SEED}" 
+    sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
+    sed -i "s#.*start_id.*#/nexus/persistency/start_id ${SEED}#" ${CONFIG}
+    sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 25. bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_25bar#" ${CONFIG}
+    sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.052 m#" ${CONFIG}
+
+    cat ${INIT}
+    cat ${CONFIG}
+
+    nexus -n $N_EVENTS ${INIT}
+    python3 ${SCRIPT} ${JOBNAME}_25bar ${JOBID}
+    mv ${JOBNAME}_25bar.h5 ${JOBNAME}_25bar_nexus_${JOBID}.h5
+fi
 
 ls -ltrh
 

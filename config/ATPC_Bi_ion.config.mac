@@ -22,10 +22,10 @@
 /PhysicsList/Nexus/electroluminescence  false
 
 #GEOMETRY
-/Geometry/ATPC/gas_pressure 15. bar
-/Geometry/ATPC/cube_size 2.432 m
-/Geometry/ATPC/chamber_thickn 2 cm
-/Geometry/ATPC/max_step_size 50 mm
+/Geometry/ATPC/gas_pressure 1. bar
+/Geometry/ATPC/cube_size 6 m
+/Geometry/ATPC/chamber_thickn 12 cm
+/Geometry/ATPC/max_step_size 1 mm
 /Geometry/ATPC/genvol Cu
 
 # PERSISTENCY

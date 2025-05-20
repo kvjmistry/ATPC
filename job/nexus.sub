@@ -12,10 +12,10 @@ CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
 
 # script=SmearEvents.py
-script=GetSummedEnergy.py
+script=GetGammaInfo.py
 
-# mode=CO2
-mode=Pressure
+mode=CO2
+# mode=Pressure
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
@@ -41,7 +41,8 @@ transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$
 transfer_output_remaps = "$(jobname)_$(Process).h5 = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).h5"
 
 # Specify Job duration category as "Medium" (expected runtime <10 hr) or "Long" (expected runtime <20 hr). 
-+JobDurationCategory = "Medium"
+#+JobDurationCategory = "Medium"
++JobDurationCategory = "Long"
 
 # Use a singularity image to submit the file. The image should be stored in the protected area of your workspace
 #+SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC5.sif"
@@ -59,4 +60,4 @@ request_disk = 5GB
 max_idle = 2000
 
 # Tell HTCondor the number of instances to run:
-queue 3000
+queue 5000
