@@ -46,7 +46,7 @@ transfer_output_remaps = "$(jobname)_$(Process).h5 = $(OSDF_LOCATION)/job/ATPC/P
 
 # Use a singularity image to submit the file. The image should be stored in the protected area of your workspace
 #+SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC5.sif"
-+SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC6.sif"
++SingularityImage = "$(OSDF_LOCATION)/containers/docker_nexus_ATPC7.sif"
 
 
 # Tell HTCondor requirements (e.g., operating system) your job needs, 
