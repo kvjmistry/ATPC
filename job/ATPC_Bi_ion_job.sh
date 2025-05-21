@@ -137,6 +137,7 @@ echo "Taring the h5 files"
 tar -cvf ATPC_Bi_ion.tar *.h5
 
 # Cleanup
+rm *.h5
 rm *.mac
 rm *.txt
 rm *.dat
