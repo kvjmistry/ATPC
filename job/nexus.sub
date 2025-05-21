@@ -14,8 +14,8 @@ INIT=$(jobname).init.mac
 # script=SmearEvents.py
 script=GetGammaInfo.py
 
-mode=CO2
-# mode=Pressure
+# mode=CO2
+mode=Pressure
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
@@ -38,7 +38,7 @@ output = jobs/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/scripts/$(script),$(HOME_LOCATION)/notebooks/CompressEvents.py
 
 # Transfer output files
-transfer_output_remaps = "$(jobname)_$(Process).h5 = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).h5"
+transfer_output_remaps = "$(jobname)_$(Process).tar = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).tar"
 
 # Specify Job duration category as "Medium" (expected runtime <10 hr) or "Long" (expected runtime <20 hr). 
 #+JobDurationCategory = "Medium"
