@@ -35,7 +35,7 @@ output = jobs/$(jobname)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 
 # Transfer input files
 # transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/notebooks/$(script),$(HOME_LOCATION)/notebooks/CompressEvents.py
-transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/scripts/$(script)
+transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/scripts/$(script),$(HOME_LOCATION)/notebooks/CompressEvents.py
 
 # Transfer output files
 transfer_output_remaps = "$(jobname)_$(Process).h5 = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).h5"

@@ -48,12 +48,13 @@ if [ "$MODE" == "CO2" ]; then
     cat ${CONFIG}
 
     nexus -n $N_EVENTS ${INIT}
+    python3 CompressEvents.py ${JOBNAME}_1bar ${JOBNAME}_1bar # also filters 60 events
     python3 ${SCRIPT} ${JOBNAME}_1bar ${JOBID}
     mv ${JOBNAME}_1bar.h5 ${JOBNAME}_1bar_nexus_${JOBID}.h5
 
 else
     # 5 bar
-    N_EVENTS=10000000
+    N_EVENTS=1000000
     echo "N_EVENTS: ${N_EVENTS}"
     SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
     echo "The seed number is: ${SEED}" 
@@ -67,11 +68,12 @@ else
     cat ${CONFIG}
 
     nexus -n $N_EVENTS ${INIT}
+    python3 CompressEvents.py ${JOBNAME}_5bar ${JOBNAME}_5bar # also filters 60 events
     python3 ${SCRIPT} ${JOBNAME}_5bar ${JOBID}
     mv ${JOBNAME}_5bar.h5 ${JOBNAME}_5bar_nexus_${JOBID}.h5
 
     # 10 bar ------------------------------------------------------------------
-    N_EVENTS=10000000
+    N_EVENTS=1000000
     echo "N_EVENTS: ${N_EVENTS}"
     SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
     echo "The seed number is: ${SEED}" 
@@ -85,11 +87,12 @@ else
     cat ${CONFIG}
 
     nexus -n $N_EVENTS ${INIT}
+    python3 CompressEvents.py ${JOBNAME}_10bar ${JOBNAME}_10bar # also filters 60 events
     python3 ${SCRIPT} ${JOBNAME}_10bar ${JOBID}
     mv ${JOBNAME}_10bar.h5 ${JOBNAME}_10bar_nexus_${JOBID}.h5
 
     # 15 bar ------------------------------------------------------------------
-    N_EVENTS=10000000
+    N_EVENTS=1000000
     echo "N_EVENTS: ${N_EVENTS}"
     SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
     echo "The seed number is: ${SEED}" 
@@ -103,12 +106,13 @@ else
     cat ${CONFIG}
 
     nexus -n $N_EVENTS ${INIT}
+    python3 CompressEvents.py ${JOBNAME}_15bar ${JOBNAME}_15bar # also filters 60 events
     python3 ${SCRIPT} ${JOBNAME}_15bar ${JOBID}
     mv ${JOBNAME}_15bar.h5 ${JOBNAME}_15bar_nexus_${JOBID}.h5
 
 
     # 25 bar ------------------------------------------------------------------
-    N_EVENTS=10000000
+    N_EVENTS=1000000
     echo "N_EVENTS: ${N_EVENTS}"
     SEED=$((${N_EVENTS}*${JOBID} + ${N_EVENTS} + 600000))
     echo "The seed number is: ${SEED}" 
@@ -122,6 +126,7 @@ else
     cat ${CONFIG}
 
     nexus -n $N_EVENTS ${INIT}
+    python3 CompressEvents.py ${JOBNAME}_25bar ${JOBNAME}_25bar # also filters 60 events
     python3 ${SCRIPT} ${JOBNAME}_25bar ${JOBID}
     mv ${JOBNAME}_25bar.h5 ${JOBNAME}_25bar_nexus_${JOBID}.h5
 fi
