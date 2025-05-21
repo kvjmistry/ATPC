@@ -14,6 +14,7 @@ print("\n\n\nLoading hits")
 print("Filename: ", sys.argv[1]+".h5")
 hits = pd.read_hdf(sys.argv[1]+".h5", 'MC/hits')
 parts = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
+config = pd.read_hdf(sys.argv[1]+".h5", 'MC/configuration')
 print("Finished loading hits")
 
 print("Total events before:", len(parts['event_id'].unique()))
@@ -30,12 +31,14 @@ parts = parts[parts['event_id'].isin(event_list)]
 print("Total events after:", len(event_list))
 print(parts)
 print(hits)
+print(config)
 
 print("Saving events to file: ", sys.argv[2]+".h5")
 with pd.HDFStore(sys.argv[2]+".h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
     store.put('MC/particles', parts, format='table')
     store.put('MC/hits', hits, format='table')
+    store.put('MC/configuration', config, format='table')
 
 # Record the end time
 end_time = time.time()
