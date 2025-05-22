@@ -78,7 +78,8 @@ start_time = time.time()
 # Load in the hits
 print("Filename: ", sys.argv[1]+".h5")
 hits = pd.read_hdf(sys.argv[1]+".h5", 'MC/hits')
-print("Finished loading hits")
+parts = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
+print("Finished loading hits and parts")
 
 jobid = int(sys.argv[2])
 
