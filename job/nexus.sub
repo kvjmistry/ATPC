@@ -15,7 +15,8 @@ INIT=$(jobname).init.mac
 script=GetGammaInfo.py
 
 # mode=CO2
-mode=Pressure
+# mode=Pressure
+mode=25bar
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
