@@ -1,0 +1,24 @@
+## ----------------------------------------------------------------------------
+## nexus | ATPC_Tl_ion.init.mac
+##
+## Initialization macro to simulate gamma decays in an atmospheric TPC
+##
+## The NEXT Collaboration
+## ----------------------------------------------------------------------------
+/PhysicsList/RegisterPhysics G4EmStandardPhysics_option4
+/PhysicsList/RegisterPhysics G4DecayPhysics
+/PhysicsList/RegisterPhysics G4RadioactiveDecayPhysics
+/PhysicsList/RegisterPhysics NexusPhysics
+/PhysicsList/RegisterPhysics G4StepLimiterPhysics
+
+/nexus/RegisterGeometry ATPC
+
+/nexus/RegisterGenerator IonGenerator
+
+/nexus/RegisterPersistencyManager PersistencyManager
+
+/nexus/RegisterRunAction DefaultRunAction
+/nexus/RegisterEventAction DefaultEventAction
+/nexus/RegisterTrackingAction DefaultTrackingAction
+
+/nexus/RegisterMacro ATPC_Tl_ion.config.mac
