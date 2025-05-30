@@ -35,7 +35,7 @@ SEED=$((${JOBID} + 1))
 
 if [ "$MODE" == "1bar" ]; then
     # 1 bar
-    N_EVENTS=100000000
+    N_EVENTS=5000000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
