@@ -22,7 +22,7 @@ print("Total events before:", len(parts['event_id'].unique()))
 
 # Filter the events to a set amount
 # Get the first 60 unique events
-event_list = hits['event_id'].unique()[0:60]
+# event_list = hits['event_id'].unique()[0:60]
 
 # Filter the DataFrame to keep only 50 events
 hits = hits[hits['event_id'].isin(event_list)]
