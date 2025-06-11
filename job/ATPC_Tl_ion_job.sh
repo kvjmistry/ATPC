@@ -55,7 +55,7 @@ if [ "$MODE" == "1bar" ]; then
     python3 SmearEnergy.py ${JOBNAME}_1bar
     
     # Get true info about the blobs etc
-    python3 GetTrueInfo.py ${JOBNAME}_1bar_Efilt 1 Gamma
+    python3 GetTrueInfo.py 1 Gamma ${JOBNAME}_1bar_Efilt.h5
     
     # <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
     python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 0 0.05  5 1.0 ${JOBID} # Just smearing
@@ -91,7 +91,7 @@ elif [ "$MODE" == "5bar" ]; then
     python3 SmearEnergy.py ${JOBNAME}_5bar
     
     # Get true info about the blobs etc
-    python3 GetTrueInfo.py ${JOBNAME}_5bar_Efilt 1 Gamma
+    python3 GetTrueInfo.py 5 Gamma ${JOBNAME}_5bar_Efilt.h5
     
     python3 SmearEvents.py ${JOBNAME}_5bar_Efilt 0 0.05  5 5.0 ${JOBID} # Just smearing
     python3 SmearEvents.py ${JOBNAME}_5bar_Efilt 1 0.05 20 5.0 ${JOBID} # Helium 10%
@@ -123,7 +123,7 @@ elif [ "$MODE" == "10bar" ]; then
     python3 SmearEnergy.py ${JOBNAME}_10bar
     
     # Get true info about the blobs etc
-    python3 GetTrueInfo.py ${JOBNAME}_10bar_Efilt 1 Gamma
+    python3 GetTrueInfo.py 10 Gamma ${JOBNAME}_10bar_Efilt.h5
     
     python3 SmearEvents.py ${JOBNAME}_10bar_Efilt 0 0.05  5 10.0 ${JOBID} # Just smearing
     python3 SmearEvents.py ${JOBNAME}_10bar_Efilt 1 0.05 20 10.0 ${JOBID} # Helium 10%
@@ -155,7 +155,7 @@ elif [ "$MODE" == "15bar" ]; then
     python3 SmearEnergy.py ${JOBNAME}_15bar
     
     # Get true info about the blobs etc
-    python3 GetTrueInfo.py ${JOBNAME}_15bar_Efilt 1 Gamma
+    python3 GetTrueInfo.py 15 Gamma ${JOBNAME}_15bar_Efilt.h5
     
     python3 SmearEvents.py ${JOBNAME}_15bar_Efilt 0 0.05  5 15.0 ${JOBID} # Just smearing
     python3 SmearEvents.py ${JOBNAME}_15bar_Efilt 1 0.05 20 15.0 ${JOBID} # Helium 10%
@@ -187,7 +187,7 @@ elif [ "$MODE" == "25bar" ]; then
     python3 SmearEnergy.py ${JOBNAME}_25bar
     
     # Get true info about the blobs etc
-    python3 GetTrueInfo.py ${JOBNAME}_25bar_Efilt 1 Gamma
+    python3 GetTrueInfo.py 25 Gamma ${JOBNAME}_25bar_Efilt.h5
     
     python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 0 0.05  5 25.0 ${JOBID} # Just smearing
     python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 1 0.05 20 25.0 ${JOBID} # Helium 10%
