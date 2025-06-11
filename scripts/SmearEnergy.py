@@ -115,7 +115,7 @@ print(df_meta, "\n")
 print(dfsE1)
 
 # Write to the file
-outfile = sys.argv[1] + "_smear.h5"
+outfile = sys.argv[1] + "_Efilt.h5"
 
 print("Saving events to file: ", outfile)
 with pd.HDFStore(outfile, mode='w', complevel=5, complib='zlib') as store:

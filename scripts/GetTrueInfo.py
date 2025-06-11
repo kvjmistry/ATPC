@@ -199,7 +199,7 @@ pressure = int(sys.argv[1])
 mode     = sys.argv[2]
 infile   = sys.argv[3]
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
-file_out = f"{file_out_seg}_properties.h5"
+file_out = f"{file_out_seg}_trueinfo.h5"
 
 print("Mode:", mode)
 print("infile:", infile)
