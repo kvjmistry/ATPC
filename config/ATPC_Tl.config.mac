@@ -5,7 +5,8 @@
 /process/em/verbose 0
 
 # GENERATION
-/Generator/SingleParticle/region ACTIVE
+#/Generator/SingleParticle/region ACTIVE
+/Generator/SingleParticle/region CuCylinder
 /Generator/SingleParticle/particle gamma
 /Generator/SingleParticle/min_energy 2.6 MeV
 /Generator/SingleParticle/max_energy 2.6 MeV
@@ -20,10 +21,11 @@
 /PhysicsList/Nexus/electroluminescence  false
 
 #GEOMETRY
-/Geometry/ATPC/gas_pressure 1. bar
+/Geometry/ATPC/gas_pressure 1 bar
 /Geometry/ATPC/cube_size  6 m
-/Geometry/ATPC/chamber_thickn 5 cm
+/Geometry/ATPC/chamber_thickn 4 cm
 /Geometry/ATPC/max_step_size 1 mm
+/Geometry/ATPC/genvol Cu
 
 # PERSISTENCY
 #/nexus/persistency/eventType background

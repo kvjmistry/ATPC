@@ -27,8 +27,8 @@
 #/Geometry/ATPC/detgeom cylinder
 /Geometry/ATPC/detgeom cube
 
-#/Generator/IonGenerator/region CuCylinder
-/Generator/IonGenerator/region Cu
+/Generator/IonGenerator/region CuCylinder
+#/Generator/IonGenerator/region Cu
 /Geometry/ATPC/genvol Cu
 
 # PERSISTENCY
