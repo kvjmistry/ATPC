@@ -7,7 +7,6 @@
 /process/em/verbose 0
 
 # GENERATION
-/Generator/Decay0Interface/region ACTIVE
 /Generator/Decay0Interface/Xe136DecayMode 1
 /Generator/Decay0Interface/Ba136FinalState 0
 
@@ -21,10 +20,13 @@
 /PhysicsList/Nexus/electroluminescence  false
 
 #GEOMETRY
-/Geometry/ATPC/gas_pressure 1. bar
-/Geometry/ATPC/cube_size  6 m
-/Geometry/ATPC/chamber_thickn 5 cm
+/Geometry/ATPC/gas_pressure 25. bar
+/Geometry/ATPC/cube_size 6 m
+/Geometry/ATPC/chamber_thickn 4 cm
 /Geometry/ATPC/max_step_size 1 mm
+
+/Geometry/ATPC/detgeom cylinder
+/Generator/Decay0Interface/region CuCylinderActive
 
 # PERSISTENCY
 #/nexus/persistency/eventType background
