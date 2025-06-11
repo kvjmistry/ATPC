@@ -131,6 +131,59 @@ def GetTrueInfoSignal(parts, hits, pressure):
     return pd.DataFrame({ "event_id": event_ids, "TrackLength" : lengths, "TrackEnergy" : energies, "TrackEnergy1" : energies1,  "TrackEnergy2" : energies2, "TrackEnergy3" : energies3,  "Blob1E" : blob1_Es, "Blob2E" :blob2_Es, "TrackDiam" :TrackDiam, "CreatorProc" :creator_procs})
 
 
+def GetTrueInfoSingle(parts, hits, pressure):
+
+    lengths  = []
+    energies = []
+    energies1 = [] # 0.1 MeV Delta thresh
+    energies2 = [] # 0.2 MeV Delta thresh
+    energies3 = [] # 0.5 MeV Delta thresh
+    blob1_Es = []
+    blob2_Es = []
+    creator_procs = []
+    event_ids = []
+
+    for eid in parts.event_id.unique():
+
+        # print("\n\n On event:", eid)
+
+        part_event = parts[parts.event_id == eid]
+        hits_event = hits[hits.event_id == eid]
+        electron1  = part_event[part_event.particle_id == 1]
+
+        electron1_E = hits_event[hits_event.particle_id == 1].energy.sum()
+
+        length = electron1.length.iloc[0]
+
+        tot_KE  = GetPrimaryKE(part_event, hits_event, 1, 2.6)
+        tot_KE1 = GetPrimaryKE(part_event, hits_event, 1, 0.1)
+        tot_KE2 = GetPrimaryKE(part_event, hits_event, 1, 0.2)
+        tot_KE3 = GetPrimaryKE(part_event, hits_event, 1, 0.5)
+        # tot_KE = electron1_E + electron2_E # total energy
+
+        blob1_E =  GetBlobEnergyRadius(electron1, hits_event, "end", 180/pressure)
+        blob2_E =  GetBlobEnergyRadius(electron2, hits_event, "start",   180/pressure)
+
+        # print("Length:", length, "mm")
+        # print("Tot Energy:", tot_KE, "MeV")
+        # print("Blob1 Energy:", blob1_E, "MeV")
+        # print("Blob2 Energy:", blob2_E, "MeV")
+
+        lengths.append(length)
+        energies.append(tot_KE)
+        energies1.append(tot_KE1)
+        energies2.append(tot_KE2)
+        energies3.append(tot_KE3)
+        blob1_Es.append(blob1_E)
+        blob2_Es.append(blob2_E)
+        creator_procs.append("DBD")
+        event_ids.append(eid)
+
+    TrackDiam = CalcTrackExtent(hits[ (hits.particle_id == 1)] )
+
+    return pd.DataFrame({ "event_id": event_ids, "TrackLength" : lengths, "TrackEnergy" : energies, "TrackEnergy1" : energies1,  "TrackEnergy2" : energies2, "TrackEnergy3" : energies3,  "Blob1E" : blob1_Es, "Blob2E" :blob2_Es, "TrackDiam" :TrackDiam, "CreatorProc" :creator_procs})
+
+
 def GetTrueInfoBackground(parts, hits, pressure):
 
     lengths  = []
@@ -214,6 +267,8 @@ hits  = pd.read_hdf(infile, "MC/hits")
 
 if (mode == "0nubb"):
     df = GetTrueInfoSignal(parts, hits, pressure)
+elif (mode == "single"):
+    df = GetTrueInfoSingle(parts, hits, pressure)
 else:
     df = GetTrueInfoBackground(parts, hits, pressure)
 
