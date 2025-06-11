@@ -31,43 +31,24 @@ pressure =  float(sys.argv[5])
 
 # Diffusion values desired
 
-# The percentage 0 is actually a small amount
-if (percentage == 0.05):
-    DL = 0.05 # mm / sqrt(cm)
-    DT = 0.05 # mm / sqrt(cm)
-elif (percentage == 0.0):
-    DL = 0.82 # mm / sqrt(cm)
-    DT = 2.61 # mm / sqrt(cm)
+# Scaling by sqrt pressure is applied to convert to whatever pressure at the same E/P
+if (percentage == 0.0):
+    DL = 0.9 / np.sqrt(pressure) # mm / sqrt(cm)
+    DT = 3.5 / np.sqrt(pressure) # mm / sqrt(cm)
+elif (percentage == 0.05): # !!HELIUM 10%!!
+    DL = 0.75 / np.sqrt(pressure) # mm / sqrt(cm)
+    DT = 1.60 / np.sqrt(pressure) # mm / sqrt(cm)
 elif (percentage == 0.1):
-    DL = 0.940 # mm / sqrt(cm)
-    DT = 0.974 # mm / sqrt(cm)
+    DL = 1.037 / np.sqrt(pressure) # mm / sqrt(cm)
+    DT = 0.818 / np.sqrt(pressure) # mm / sqrt(cm)
 elif (percentage == 0.25):
-    DL = 0.703 # mm / sqrt(cm)
-    DT = 0.517 # mm / sqrt(cm)
-elif (percentage == 0.5):
-    DL = 0.507 # mm / sqrt(cm)
-    DT = 0.373 # mm / sqrt(cm)
+    DL = 0.627 / np.sqrt(pressure) # mm / sqrt(cm)
+    DT = 0.463 / np.sqrt(pressure) # mm / sqrt(cm)
 elif (percentage == 5):
-
-    if (pressure == 1.0):
-        DL = 0.290 # mm / sqrt(cm)
-        DT = 0.279 # mm / sqrt(cm)
-    elif (pressure == 5.0):
-        DL = 0.270
-        DT = 0.259
-    elif (pressure == 10.0):
-        DL = 0.251
-        DT = 0.249
-    elif (pressure == 15.0):
-        DL = 0.258
-        DT = 0.255
-    elif (pressure == 25.0):
-        DL = 0.253
-        DT = 0.251
-    else:
-        print("Error pressure not found")
+    DL = 0.314 / np.sqrt(pressure) # mm / sqrt(cm)
+    DT = 0.300 / np.sqrt(pressure) # mm / sqrt(cm)
 else:
-    print("Error CO2 percentage not defined at 75 V/cm field")
+    print("Error CO2 percentage not defined at 60 V/cm/bar field")
 
 
 # This is the scaling amount of diffusion
@@ -84,7 +65,11 @@ print("DT: ", DT, "mm/sqrt(cm)")
 print("binsize is: ", binsize, "mm")
 
 # Calculate the detector half-length
-det_size = int(np.cbrt(6000**3/pressure)/2.0) 
+
+density = 5.987*pressure
+M = 1000/0.9
+det_size = 1000*np.cbrt((4 * M) / (np.pi * density))/2.0
+# det_size = int(np.cbrt(6000**3/pressure)/2.0) 
 
 # Create the bins ---- 
 xbw=binsize
@@ -102,8 +87,8 @@ z_shift = det_size
 # z_shift = 0
 
 zbw=binsize
-zmin=-det_size + z_shift - binsize/2 
-zmax=det_size + z_shift + binsize/2
+zmin=-det_size + z_shift - binsize/2
+zmax=det_size + z_shift + binsize/2 
 
 print("Detector size is:", det_size*2)
 
@@ -142,7 +127,7 @@ def generate_random(row):
         # If we smeared to something negative then apply no diffusion
         # This should only be an edge effted
         if (z < 0):
-            print("Negative z value! This should be uncommon...")
+            print("Negative z value! This should be uncommon...", z)
             z = 0
         
         sigma_DL = diff_scaling * DL * np.sqrt(z / 10.0)  # mm  
@@ -155,13 +140,6 @@ def generate_random(row):
 
     return pd.Series(new_r, index=['x_smear', 'y_smear', 'z_smear'])
 
-# Function to smear the number of electrons in each hit by the fano factor
-def smear_energy(N):
-    if N < 10:
-        return np.random.poisson(N)  # Poisson for small N
-    else:
-        sigma = np.sqrt(N * 0.15) # 0.15 Fano factor
-        return int(round(np.random.normal(N, sigma)))  # Apply Gauss+rounding
 
 # Print the number of events:
 print("Number of events to process: ", len(hits.event_id.unique()))
@@ -187,12 +165,6 @@ for index, e in enumerate(hits.event_id.unique()):
     # Shift z-values so 0 is at the anode
     event.z = event.z+z_shift
 
-    # Calc number of electrons in a hit
-    event["n"] = round(event["energy"]/E_mean)
-    
-    # Smear the energy by Fano amount
-    event["n"] = event["n"].apply(smear_energy)
-
     # Loop over the particles and get the differences between steps ------
     particles = event.particle_id.unique()
 
@@ -211,9 +183,10 @@ for index, e in enumerate(hits.event_id.unique()):
         diff_df = temp_part_hits[['x', 'y', 'z']].diff()
 
         # Set the dist for the first hit as the difference to the inital position
-        diff_df.iloc[0, diff_df.columns.get_loc('x')] = temp_part_hits.iloc[0].x - temp_part.initial_x.iloc[0]
-        diff_df.iloc[0, diff_df.columns.get_loc('y')] = temp_part_hits.iloc[0].y - temp_part.initial_y.iloc[0]
-        diff_df.iloc[0, diff_df.columns.get_loc('z')] = temp_part_hits.iloc[0].z - (temp_part.initial_z.iloc[0]+z_shift)
+        diff_df.iloc[0, diff_df.columns.get_loc('x')] = np.float32(temp_part_hits.iloc[0].x - temp_part.initial_x.iloc[0])
+        diff_df.iloc[0, diff_df.columns.get_loc('y')] = np.float32(temp_part_hits.iloc[0].y - temp_part.initial_y.iloc[0])
+        diff_df.iloc[0, diff_df.columns.get_loc('z')] = np.float32(temp_part_hits.iloc[0].z - (temp_part.initial_z.iloc[0] + z_shift))
+
 
         # Name the columns by their deltas
         diff_df = diff_df.rename(columns={'x': 'dx', 'y': 'dy', 'z': 'dz'})
