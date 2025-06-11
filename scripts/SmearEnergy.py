@@ -122,6 +122,7 @@ with pd.HDFStore(outfile, mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
     store.put('MC/particles', parts, format='table')
     store.put('MC/hits', dfsE1, format='table')
+    store.put('MC/configuration', config, format='table')
     store.put("MC/meta", df_meta, format='table')
 
 
