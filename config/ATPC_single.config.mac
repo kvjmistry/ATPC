@@ -7,7 +7,6 @@
 /process/em/verbose 0
 
 # GENERATION
-/Generator/SingleParticle/region ACTIVE
 /Generator/SingleParticle/particle e-
 /Generator/SingleParticle/min_energy 2.3 MeV
 /Generator/SingleParticle/max_energy 2.6 MeV
@@ -29,7 +28,7 @@
 /Geometry/ATPC/max_step_size 1 mm
 
 /Geometry/ATPC/detgeom cylinder
-/Generator/Decay0Interface/region CuCylinderActive
+/Generator/SingleParticle/region CuCylinderActive
 
 # PERSISTENCY
 #/nexus/persistency/eventType background

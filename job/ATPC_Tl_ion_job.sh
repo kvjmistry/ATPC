@@ -32,7 +32,7 @@ SEED=$((${JOBID} + 1))
 
 if [ "$MODE" == "1bar" ]; then
     # 1 bar
-    N_EVENTS=10000000
+    N_EVENTS=69000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -40,7 +40,7 @@ if [ "$MODE" == "1bar" ]; then
     sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
     sed -i "s#.*start_id.*#/nexus/persistency/start_id ${EID}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 1. bar#" ${CONFIG}
-    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_1bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_ion_1bar#" ${CONFIG}
     sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 6.182 m#" ${CONFIG}
 
     cat ${INIT}
@@ -68,7 +68,7 @@ if [ "$MODE" == "1bar" ]; then
 
 elif [ "$MODE" == "5bar" ]; then
     # 5 bar
-    N_EVENTS=2100000
+    N_EVENTS=13000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -76,7 +76,7 @@ elif [ "$MODE" == "5bar" ]; then
     sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
     sed -i "s#.*start_id.*#/nexus/persistency/start_id ${EID}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 5. bar#" ${CONFIG}
-    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_5bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_ion_5bar#" ${CONFIG}
     sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 3.615 m#" ${CONFIG}
 
     cat ${INIT}
@@ -100,7 +100,7 @@ elif [ "$MODE" == "5bar" ]; then
 
 elif [ "$MODE" == "10bar" ]; then
     # 10 bar ------------------------------------------------------------------
-    N_EVENTS=1000000
+    N_EVENTS=8666
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -108,7 +108,7 @@ elif [ "$MODE" == "10bar" ]; then
     sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
     sed -i "s#.*start_id.*#/nexus/persistency/start_id ${EID}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 10. bar#" ${CONFIG}
-    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_10bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_ion_10bar#" ${CONFIG}
     sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.870 m#" ${CONFIG}
 
     cat ${INIT}
@@ -132,7 +132,7 @@ elif [ "$MODE" == "10bar" ]; then
 
 elif [ "$MODE" == "15bar" ]; then
     # 15 bar ------------------------------------------------------------------
-    N_EVENTS=640000
+    N_EVENTS=7000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -140,7 +140,7 @@ elif [ "$MODE" == "15bar" ]; then
     sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
     sed -i "s#.*start_id.*#/nexus/persistency/start_id ${EID}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 15. bar#" ${CONFIG}
-    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_15bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_ion_15bar#" ${CONFIG}
     sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.507 m#" ${CONFIG}
 
     cat ${INIT}
@@ -164,7 +164,7 @@ elif [ "$MODE" == "15bar" ]; then
 
 elif [ "$MODE" == "25bar" ]; then
     # 25 bar ------------------------------------------------------------------
-    N_EVENTS=360000
+    N_EVENTS=5000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -172,7 +172,7 @@ elif [ "$MODE" == "25bar" ]; then
     sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
     sed -i "s#.*start_id.*#/nexus/persistency/start_id ${EID}#" ${CONFIG}
     sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure 25. bar#" ${CONFIG}
-    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Bi_ion_25bar#" ${CONFIG}
+    sed -i "s#.*output_file.*#/nexus/persistency/output_file ATPC_Tl_ion_25bar#" ${CONFIG}
     sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size 2.114 m#" ${CONFIG}
 
     cat ${INIT}
@@ -192,13 +192,13 @@ elif [ "$MODE" == "25bar" ]; then
     python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 0 0.05  5 25.0 ${JOBID} # Just smearing
     python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 1 0.05 20 25.0 ${JOBID} # Helium 10%
     python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 1    5 10 25.0 ${JOBID} # 5.0 % CO2
-    rm ${JOBNAME}_25bar.h
+    rm ${JOBNAME}_25bar.h5
 fi
 
 ls -ltrh
 
 echo "Taring the h5 files"
-tar -cvf ATPC_Bi_ion.tar *.h5
+tar -cvf ATPC_Tl_ion.tar *.h5
 
 # Cleanup
 rm *.h5
