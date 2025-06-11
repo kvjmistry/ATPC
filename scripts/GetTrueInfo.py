@@ -162,7 +162,7 @@ def GetTrueInfoSingle(parts, hits, pressure):
         # tot_KE = electron1_E + electron2_E # total energy
 
         blob1_E =  GetBlobEnergyRadius(electron1, hits_event, "end", 180/pressure)
-        blob2_E =  GetBlobEnergyRadius(electron2, hits_event, "start",   180/pressure)
+        blob2_E =  GetBlobEnergyRadius(electron1, hits_event, "start",   180/pressure)
 
         # print("Length:", length, "mm")
         # print("Tot Energy:", tot_KE, "MeV")
@@ -176,7 +176,7 @@ def GetTrueInfoSingle(parts, hits, pressure):
         energies3.append(tot_KE3)
         blob1_Es.append(blob1_E)
         blob2_Es.append(blob2_E)
-        creator_procs.append("DBD")
+        creator_procs.append("single")
         event_ids.append(eid)
 
     TrackDiam = CalcTrackExtent(hits[ (hits.particle_id == 1)] )
