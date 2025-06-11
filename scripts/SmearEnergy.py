@@ -34,7 +34,12 @@ def smear_energy(N, resolution):
         else:
             print("Error resoltion not defined, using default 1%")
             sigma = np.sqrt(N * 1.8) # 1% ER
-        return int(round(np.random.normal(N, sigma)))  # Apply Gauss+rounding
+        
+        new_n = int(round(np.random.normal(N, sigma)))
+        if (new_n < 0):
+            return 1
+        else:
+            return new_n  # Apply Gauss+rounding
 
 def FilterEventE(hits, parts_, Emin, Emax, E_mean):
 
