@@ -251,8 +251,9 @@ def GetTrueInfoBackground(parts, hits, pressure):
 pressure = int(sys.argv[1])
 mode     = sys.argv[2]
 infile   = sys.argv[3]
+jobid = int(sys.argv[4])
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
-file_out = f"{file_out_seg}_trueinfo.h5"
+file_out = f"{file_out_seg}_trueinfo_{jobid}.h5"
 
 print("Mode:", mode)
 print("infile:", infile)
