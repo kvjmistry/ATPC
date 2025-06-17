@@ -7,6 +7,7 @@ import itertools
 import copy
 from scipy.spatial.distance import cdist
 from mpl_toolkits.mplot3d import Axes3D
+from sklearn.cluster import DBSCAN
 
 colormap = plt.cm.get_cmap('Dark2')
 color_cycle = itertools.cycle(colormap.colors)
@@ -1448,12 +1449,12 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
 #            which will help the algorithm converge better
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf, Tortuosity_dist = InitializeParams(pressure, diffusion)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist = InitializeParams(pressure, diffusion)
     print("Diffussion smear is: ",        Diff_smear,            "mm/sqrt(cm)")
     print("Energy threshold is: ",        1000*energy_threshold, "keV")
     print("diffision scale factor is: ",  diff_scale_factor)
     print("Radius scale factor is: ",     radius_sf)
-    print("Voxel scale factor is: ",      voxel_sf)
+    print("Hit grouping factor is: ",     group_sf)
     print("Tortuosity distance scale is:", Tortuosity_dist)
 
     # There seems to be a duplicate row sometimes
@@ -1477,20 +1478,8 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     # in this case apply grouping to generate the column
     if ("group_id" not in data.columns):
         print("Grouping has not been applied yet so run grouping function,...")
-        mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*data.z.mean()))
-        det_size = int(np.cbrt(6000**3/pressure)/2.0) 
-        z_shift = det_size
-
-        xmin=-det_size - mean_sigma/2 
-        ymin=-det_size - mean_sigma/2 
-        zmin=-det_size + z_shift - mean_sigma/2 
-
-        # voxel size and parameters
-        voxel_size = mean_sigma  # mm
-        threshold = voxel_size*voxel_sf
-
-        data = GroupHits(data, xmin, ymin, zmin, voxel_size, threshold)
-
+        mean_sigma_group = round(group_sf*Diff_smear*np.sqrt(0.1*data.z.mean()))
+        data = GroupHits(data, mean_sigma_group)
 
     # then sort it based on the x,y,z
     if (sort_flag == 0):
@@ -1690,7 +1679,7 @@ def Cluster(input_data, R):
 # ---------------------------------------------------------------------------------------------------
 def RunClustering(node_centers_df, pressure, diffusion):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf, Tortuosity_dist = InitializeParams(pressure, diffusion)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist = InitializeParams(pressure, diffusion)
 
     event_id = node_centers_df.event_id.iloc[0]
 
@@ -1699,20 +1688,12 @@ def RunClustering(node_centers_df, pressure, diffusion):
     print("Mean Sigma is:", mean_sigma)
 
     # Apply hit grouping
-    voxel_size =  mean_sigma
-    threshold  =  voxel_size*voxel_sf
-    det_size   =  int(np.cbrt(6000**3/pressure)/2.0) 
-    z_shift    =  det_size
-    xmin       = -det_size - mean_sigma/2 
-    ymin       = -det_size - mean_sigma/2 
-    zmin       = -det_size + z_shift - mean_sigma/2 
+    mean_sigma_group = round(group_sf*Diff_smear*np.sqrt(0.1*data.z.mean()))
+    df_merged = GroupHits(node_centers_df, mean_sigma_group)
 
-    df_merged = GroupHits(node_centers_df, xmin, ymin, zmin, voxel_size, threshold)
-    
-    # If we have too many groups then bump up the voxel size since the track was broken too much
     if (len(df_merged.group_id.unique()) > 10):
-        print("Running grouping again")
-        df_merged = GroupHits(node_centers_df, xmin, ymin, zmin, voxel_size, voxel_size*(voxel_sf+1))
+        print("Running grouping again new mean sigma is:", mean_sigma_group*5)
+        df_merged = GroupHits(node_centers_df, mean_sigma_group*5)
 
     # Apply energy threshold and redistribute energy
     df_merged = CutandRedistibuteEnergy(df_merged, energy_threshold)
@@ -1733,7 +1714,9 @@ def RunClustering(node_centers_df, pressure, diffusion):
     # Bin the data
 
     # Calculate the detector half-length
-    det_size = int(np.cbrt(6000**3/pressure)/2.0) 
+    density = 5.987*pressure
+    M = 1000/0.9
+    det_size = 1000*np.cbrt((4 * M) / (np.pi * density))/2.0
 
     # Create the bins ---- 
     xbw  = mean_sigma
@@ -1821,104 +1804,23 @@ def RunClustering(node_centers_df, pressure, diffusion):
 
     return databin
 
-
-# ---------------------------------------------------------------------------------------------------
-# A class for grouping hits
-class Voxel:
-    def __init__(self, x, y, z, energy, voxel_id):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.energy   = energy
-        self.voxel_id = voxel_id # Each hit has a unique id which we can match to
-
-    def is_close_to(self, other, threshold):
-        distance = np.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2)
-        return distance < threshold
-
-# ---------------------------------------------------------------------------------------------------
-# Function to get a list of voxels that are near by
-# voxels    : a list of unique voxels
-# threshold : distance to which we assign a new voxel to
-# returns a list of voxels in each unique group and the number
-# of uniuque groups
-def group_voxels(voxels, threshold):
-    
-    groups = []
-
-    # Loop over voxels
-    for voxel in voxels:
-        
-        close_groups = []
-
-        # Look in the existing group and find voxels that are near it
-        # then add to the same group if it is
-        for group in groups:
-            if any(voxel.is_close_to(other, threshold) for other in group):
-                close_groups.append(group)
-        
-        # Put voxels in corresponding group
-        if not close_groups:
-            groups.append([voxel])
-        elif len(close_groups) == 1:
-            close_groups[0].append(voxel)
-        else:
-            merged_group = sum(close_groups, [voxel])
-            groups = [g for g in groups if g not in close_groups]
-            groups.append(merged_group)
-    
-    print("Total groups created:", len(groups))
-    return groups, len(groups)
 # ---------------------------------------------------------------------------------------------------
 # Function to group hits based on proximity, returns a new row to the dataframe based on the hit group
+# it uses the skikit learn DB scan tool
 # df: input dataframe
-# voxel_size: apply voxelization of hits which helps with the grouping
 # threshold: a maximum distance which hits can be separated from before categorizing to a new group
-# x/y/zmin : the minimum value of x,y,z in the dataframe
-def GroupHits(df, xmin, ymin, zmin, voxel_size, threshold):
+def GroupHits(df, threshold):
 
-    # Step 1: Voxelization 
-    df['voxel_x'] = ((df.x - xmin) // voxel_size).astype(int)
-    df['voxel_y'] = ((df.y - ymin) // voxel_size).astype(int)
-    df['voxel_z'] = ((df.z - zmin) // voxel_size).astype(int)
+    # Convert to NumPy array for clustering
+    coords = df[["x", "y", "z"]].to_numpy()
 
-    # Step 2: Create voxelized groups
-    voxel_groups_df = df.groupby(['voxel_x', 'voxel_y', 'voxel_z']).agg(
-        centroid_x=('x', 'mean'),
-        centroid_y=('y', 'mean'),
-        centroid_z=('z', 'mean'),
-        total_energy=('energy', 'sum')
-    ).reset_index()
+    # Apply DBSCAN
+    db = DBSCAN(eps=threshold, min_samples=1).fit(coords)
 
-    # Step 3: Assign unique voxel ID
-    voxel_groups_df['voxel_id'] = voxel_groups_df.index  # Unique ID for each voxel
+    # Add group labels to the original DataFrame
+    df["group_id"] = db.labels_
 
-    # Step 4: Merge back to create a mapping as a column in reco_DE_event
-    df = df.merge(
-        voxel_groups_df[['voxel_x', 'voxel_y', 'voxel_z', 'voxel_id']],
-        on=['voxel_x', 'voxel_y', 'voxel_z'],
-        how='left'
-    )
-
-    voxels = [Voxel(row['centroid_x'], row['centroid_y'], row['centroid_z'], row['total_energy'], row['voxel_id']) for _, row in voxel_groups_df.iterrows()]
-    voxel_groups, total_groups = group_voxels(voxels, threshold)
-
-    df_group = pd.DataFrame(columns=['voxel_id', 'group_id'])
-
-    # Collect data in a list first (much faster than appending to a DataFrame)
-    data = []
-
-    for index, group in enumerate(voxel_groups):
-        for voxel in group:
-            data.append({'voxel_id': int(voxel.voxel_id), 'group_id': index})
-
-    # Convert list to DataFrame in one step
-    df_group = pd.DataFrame(data)
-
-    df_merged = df.merge(df_group, on='voxel_id', how='left')
-    df_merged = df_merged[["event_id", "x", "y", "z", "energy", "group_id"]]
-
-    return df_merged
+    return df
 # ---------------------------------------------------------------------------------------------------
 # Function checks if the nodes are in the same group. 
 # df: the input dataframe, should contain the group_id
@@ -1939,7 +1841,7 @@ def CheckSameGroup(df, node1, node2):
 #         diff_scale_factor - This addtional adjustment scales the radius in clustering by this amount
 #         radius_sf - The no diffusion files have a lot of nodes so skew the median node distance.
 #                     factor helps to adjust that
-#         voxel_sf -  This scales the distance used to group hit clusters together
+#         group_sf -  This scales the distance used to group hit clusters together
 #         Tortuosity_dist - this is the length scale to calculate tortuosity
 def InitializeParams(pressure, diffusion):
 
@@ -1947,32 +1849,32 @@ def InitializeParams(pressure, diffusion):
     energy_threshold  = 0   # MeV
     diff_scale_factor = 7
     radius_sf         = 7 
-    voxel_sf          = 1.1
+    group_sf          = 3
     Tortuosity_dist   = 70
 
-    # This is acutally 0.05 mm/sqrt diffusion not CO2 percentage
+    # This is acutally 10 % Helium
     if (diffusion == "0.05percent"):
-        Diff_smear        = 0.05
+        Diff_smear        = 2.0/np.sqrt(pressure)
         energy_threshold  = 0.0
-        diff_scale_factor = 7
-        radius_sf         = 7
-        voxel_sf          = 2.1
-        Tortuosity_dist   = 0.02*3500/pressure
+        diff_scale_factor = 4
+        radius_sf         = 3
+        group_sf          = 2.1
+        Tortuosity_dist   = 0.05*3500/pressure
     
     elif (diffusion == "nodiff"):
         Diff_smear        = 0.1
         energy_threshold  = 0.0
         diff_scale_factor = 7
-        radius_sf         = 7
-        voxel_sf          = 2.1
+        radius_sf         = 10
+        group_sf          = 2.1
         Tortuosity_dist   = 0.02*3500/pressure
     
     elif (diffusion == "0.1percent"):
-        Diff_smear        = 0.95
+        Diff_smear        = 1.0
         energy_threshold  = 0.0004
         diff_scale_factor = 4
         radius_sf         = 7
-        voxel_sf          = 2.1
+        group_sf          = 3
         Tortuosity_dist   = 0.05*3500/pressure
     
     elif (diffusion == "0.25percent"):
@@ -1980,73 +1882,38 @@ def InitializeParams(pressure, diffusion):
         energy_threshold  = 0.0004
         diff_scale_factor = 4
         radius_sf         = 7
-        voxel_sf          = 2.1
+        group_sf          = 3
         Tortuosity_dist   = 0.03*3500/pressure
     
-    elif (diffusion == "0.5percent"):
-        Diff_smear        = 0.507 
-        energy_threshold  = 0.0004
-        diff_scale_factor = 4
-        radius_sf         = 7
-        voxel_sf          = 2.1
-        Tortuosity_dist   = 0.03*3500/pressure
-
     elif (diffusion == "0.0percent"):
         Diff_smear        = 2.6
         energy_threshold  = 0.0004
         diff_scale_factor = 4
         radius_sf         = 7
-        voxel_sf          = 2.1
+        group_sf          = 3
         Tortuosity_dist   = 0.05*3500/pressure
 
     elif (diffusion == "5percent" or diffusion == "5.0percent"): # because I messed up naming conventions
 
         if (pressure == 1):
-            Diff_smear        = 0.290 
+            Diff_smear        = 0.314/np.sqrt(pressure)
             energy_threshold  = 0.0004
             diff_scale_factor = 4
             radius_sf         = 7
-            voxel_sf          = 2.1
+            group_sf          = 3
             Tortuosity_dist   = 0.03*3500/pressure
-
-        elif (pressure == 5):
-            Diff_smear        = 0.270
-            diff_scale_factor = 5
-            energy_threshold  = 0.001
-            radius_sf         = 7
-            voxel_sf          = 2.1
-            Tortuosity_dist   = 0.1*3500/pressure
-
-        elif (pressure == 10):
-            Diff_smear        = 0.251
-            diff_scale_factor = 5
-            energy_threshold  = 0.001
-            radius_sf         = 7
-            voxel_sf          = 2.1
-            Tortuosity_dist   = 0.1*3500/pressure
-
-        elif (pressure == 15):
-            Diff_smear        = 0.258
-            diff_scale_factor = 5
-            energy_threshold  = 0.001
-            radius_sf         = 7
-            voxel_sf          = 2.1
-            Tortuosity_dist   = 0.1*3500/pressure
-
-        elif (pressure == 25):
-            Diff_smear        = 0.258
-            diff_scale_factor = 5
-            energy_threshold  = 0.001
-            radius_sf         = 7
-            voxel_sf          = 2.1
-            Tortuosity_dist   = 0.1*3500/pressure
-
         else:
-            print("Error pressure not found")
-    else:
-        print("Error CO2 percentage not defined at 75 V/cm field")
+            Diff_smear        = 0.314/np.sqrt(pressure)
+            diff_scale_factor = 5
+            energy_threshold  = 0.001
+            radius_sf         = 7
+            group_sf          = 3
+            Tortuosity_dist   = 0.1*3500/pressure
 
-    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, voxel_sf, Tortuosity_dist
+    else:
+        print("Error gas percentage not defined at 60 V/cm/bar field")
+
+    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
