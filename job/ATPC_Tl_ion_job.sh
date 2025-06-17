@@ -32,7 +32,7 @@ SEED=$((${JOBID} + 1))
 
 if [ "$MODE" == "1bar" ]; then
     # 1 bar
-    N_EVENTS=69000
+    N_EVENTS=690000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -69,7 +69,7 @@ if [ "$MODE" == "1bar" ]; then
 
 elif [ "$MODE" == "5bar" ]; then
     # 5 bar
-    N_EVENTS=13000
+    N_EVENTS=170000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -102,7 +102,7 @@ elif [ "$MODE" == "5bar" ]; then
 
 elif [ "$MODE" == "10bar" ]; then
     # 10 bar ------------------------------------------------------------------
-    N_EVENTS=8666
+    N_EVENTS=86666
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -135,7 +135,7 @@ elif [ "$MODE" == "10bar" ]; then
 
 elif [ "$MODE" == "15bar" ]; then
     # 15 bar ------------------------------------------------------------------
-    N_EVENTS=7000
+    N_EVENTS=70000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
@@ -168,7 +168,7 @@ elif [ "$MODE" == "15bar" ]; then
 
 elif [ "$MODE" == "25bar" ]; then
     # 25 bar ------------------------------------------------------------------
-    N_EVENTS=5000
+    N_EVENTS=50000
     echo "N_EVENTS: ${N_EVENTS}"
     EID=$((${N_EVENTS}*${JOBID} + ${N_EVENTS}))
     echo "The seed number is: ${SEED}" 
