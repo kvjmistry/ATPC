@@ -112,7 +112,7 @@ df = GetTrueInfoBackground(parts, hits, cube_size)
 pd.set_option('display.max_rows', None)  # Show all rows
 print(df)
 
-outfile = sys.argv[1] + "_"+ str(jobid) + "_gammatable.h5"
+outfile = sys.argv[1] + "_gammatable_" + str(jobid) + ".h5"
 
 print("Saving events to file: ", outfile)
 with pd.HDFStore(outfile, mode='w', complevel=5, complib='zlib') as store:
