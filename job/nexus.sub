@@ -31,7 +31,7 @@ output = jobs/$(jobname)/$(mode)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 
 # Transfer input files
 # transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/notebooks/$(script),$(HOME_LOCATION)/notebooks/CompressEvents.py
-transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/scripts/GetGammaInfo.py,$(HOME_LOCATION)/scripts/SmearEnergy.py,$(HOME_LOCATION)/scripts/SmearEvents.py,$(HOME_LOCATION)/scripts/GetTrueInfo.py
+transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/config/Bi214.mac,$(HOME_LOCATION)/scripts/GetGammaInfo.py,$(HOME_LOCATION)/scripts/SmearEnergy.py,$(HOME_LOCATION)/scripts/SmearEvents.py,$(HOME_LOCATION)/scripts/GetTrueInfo.py
 
 # Transfer output files
 transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).tar"
