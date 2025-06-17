@@ -24,3 +24,5 @@
 /nexus/RegisterTrackingAction DefaultTrackingAction
 
 /nexus/RegisterMacro ATPC_Bi_ion.config.mac
+
+/nexus/RegisterDelayedMacro Bi214.mac
