@@ -1478,7 +1478,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     # in this case apply grouping to generate the column
     if ("group_id" not in data.columns):
         print("Grouping has not been applied yet so run grouping function,...")
-        mean_sigma_group = round(group_sf*Diff_smear*np.sqrt(0.1*data.z.mean()))
+        mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*data.z.mean())
         data = GroupHits(data, mean_sigma_group)
 
     # then sort it based on the x,y,z
@@ -1683,22 +1683,17 @@ def RunClustering(node_centers_df, pressure, diffusion):
 
     event_id = node_centers_df.event_id.iloc[0]
 
+    # Apply energy threshold and redistribute energy
+    df_merged = CutandRedistibuteEnergy(node_centers_df, energy_threshold)
+    # print(df_merged)
+
     # define the radius to cluster by
     mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
     print("Mean Sigma is:", mean_sigma)
 
     # Apply hit grouping
-    mean_sigma_group = round(group_sf*Diff_smear*np.sqrt(0.1*data.z.mean()))
-    df_merged = GroupHits(node_centers_df, mean_sigma_group)
-
-    if (len(df_merged.group_id.unique()) > 10):
-        print("Running grouping again new mean sigma is:", mean_sigma_group*5)
-        df_merged = GroupHits(node_centers_df, mean_sigma_group*5)
-
-    # Apply energy threshold and redistribute energy
-    df_merged = CutandRedistibuteEnergy(df_merged, energy_threshold)
-    # print(df_merged)
-
+    mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*data.z.mean())
+    df_merged = GroupHits(df_merged, mean_sigma_group)
 
     # Run the clustering
     node_centers_df = []
@@ -1820,6 +1815,10 @@ def GroupHits(df, threshold):
     # Add group labels to the original DataFrame
     df["group_id"] = db.labels_
 
+    if (len(df.group_id.unique()) > 10):
+        print("Running grouping again new mean sigma is:", threshold*15)
+        df = GroupHits(df, threshold*15)
+
     return df
 # ---------------------------------------------------------------------------------------------------
 # Function checks if the nodes are in the same group. 
@@ -1854,12 +1853,28 @@ def InitializeParams(pressure, diffusion):
 
     # This is acutally 10 % Helium
     if (diffusion == "0.05percent"):
-        Diff_smear        = 2.0/np.sqrt(pressure)
-        energy_threshold  = 0.0
-        diff_scale_factor = 4
-        radius_sf         = 3
-        group_sf          = 2.1
-        Tortuosity_dist   = 0.05*3500/pressure
+
+        if (pressure == 1 or pressure == 5):
+            Diff_smear        = 2.0/np.sqrt(pressure)
+            energy_threshold  = 0.0002
+            diff_scale_factor = 3
+            radius_sf         = 7
+            group_sf          = 3
+            Tortuosity_dist   = 0.05*3500/pressure
+        elif (pressure == 10):
+            Diff_smear        = 2.0/np.sqrt(pressure)
+            energy_threshold  = 0.0002
+            diff_scale_factor = 3
+            radius_sf         = 7
+            group_sf          = 5
+            Tortuosity_dist   = 0.05*3500/pressure
+        else:
+            Diff_smear        = 2.0/np.sqrt(pressure)
+            energy_threshold  = 0.0002
+            diff_scale_factor = 3
+            radius_sf         = 7
+            group_sf          = 7
+            Tortuosity_dist   = 0.05*3500/pressure
     
     elif (diffusion == "nodiff"):
         Diff_smear        = 0.1
@@ -1882,7 +1897,7 @@ def InitializeParams(pressure, diffusion):
         energy_threshold  = 0.0004
         diff_scale_factor = 4
         radius_sf         = 7
-        group_sf          = 3
+        group_sf          = 5
         Tortuosity_dist   = 0.03*3500/pressure
     
     elif (diffusion == "0.0percent"):
@@ -1897,11 +1912,18 @@ def InitializeParams(pressure, diffusion):
 
         if (pressure == 1):
             Diff_smear        = 0.314/np.sqrt(pressure)
-            energy_threshold  = 0.0004
+            energy_threshold  = 0.0002
             diff_scale_factor = 4
             radius_sf         = 7
-            group_sf          = 3
+            group_sf          = 5
             Tortuosity_dist   = 0.03*3500/pressure
+        elif (pressure == 25):
+            Diff_smear        = 0.314/np.sqrt(pressure)
+            diff_scale_factor = 5
+            energy_threshold  = 0.001
+            radius_sf         = 30
+            group_sf          = 3
+            Tortuosity_dist   = 0.1*3500/pressure
         else:
             Diff_smear        = 0.314/np.sqrt(pressure)
             diff_scale_factor = 5
