@@ -992,6 +992,13 @@ def GetMedianNodeDistances(df):
 
     print("Median distance to the closest row:", median_distance)
 
+    if (median_distance <= 0):
+        print("Median distance was zero, so setting to default value of 15") 
+        median_distance = 15
+    elif (median_distance ==np.inf):
+        print("Median distance was infinate, so setting to default value of 15")
+        median_distance = 15
+    
     return median_distance
 
 # ---------------------------------------------------------------------------------------------------
@@ -1449,13 +1456,14 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
 #            which will help the algorithm converge better
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist = InitializeParams(pressure, diffusion)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size = InitializeParams(pressure, diffusion)
     print("Diffussion smear is: ",        Diff_smear,            "mm/sqrt(cm)")
     print("Energy threshold is: ",        1000*energy_threshold, "keV")
     print("diffision scale factor is: ",  diff_scale_factor)
     print("Radius scale factor is: ",     radius_sf)
     print("Hit grouping factor is: ",     group_sf)
     print("Tortuosity distance scale is:", Tortuosity_dist)
+    print("The voxel size is:",           voxel_size)
 
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
@@ -1472,13 +1480,19 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
     # Cluster the data if required
     if (cluster):
-        data =  RunClustering(data, pressure, diffusion)
+        # Also only cluster if enough points in the dataframe
+        if (len(data)> 30):
+            data =  RunClustering(data, pressure, diffusion)
+        else:
+            print("Skipping Clustering due to not enough points")
     
     # If clustering has not been applied then we assume it was nodiff sample
     # in this case apply grouping to generate the column
     if ("group_id" not in data.columns):
         print("Grouping has not been applied yet so run grouping function,...")
         mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*data.z.mean())
+        if (mean_sigma_group < 1.5*voxel_size):
+            mean_sigma_group = 1.5*voxel_size
         data = GroupHits(data, mean_sigma_group)
 
     # then sort it based on the x,y,z
@@ -1679,7 +1693,7 @@ def Cluster(input_data, R):
 # ---------------------------------------------------------------------------------------------------
 def RunClustering(node_centers_df, pressure, diffusion):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist = InitializeParams(pressure, diffusion)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size = InitializeParams(pressure, diffusion)
 
     event_id = node_centers_df.event_id.iloc[0]
 
@@ -1688,11 +1702,17 @@ def RunClustering(node_centers_df, pressure, diffusion):
     # print(df_merged)
 
     # define the radius to cluster by
-    mean_sigma = round(diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean()))
+    mean_sigma = diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean())
+    if (mean_sigma < 1.5*voxel_size):
+        mean_sigma = 1.5*voxel_size
+
     print("Mean Sigma is:", mean_sigma)
 
     # Apply hit grouping
-    mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*data.z.mean())
+    mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean())
+    if (mean_sigma_group < 1.5*voxel_size):
+        mean_sigma_group = 1.5*voxel_size
+
     df_merged = GroupHits(df_merged, mean_sigma_group)
 
     # Run the clustering
@@ -1802,7 +1822,7 @@ def RunClustering(node_centers_df, pressure, diffusion):
 # ---------------------------------------------------------------------------------------------------
 # Function to group hits based on proximity, returns a new row to the dataframe based on the hit group
 # it uses the skikit learn DB scan tool
-# df: input dataframe
+# df: input dataframe, returns a new column group_id with associated hits
 # threshold: a maximum distance which hits can be separated from before categorizing to a new group
 def GroupHits(df, threshold):
 
@@ -1815,9 +1835,9 @@ def GroupHits(df, threshold):
     # Add group labels to the original DataFrame
     df["group_id"] = db.labels_
 
-    if (len(df.group_id.unique()) > 10):
-        print("Running grouping again new mean sigma is:", threshold*15)
-        df = GroupHits(df, threshold*15)
+    if (len(df.group_id.unique()) > 8):
+        print("Running grouping again new mean sigma is:", threshold*10)
+        df = GroupHits(df, threshold*10)
 
     return df
 # ---------------------------------------------------------------------------------------------------
@@ -1842,6 +1862,7 @@ def CheckSameGroup(df, node1, node2):
 #                     factor helps to adjust that
 #         group_sf -  This scales the distance used to group hit clusters together
 #         Tortuosity_dist - this is the length scale to calculate tortuosity
+#         voxel_size -- the size of binning used in the smear code
 def InitializeParams(pressure, diffusion):
 
     Diff_smear        = 0.0 # mm / sqrt(cm)
@@ -1850,14 +1871,17 @@ def InitializeParams(pressure, diffusion):
     radius_sf         = 7 
     group_sf          = 3
     Tortuosity_dist   = 70
+    voxel_size        = 10
 
     # This is acutally 10 % Helium
     if (diffusion == "0.05percent"):
 
+        voxel_size        = 20
+
         if (pressure == 1 or pressure == 5):
             Diff_smear        = 2.0/np.sqrt(pressure)
             energy_threshold  = 0.0002
-            diff_scale_factor = 3
+            diff_scale_factor = 5
             radius_sf         = 7
             group_sf          = 3
             Tortuosity_dist   = 0.05*3500/pressure
@@ -1867,6 +1891,13 @@ def InitializeParams(pressure, diffusion):
             diff_scale_factor = 3
             radius_sf         = 7
             group_sf          = 5
+            Tortuosity_dist   = 0.05*3500/pressure
+        elif (pressure == 15):
+            Diff_smear        = 2.0/np.sqrt(pressure)
+            energy_threshold  = 0.0002
+            diff_scale_factor = 3
+            radius_sf         = 7
+            group_sf          = 7
             Tortuosity_dist   = 0.05*3500/pressure
         else:
             Diff_smear        = 2.0/np.sqrt(pressure)
@@ -1883,14 +1914,16 @@ def InitializeParams(pressure, diffusion):
         radius_sf         = 10
         group_sf          = 2.1
         Tortuosity_dist   = 0.02*3500/pressure
+        voxel_size        = 5
     
     elif (diffusion == "0.1percent"):
         Diff_smear        = 1.0
         energy_threshold  = 0.0004
-        diff_scale_factor = 4
+        diff_scale_factor = 5
         radius_sf         = 7
         group_sf          = 3
         Tortuosity_dist   = 0.05*3500/pressure
+        voxel_size        = 20
     
     elif (diffusion == "0.25percent"):
         Diff_smear        = 0.703 
@@ -1899,24 +1932,49 @@ def InitializeParams(pressure, diffusion):
         radius_sf         = 7
         group_sf          = 5
         Tortuosity_dist   = 0.03*3500/pressure
+        voxel_size        = 15
     
     elif (diffusion == "0.0percent"):
         Diff_smear        = 2.6
         energy_threshold  = 0.0004
-        diff_scale_factor = 4
+        diff_scale_factor = 6
         radius_sf         = 7
         group_sf          = 3
         Tortuosity_dist   = 0.05*3500/pressure
+        voxel_size        = 50
 
     elif (diffusion == "5percent" or diffusion == "5.0percent"): # because I messed up naming conventions
+
+        voxel_size        = 10
 
         if (pressure == 1):
             Diff_smear        = 0.314/np.sqrt(pressure)
             energy_threshold  = 0.0002
-            diff_scale_factor = 4
+            diff_scale_factor = 6
             radius_sf         = 7
             group_sf          = 5
             Tortuosity_dist   = 0.03*3500/pressure
+        elif (pressure == 5):
+            Diff_smear        = 0.314/np.sqrt(pressure)
+            diff_scale_factor = 6
+            energy_threshold  = 0.001
+            radius_sf         = 7
+            group_sf          = 30
+            Tortuosity_dist   = 0.1*3500/pressure
+        elif (pressure == 10):
+            Diff_smear        = 0.314/np.sqrt(pressure)
+            diff_scale_factor = 6
+            energy_threshold  = 0.001
+            radius_sf         = 7
+            group_sf          = 30
+            Tortuosity_dist   = 0.1*3500/pressure
+        elif (pressure == 15):
+            Diff_smear        = 0.314/np.sqrt(pressure)
+            diff_scale_factor = 6
+            energy_threshold  = 0.001
+            radius_sf         = 7
+            group_sf          = 30
+            Tortuosity_dist   = 0.1*3500/pressure
         elif (pressure == 25):
             Diff_smear        = 0.314/np.sqrt(pressure)
             diff_scale_factor = 5
@@ -1925,17 +1983,12 @@ def InitializeParams(pressure, diffusion):
             group_sf          = 3
             Tortuosity_dist   = 0.1*3500/pressure
         else:
-            Diff_smear        = 0.314/np.sqrt(pressure)
-            diff_scale_factor = 5
-            energy_threshold  = 0.001
-            radius_sf         = 7
-            group_sf          = 3
-            Tortuosity_dist   = 0.1*3500/pressure
+            print("Unknown pressure configured")
 
     else:
         print("Error gas percentage not defined at 60 V/cm/bar field")
 
-    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist
+    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------

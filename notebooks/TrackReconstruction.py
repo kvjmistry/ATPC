@@ -137,9 +137,9 @@ if plot:
         plot_tracks(axs[2], temp_df['y'], temp_df['z'], connection_count, 'Y', 'Z', Tracks)
 
         plt.tight_layout()
-        if (cluster !=0):
-            plt.savefig(f"plots/TrackingAlgoOut/event_{evt}_{diffusion}.pdf")
-        else:
-            plt.savefig(f"plots/TrackingAlgoOut/event_{evt}.pdf")
+        dir_path = f"plots/TrackingAlgoOut/{pressure}bar/{diffusion}"
+        os.makedirs(dir_path, exist_ok=True)
+        plt.savefig(f"plots/TrackingAlgoOut/{pressure}bar/{diffusion}/event_{evt}.pdf")
+
 
         plt.close()
