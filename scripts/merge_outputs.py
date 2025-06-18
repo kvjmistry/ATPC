@@ -49,8 +49,8 @@ df_primary = df_primary[ cuts ]
 filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))].event_id.unique()
 
 # Only filter 100 events for signal
-if (mode == "ATPC_0nubb"):
-    filtered_events = filtered_events[0:100]
+#if (mode == "ATPC_0nubb"):
+filtered_events = filtered_events[0:100] # for now filter first 100 events for all
 
 if (len(filtered_events) ==0):
     filtered_events = df_meta.event_id.unique()[0:100]
