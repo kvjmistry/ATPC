@@ -2,8 +2,8 @@ import pandas as pd
 import glob
 
 
-pressures = [1,5,10,15]
-modes = ["0nubb", "Bi", "Tl"]
+pressures = [1,5,10,15,25]
+modes = ["0nubb", "single"]
 
 
 
@@ -16,7 +16,7 @@ for m in modes:
     for p in pressures:
         print("On Pressure:", p)
 
-        files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/NEXUSTRUE/{m}/{p}bar/*.h5"))
+        files = sorted(glob.glob(f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/ATPC_{m}/{p}bar/TrueInfo/*.h5"))
 
         for f in files:
             df = pd.read_hdf(f, "trueinfo")
@@ -26,7 +26,7 @@ for m in modes:
 
     print(dfs)
 
-    with pd.HDFStore(f"merged/NEXUS_True_ATPC_{m}.h5", mode='w', complevel=5, complib='zlib') as store:
+    with pd.HDFStore(f"files/TrueInfo_ATPC_{m}.h5", mode='w', complevel=5, complib='zlib') as store:
         store.put('trueinfo', dfs, format='table')
 
 
