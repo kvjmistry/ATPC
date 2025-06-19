@@ -1023,6 +1023,13 @@ def CalcAngularVars(df_angles, Tortuosity_dist):
         # Get the track -- should be fine to reset the index as long as the ordering is preserved to df_angles
         trk_df = df_angles[df_angles.trkID == trkID].reset_index(drop=True) 
 
+        # For the deltas and brems, use 10% of the track to compute quanitites
+        if (trk_df.primary.iloc[0] != 1):
+            Tortuosity_dist = max(trk_df.cumulative_distance/10)
+            if (Tortuosity_dist == 0):
+                Tortuosity_dist = 10
+
+
         # Loop over the nodes in the track
         for index in range(len(trk_df)):
 
@@ -1912,7 +1919,7 @@ def InitializeParams(pressure, diffusion):
         energy_threshold  = 0.0
         diff_scale_factor = 7
         radius_sf         = 10
-        group_sf          = 2.1
+        group_sf          = 10
         Tortuosity_dist   = 0.02*3500/pressure
         voxel_size        = 5
     
