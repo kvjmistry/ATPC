@@ -16,12 +16,14 @@ for i, f in enumerate(files):
     if i %50 ==0:
         print(f"{i} /", len(files))
 
-    df_meta.append(pd.read_hdf(f, "/MC/meta))
+    df_meta.append(pd.read_hdf(f, "/MC/meta"))
 
 
 df_meta = pd.concat(df_meta)
 
-print(df_meta.sum(numeric_only=True))
+cols_to_sum = ['N_gen', 'N_saved', 'N_savedE1', 'N_savedE2']
+df_meta[cols_to_sum] = df_meta[cols_to_sum].astype(int) # They are saved as strings...
+print(df_meta[cols_to_sum].sum())
 
 
 
