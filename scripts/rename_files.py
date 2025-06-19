@@ -5,7 +5,7 @@ import glob
 base_dir = "ATPC_0nubb"
 
 # Define the pressure and diffusion categories
-pressures = ["1bar", "5bar", "10bar", "15bar"]
+pressures = ["1bar", "5bar", "10bar", "15bar", "25bar"]
 diffusions = {
     "1bar": ["0.0percent", "0.05percent", "0.1percent", "0.25percent","5percent", "nexus", "nodiff"],
     "5bar": ["0.05percent", "5percent", "nexus", "nodiff"],
