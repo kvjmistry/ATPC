@@ -1463,7 +1463,7 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
 #            which will help the algorithm converge better
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size = InitializeParams(pressure, diffusion)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_half_length = InitializeParams(pressure, diffusion)
     print("Diffussion smear is: ",        Diff_smear,            "mm/sqrt(cm)")
     print("Energy threshold is: ",        1000*energy_threshold, "keV")
     print("diffision scale factor is: ",  diff_scale_factor)
@@ -1471,6 +1471,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     print("Hit grouping factor is: ",     group_sf)
     print("Tortuosity distance scale is:", Tortuosity_dist)
     print("The voxel size is:",           voxel_size)
+    print("The det half_length is: ",     det_half_length)
 
     # There seems to be a duplicate row sometimes
     data = data.drop_duplicates()
@@ -1664,8 +1665,11 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
 
     df_angles = CalcAngularVars(df_angles, Tortuosity_dist)  # Add the tortuosity and squiglicity
+
+    contained = CheckHitBounds(data, det_half_length-20, +20, det_half_length*2.0-20)
+
     print(df_angles)
-    return df_angles, Tracks, connected_nodes, connection_count, pass_flag
+    return df_angles, Tracks, connected_nodes, connection_count, pass_flag, contained
 # ---------------------------------------------------------------------------------------------------
 def Cluster(input_data, R):
 
@@ -1700,7 +1704,7 @@ def Cluster(input_data, R):
 # ---------------------------------------------------------------------------------------------------
 def RunClustering(node_centers_df, pressure, diffusion):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size = InitializeParams(pressure, diffusion)
+    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_size = InitializeParams(pressure, diffusion)
 
     event_id = node_centers_df.event_id.iloc[0]
 
@@ -1734,11 +1738,6 @@ def RunClustering(node_centers_df, pressure, diffusion):
     node_centers_df["event_id"] = event_id
 
     # Bin the data
-
-    # Calculate the detector half-length
-    density = 5.987*pressure
-    M = 1000/0.9
-    det_size = 1000*np.cbrt((4 * M) / (np.pi * density))/2.0
 
     # Create the bins ---- 
     xbw  = mean_sigma
@@ -1870,6 +1869,7 @@ def CheckSameGroup(df, node1, node2):
 #         group_sf -  This scales the distance used to group hit clusters together
 #         Tortuosity_dist - this is the length scale to calculate tortuosity
 #         voxel_size -- the size of binning used in the smear code
+#         det_half_length - the half-length of the detector
 def InitializeParams(pressure, diffusion):
 
     Diff_smear        = 0.0 # mm / sqrt(cm)
@@ -1879,6 +1879,11 @@ def InitializeParams(pressure, diffusion):
     group_sf          = 3
     Tortuosity_dist   = 70
     voxel_size        = 10
+
+    # Calculate the detector half-length
+    density = 5.987*pressure
+    M = 1000/0.9
+    det_half_length = 1000*np.cbrt((4 * M) / (np.pi * density))/2.0
 
     # This is acutally 10 % Helium
     if (diffusion == "0.05percent"):
@@ -1995,8 +2000,13 @@ def InitializeParams(pressure, diffusion):
     else:
         print("Error gas percentage not defined at 60 V/cm/bar field")
 
-    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size
+    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_half_length
 # ---------------------------------------------------------------------------------------------------
+# Function to check if any hit is outside a desired volume in cylinder geometry
+# Returns False if the event is considered to be contained and True if contained
+def CheckHitBounds(df, R, z_min, z_max):
+    outside = (df.x**2 + df.y**2 > R**2) | (df.z < z_min) | (df.z > z_max)
+    return not outside.any()
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------

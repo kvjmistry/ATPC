@@ -68,13 +68,13 @@ for index, event_num in enumerate(hits.event_id.unique()):
     hit = hits[hits.event_id == event_num]
 
     # These different function calls allow for different sorting if there is soeme kind of failure
-    df, Tracks, connected_nodes, connection_count, pass_flag     = RunTracking(hit, cluster, pressure, diffusion, 0)
+    df, Tracks, connected_nodes, connection_count, pass_flag, contained     = RunTracking(hit, cluster, pressure, diffusion, 0)
     if (not pass_flag):
         print("Error in track reco, try resorting hits")
-        df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 1)
+        df, Tracks, connected_nodes, connection_count, pass_flag, contained = RunTracking(hit, cluster, pressure, diffusion, 1)
     if (not pass_flag):
         print("Error in track reco, try resorting hits")
-        df, Tracks, connected_nodes, connection_count, pass_flag = RunTracking(hit, cluster, pressure, diffusion, 2)
+        df, Tracks, connected_nodes, connection_count, pass_flag, contained = RunTracking(hit, cluster, pressure, diffusion, 2)
 
     if (not pass_flag):
         print("Track still failed, skipping,...")
@@ -86,6 +86,7 @@ for index, event_num in enumerate(hits.event_id.unique()):
     df_list.append(df)
     temp_meta = GetTrackdf(df, Tracks, 500/pressure, 180/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
     temp_meta = UpdateTrackMeta(temp_meta, df, 100/pressure) # Merge deltas and brems that are near the blobs in the metadata
+    temp_meta["contained"] = contained
     df_meta.append(temp_meta)
 
     print("Printing Metadata\n", temp_meta)
