@@ -1620,7 +1620,8 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
    
     # return if the event did not pass
     if (not pass_flag):
-        return data, Tracks, connected_nodes, connection_count, pass_flag, True
+        contained = CheckHitBounds(data, det_half_length-20, +20, det_half_length*2.0-20)
+        return data, Tracks, connected_nodes, connection_count, pass_flag, contained
 
     # Function to get track topo info
     num_nodes = 0
