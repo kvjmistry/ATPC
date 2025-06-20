@@ -1620,7 +1620,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
    
     # return if the event did not pass
     if (not pass_flag):
-        return data, Tracks, connected_nodes, connection_count, pass_flag
+        return data, Tracks, connected_nodes, connection_count, pass_flag, True
 
     # Function to get track topo info
     num_nodes = 0
