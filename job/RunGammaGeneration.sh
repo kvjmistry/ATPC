@@ -57,6 +57,9 @@ nexus ${INIT} -n 10000000
 python3 CompressEvents.py ATPC_${MODE}_${Enrichment}_${Pressure}bar
 python3 SmearEnergy.py ATPC_${MODE}_${Enrichment}_${Pressure}bar
 
+rm *.mac
+rm *.py
+
 echo "FINISHED....EXITING"
 
 end=`date +%s`

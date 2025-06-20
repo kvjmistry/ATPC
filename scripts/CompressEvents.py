@@ -25,8 +25,8 @@ print("Total events before:", len(parts['event_id'].unique()))
 # event_list = hits['event_id'].unique()[0:60]
 
 # Filter the DataFrame to keep only 50 events
-hits = hits[hits['event_id'].isin(event_list)]
-parts = parts[parts['event_id'].isin(event_list)]
+# hits = hits[hits['event_id'].isin(event_list)]
+# parts = parts[parts['event_id'].isin(event_list)]
 
 print("Total events after:", len(event_list))
 print(parts)
