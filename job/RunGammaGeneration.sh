@@ -35,6 +35,7 @@ cp /home/argon/Projects/Krishan/ATPC/config/${CONFIG} .
 cp /home/argon/Projects/Krishan/ATPC/config/${INIT} .
 cp /home/argon/Projects/Krishan/ATPC/scripts/SmearEnergy.py .
 cp /home/argon/Projects/Krishan/ATPC/scripts/CompressEvents.py .
+cp /home/argon/Projects/Krishan/ATPC/scripts/GetGammaInfo.py .
 
 # Copy the ion generator disrupter file
 if [ "$MODE" = "Bi_ion" ]; then
@@ -54,7 +55,10 @@ cat ${INIT}
 nexus ${INIT} -n 10000000
 
 
-python3 CompressEvents.py ATPC_${MODE}_${Enrichment}_${Pressure}bar
+python3 CompressEvents.py ATPC_${MODE}_${Enrichment}_${Pressure}bar ATPC_${MODE}_${Enrichment}_${Pressure}bar
+
+python3 GetGammaInfo.py  ATPC_${MODE}_${Enrichment}_${Pressure}bar ${SLURM_ARRAY_TASK_ID}
+
 python3 SmearEnergy.py ATPC_${MODE}_${Enrichment}_${Pressure}bar
 
 rm *.mac
@@ -67,3 +71,4 @@ let deltatime=end-start
 let hours=deltatime/3600
 let minutes=(deltatime/60)%60
 let seconds=deltatime%60
+printf "Time spent: %d:%02d:%02d\n" $hours $minutes $seconds 

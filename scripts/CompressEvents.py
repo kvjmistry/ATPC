@@ -28,7 +28,7 @@ print("Total events before:", len(parts['event_id'].unique()))
 # hits = hits[hits['event_id'].isin(event_list)]
 # parts = parts[parts['event_id'].isin(event_list)]
 
-print("Total events after:", len(event_list))
+# print("Total events after:", len(event_list))
 print(parts)
 print(hits)
 print(config)
