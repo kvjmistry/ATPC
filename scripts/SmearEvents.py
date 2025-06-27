@@ -10,7 +10,7 @@ pd.options.mode.chained_assignment = None  # Disable the warning
 
 # USAGE:
 # python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
-# e.g. python3 SmearEvents.py /Users/mistryk2/Packages/nexus/ATPC_0nuBB 1 1 10
+# e.g. python3 SmearEvents.py ATPC_0nubb_1bar_Efilt 1 0.1 20 1.0 1 
 
 # Record the start time
 start_time = time.time()
