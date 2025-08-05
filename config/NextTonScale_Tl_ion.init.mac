@@ -41,4 +41,4 @@
 /nexus/RegisterRunAction DefaultRunAction
 
 ### CONFIGURATION
-/nexus/RegisterMacro NextTonScale.config.mac
+/nexus/RegisterMacro NextTonScale_Tl_ion.config.mac
