@@ -19,9 +19,10 @@ parts  = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
 config = pd.read_hdf(sys.argv[1]+".h5", 'MC/configuration')
 print("Finished loading hits")
 
-cube_size = config[config["param_key"] == "/Geometry/ATPC/cube_size"].param_value.iloc[0]
-match = re.search(r'\d+\.\d+|\d+', cube_size)
-cube_size = float(match.group())*1000
+# cube_size = config[config["param_key"] == "/Geometry/ATPC/cube_size"].param_value.iloc[0]
+# match = re.search(r'\d+\.\d+|\d+', cube_size)
+# cube_size = float(match.group())*1000
+cube_size=2600
 print("The cube_size is:", cube_size)
 
 # Mean energy per e-. This splits up each G4 into E_hit/E_mean electrons
@@ -118,9 +119,12 @@ N_savedE1C = len(dfsE1[dfsE1.contained == True].event_id.unique()) # apply 2 cm 
 N_savedE2C = len(dfsE2[dfsE2.contained == True].event_id.unique()) # apply 2 cm containment
 min_E   = config[config["param_key"] == "/Actions/DefaultEventAction/min_energy"].param_value.iloc[0]
 max_E   = config[config["param_key"] == "/Actions/DefaultEventAction/max_energy"].param_value.iloc[0]
-P       = config[config["param_key"] == "/Geometry/ATPC/gas_pressure"].param_value.iloc[0]
-detsize = config[config["param_key"] == "/Geometry/ATPC/cube_size"].param_value.iloc[0]
-chamber_thick = config[config["param_key"] == "/Geometry/ATPC/chamber_thickn"].param_value.iloc[0]
+# P       = config[config["param_key"] == "/Geometry/ATPC/gas_pressure"].param_value.iloc[0]
+P       = 15
+# detsize = config[config["param_key"] == "/Geometry/ATPC/cube_size"].param_value.iloc[0]
+detsize=2.600
+# chamber_thick = config[config["param_key"] == "/Geometry/ATPC/chamber_thickn"].param_value.iloc[0]
+chamber_thick = 12
 seed = config[config["param_key"] == "/nexus/random_seed"].param_value.iloc[0]
 start_id = config[config["param_key"] == "/nexus/persistency/start_id"].param_value.iloc[0]
 
@@ -142,10 +146,11 @@ df_meta = pd.DataFrame({
 "start_id"  : [start_id]
 })
 
-dfsE1 = dfsE1[["event_id", "x", "y", "z", "energy", "particle_id", "n"]]
+# dfsE1 = dfsE1[["event_id", "x", "y", "z", "energy", "particle_id", "n"]]
+dfsE2 = dfsE2[["event_id", "x", "y", "z", "energy", "particle_id", "n"]]
 
 print(df_meta, "\n")
-print(dfsE1)
+print(dfsE2)
 
 # Write to the file
 outfile = sys.argv[1] + "_Efilt.h5"
@@ -154,7 +159,7 @@ print("Saving events to file: ", outfile)
 with pd.HDFStore(outfile, mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
     store.put('MC/particles', parts, format='table')
-    store.put('MC/hits', dfsE1, format='table')
+    store.put('MC/hits', dfsE2, format='table')
     store.put('MC/configuration', config, format='table')
     store.put("MC/meta", df_meta, format='table')
 
