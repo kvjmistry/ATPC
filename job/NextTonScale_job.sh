@@ -33,10 +33,10 @@ if [ "$MODE" == "0nubb" ]; then
     N_EVENTS=625
 
 elif [ "$MODE" == "Bi_ion" ]; then
-    N_EVENTS=5e6
+    N_EVENTS=2000000
 
 elif [ "$MODE" == "Tl_ion" ]; then
-    N_EVENTS=5e6
+    N_EVENTS=2000000
 fi
 
 echo "N_EVENTS: ${N_EVENTS}"
