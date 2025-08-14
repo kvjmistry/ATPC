@@ -45,16 +45,16 @@
 # /Generator/SingleParticle/momentum 0 0 1
 
 # Ion Generator for background decays... (Bi214: Z=83, A=214), (Tl208: Z=81, A=208)
-/Generator/IonGenerator/region INNER_SHIELDING
-/Generator/IonGenerator/atomic_number 83
-/Generator/IonGenerator/mass_number 214
+# /Generator/IonGenerator/region INNER_SHIELDING
+# /Generator/IonGenerator/atomic_number 83
+# /Generator/IonGenerator/mass_number 214
 
 # Decay0 interface for BB decays ... (BB0nu: DecayMode 1), (BB2nu: DecayMode 4)
-#/Generator/Decay0Interface/region ACTIVE
-#/Generator/Decay0Interface/inputFile none
-#/Generator/Decay0Interface/Xe136DecayMode 1
-#/Generator/Decay0Interface/EnergyThreshold 0. keV
-#/Generator/Decay0Interface/Ba136FinalState 0
+/Generator/Decay0Interface/region ACTIVE
+/Generator/Decay0Interface/inputFile none
+/Generator/Decay0Interface/Xe136DecayMode 1
+/Generator/Decay0Interface/EnergyThreshold 0. keV
+/Generator/Decay0Interface/Ba136FinalState 0
 
 ### ACTIONS
 /Actions/DefaultEventAction/min_energy 2.3 MeV
@@ -69,4 +69,4 @@
 #/nexus/persistency/eventType background
 /nexus/random_seed            9800
 /nexus/persistency/start_id   9800
-/nexus/persistency/output_file NextTonScale_Bi_ion
+/nexus/persistency/output_file NextTonScale_0nubb

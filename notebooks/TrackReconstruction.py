@@ -84,7 +84,14 @@ for index, event_num in enumerate(hits.event_id.unique()):
     connected_nodes_dict[event_num]   = connected_nodes
     connections_count_dict[event_num] = connection_count
     df_list.append(df)
-    temp_meta = GetTrackdf(df, Tracks, 500/pressure, 180/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
+    
+    # Slightly different input params for next1t analysis
+    if (diffusion == "next1t"):
+        temp_meta = GetTrackdf(df, Tracks, 30, 15, 15, pressure)
+    else:
+        temp_meta = GetTrackdf(df, Tracks, 500/pressure, 180/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
+    
+    
     temp_meta = UpdateTrackMeta(temp_meta, df, 100/pressure) # Merge deltas and brems that are near the blobs in the metadata
     temp_meta["contained"] = contained
     df_meta.append(temp_meta)

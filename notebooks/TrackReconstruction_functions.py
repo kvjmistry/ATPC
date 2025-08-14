@@ -1620,7 +1620,13 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
    
     # return if the event did not pass
     if (not pass_flag):
-        contained = CheckHitBounds(data, det_half_length-20, +20, det_half_length*2.0-20)
+        
+        # The NEXT1t analysis has a central cathode to account for
+        if diffusion == "next1t":
+            contained = CheckHitBoundsNext1t(data)
+        else:
+            contained = CheckHitBounds(data, det_half_length-20, +20, det_half_length*2.0-20)
+        
         return data, Tracks, connected_nodes, connection_count, pass_flag, contained
 
     # Function to get track topo info
@@ -1667,7 +1673,11 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
     df_angles = CalcAngularVars(df_angles, Tortuosity_dist)  # Add the tortuosity and squiglicity
 
-    contained = CheckHitBounds(data, det_half_length-20, +20, det_half_length*2.0-20)
+    # The NEXT1t analysis has a central cathode to account for
+    if diffusion == "next1t":
+        contained = CheckHitBoundsNext1t(data)
+    else:
+        contained = CheckHitBounds(data, det_half_length-20, +20, det_half_length*2.0-20)
 
     print(df_angles)
     return df_angles, Tracks, connected_nodes, connection_count, pass_flag, contained
@@ -1718,12 +1728,20 @@ def RunClustering(node_centers_df, pressure, diffusion):
     if (mean_sigma < 1.5*voxel_size):
         mean_sigma = 1.5*voxel_size
 
+    # Use fixed value since voxels are same size in next1t analysis
+    if (diffusion == "next1t"):
+        mean_sigma=6
+
     print("Mean Sigma is:", mean_sigma)
 
     # Apply hit grouping
     mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean())
     if (mean_sigma_group < 1.5*voxel_size):
         mean_sigma_group = 1.5*voxel_size
+
+    # Use fixed value since voxels are same size in next1t analysis
+    if diffusion == "next1t":
+        mean_sigma_group = 10
 
     df_merged = GroupHits(df_merged, mean_sigma_group)
 
@@ -1998,6 +2016,14 @@ def InitializeParams(pressure, diffusion):
         else:
             print("Unknown pressure configured")
 
+    elif (diffusion == "next1t"): # this configures 15 bar fixed 3mm voxels for NEXT1t analysis
+        Diff_smear        = 0.314/np.sqrt(pressure)
+        diff_scale_factor = 4
+        energy_threshold  = 0.001
+        radius_sf         = 7
+        group_sf          = 30
+        Tortuosity_dist   = 0.1*3500/pressure
+        det_half_length   = 1300
     else:
         print("Error gas percentage not defined at 60 V/cm/bar field")
 
@@ -2009,6 +2035,18 @@ def CheckHitBounds(df, R, z_min, z_max):
     outside = (df.x**2 + df.y**2 > R**2) | (df.z < z_min) | (df.z > z_max)
     return not outside.any()
 # ---------------------------------------------------------------------------------------------------
+# Function to check if any hit is outside a desired volume in cylinder geometry
+# Returns False if the event is considered to be contained and True if contained
+# This function only applies for the NEXT-1t analysis. 15 bar 3mm vox fixed. 
+def CheckHitBoundsNext1t(df):
+    cube_size = 2600
+    R = cube_size/2.0-20
+    z1_max = cube_size/2.0-20
+    z1_min = 20.1 # mm
+    z2_max = -20.1 #mm
+    z2_min = -cube_size/2.0+20
+    outside = (df.x**2 + df.y**2 > R**2) | (df.z < z2_min) | (df.z > z1_max) | ((df.z > z2_max) & (df.z < z1_min))
+    return not outside.any()
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------

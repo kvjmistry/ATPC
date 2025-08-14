@@ -24,7 +24,8 @@
 /Geometry/ATPC/chamber_thickn 4 cm
 /Geometry/ATPC/max_step_size 1 mm
 
-/Geometry/ATPC/detgeom cylinder
+# /Geometry/ATPC/detgeom cylinder
+/Geometry/ATPC/detgeom cylinderPTFE
 #/Geometry/ATPC/detgeom cube
 
 /Generator/IonGenerator/region CuCylinder
