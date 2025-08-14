@@ -59,7 +59,7 @@ mv NextTonne_${MODE}_Efilt.h5 NextTonne_${MODE}_nexus_${JOBID}.h5
 ls -ltrh
 
 echo "Taring the h5 files"
-tar -cvf NextTonne.tar *.h5
+tar -cvf ${JOBNAME}.tar *.h5
 
 # Cleanup
 rm *.h5
