@@ -52,11 +52,13 @@ cat ${CONFIG}
 nexus -n $N_EVENTS ${INIT}
 
 # Smear the energy, voxelize and return only window events
-python3 SmearEnergyNEXT1t.py NextTonne_${MODE}
+python3 SmearEnergyNEXT1t.py ${JOBNAME}_${MODE}
 
-mv NextTonne_${MODE}_Efilt.h5 NextTonne_${MODE}_nexus_${JOBID}.h5
+mv ${JOBNAME}_${MODE}_Efilt.h5 ${JOBNAME}_${MODE}_nexus_${JOBID}.h5
 
-python3 TrackReconstruction.py NextTonne_${MODE}_nexus_${JOBID}.h5 15 "next1t" 0
+python3 TrackReconstruction.py ${JOBNAME}_${MODE}_nexus_${JOBID}.h5 15 "next1t" 0
+
+rm ${JOBNAME}_${MODE}.h5
 
 ls -ltrh
 
