@@ -56,10 +56,12 @@ python3 SmearEnergyNEXT1t.py NextTonne_${MODE}
 
 mv NextTonne_${MODE}_Efilt.h5 NextTonne_${MODE}_nexus_${JOBID}.h5
 
+python3 TrackReconstruction.py NextTonne_${MODE}_nexus_${JOBID}.h5 15 "next1t" 0
+
 ls -ltrh
 
 echo "Taring the h5 files"
-tar -cvf ${JOBNAME}.tar *.h5
+tar -cvf ${JOBNAME}.tar *.h5 *.pkl
 
 # Cleanup
 rm *.h5
@@ -67,6 +69,7 @@ rm *.mac
 rm *.txt
 rm *.dat
 rm *.py
+rm *.pkl
 
 echo "FINISHED....EXITING" 
 
