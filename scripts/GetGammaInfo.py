@@ -101,10 +101,10 @@ parts = pd.read_hdf(sys.argv[1]+".h5", 'MC/particles')
 config = pd.read_hdf(sys.argv[1]+".h5", 'MC/configuration')
 print("Finished loading hits and parts")
 
-# cube_size = config[config["param_key"] == "/Geometry/ATPC/cube_size"].param_value.iloc[0]
-# match = re.search(r'\d+\.\d+|\d+', cube_size)
-# cube_size = float(match.group())*1000
-cube_size=2600
+cube_size = config[config["param_key"] == "/Geometry/ATPC/cube_size"].param_value.iloc[0]
+match = re.search(r'\d+\.\d+|\d+', cube_size)
+cube_size = float(match.group())*1000
+# cube_size=2600
 print("The cube_size is:", cube_size)
 
 jobid = int(sys.argv[2])
