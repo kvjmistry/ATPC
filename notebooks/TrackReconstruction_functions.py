@@ -2048,7 +2048,7 @@ def CheckHitBoundsNext1t(df):
     z1_min = 20.1 # mm
     z2_max = -20.1 #mm
     z2_min = -cube_size/2.0+20
-    outside = (df.x**2 + df.y**2 > R**2) | (df.z < z2_min) | (df.z > z1_max) | ((df.z > z2_max) & (df.z < z1_min))
+    outside = (df.x**2 + df.y**2 > R**2) | (df.z < z2_min) | (df.z > z1_max) | ((df.z-1300 > z2_max) & (df.z-1300 < z1_min)) # the -1300 shifts it back to zero to make this cut work
     return not outside.any()
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
