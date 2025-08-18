@@ -1840,6 +1840,9 @@ def RunClustering(node_centers_df, pressure, diffusion):
             'group_id' : int(group_id)
         })
 
+    # Create final DataFrame
+    databin = pd.DataFrame(result)
+
     databin["event_id"] = databin["event_id"].astype('int')
 
     return databin
