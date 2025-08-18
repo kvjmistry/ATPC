@@ -1473,8 +1473,8 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     print("The voxel size is:",           voxel_size)
     print("The det half_length is: ",     det_half_length)
 
-    # There seems to be a duplicate row sometimes
-    data = data.drop_duplicates()
+    # If there are overlapping voxels, merge them. Otherwise the energy gets messed up
+    data = (data.groupby(["event_id", "x", "y", "z"], as_index=False)["energy"].sum())
     # display(data)
 
     if ("group_id" in data.columns):
