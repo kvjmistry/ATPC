@@ -1165,11 +1165,9 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
     
     # Get the tortuosity
     T1, T2   = GetEndVariableMean(df, T_threshold, "Tortuosity")
-    # TA1, TA2 = GetEndVariableArea(df, T_threshold, pressure, "Tortuosity")
 
     # Get the squiglicity
     S1, S2   = GetEndVariableMean(df, T_threshold, "Squiglicity")
-    # SA1, SA2 = GetEndVariableArea(df, T_threshold, pressure, "Squiglicity")
     
     # Create a new DataFrame to append
     properties_df = pd.DataFrame({
@@ -1184,12 +1182,8 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
         "blob2R"         : [blob2R],
         "Tortuosity1"    : [T1], 
         "Tortuosity2"    : [T2],
-        # "TortuosityA1"   : [TA1], 
-        # "TortuosityA2"   : [TA2],
         "Squiglicity1"   : [S1],
         "Squiglicity2"   : [S2]
-        # "SquiglicityA1"  : [SA1],
-        # "SquiglicityA2"  : [SA2]
     })
 
     properties_df["trkID"] = properties_df["trkID"].astype(int)
@@ -1324,7 +1318,6 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, radius_threshold, T_
         df = pd.DataFrame([filtered_data])
         df.rename(columns={'id': 'trkID'}, inplace=True)
         df = properties_df.merge(df, on='trkID', how='inner')
-        # df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "blob1R", "blob2R", "Tortuosity1", "Tortuosity2","TortuosityA1", "TortuosityA2", "Squiglicity1","Squiglicity2","SquiglicityA1", "SquiglicityA2", "label"]]
         df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "blob1R", "blob2R", "Tortuosity1", "Tortuosity2", "Squiglicity1","Squiglicity2", "label"]]
 
         Track_df.append(df)
@@ -1347,13 +1340,8 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
     blob2R_energy = [prim_df.blob2R.iloc[0]]
     Tortuosity1   = [prim_df.Tortuosity1.iloc[0]]
     Tortuosity2   = [prim_df.Tortuosity2.iloc[0]]
-    # TortuosityA1  = [prim_df.TortuosityA1.iloc[0]]
-    # TortuosityA2  = [prim_df.TortuosityA2.iloc[0]]
     Squiglicity1  = [prim_df.Squiglicity1.iloc[0]]
     Squiglicity2  = [prim_df.Squiglicity2.iloc[0]]
-    # SquiglicityA1 = [prim_df.SquiglicityA1.iloc[0]]
-    # SquiglicityA2 = [prim_df.SquiglicityA2.iloc[0]]
-    
     
     prim_start = df_angles[df_angles['id'] == prim_df.start.iloc[0]][['x', 'y', 'z']].values
     prim_end   = df_angles[df_angles['id'] == prim_df.end.iloc[0]][['x', 'y', 'z']].values
@@ -1374,9 +1362,7 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
             blob1_energy.append(trk_df.energy.iloc[0])
             blob1R_energy.append(trk_df.energy.iloc[0])
             Tortuosity1.append(trk_df.Tortuosity1.iloc[0])
-            # TortuosityA1.append(trk_df.TortuosityA1.iloc[0])
             Squiglicity1.append(trk_df.Squiglicity1.iloc[0])
-            # SquiglicityA1.append(trk_df.SquiglicityA1.iloc[0])
             continue
 
         # Check delta/brem to the blob2 pos
@@ -1386,25 +1372,18 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
             blob2_energy.append(trk_df.energy.iloc[0])
             blob2R_energy.append(trk_df.energy.iloc[0])
             Tortuosity2.append(trk_df.Tortuosity2.iloc[0])
-            # TortuosityA2.append(trk_df.TortuosityA2.iloc[0])
             Squiglicity2.append(trk_df.Squiglicity2.iloc[0])
-            # SquiglicityA2.append(trk_df.SquiglicityA2.iloc[0])
             continue
 
     # remove any nan from the variables e.g. if there was bad delta information
-    blob1_energy  = [x for x in blob1_energy   if not np.isnan(x)]
-    blob2_energy  = [x for x in blob2_energy   if not np.isnan(x)]
-    blobR_energy  = [x for x in blob1R_energy  if not np.isnan(x)]
-    blobR_energy  = [x for x in blob2R_energy  if not np.isnan(x)]
-    blobR_energy  = [x for x in blob2R_energy  if not np.isnan(x)]
-    Tortuosity1   = [x for x in Tortuosity1    if not np.isnan(x)]
-    Tortuosity2   = [x for x in Tortuosity2    if not np.isnan(x)]
-    # TortuosityA1  = [x for x in TortuosityA1   if not np.isnan(x)]
-    # TortuosityA2  = [x for x in TortuosityA2   if not np.isnan(x)]
-    Squiglicity1  = [x for x in Squiglicity1   if not np.isnan(x)]
-    Squiglicity2  = [x for x in Squiglicity2   if not np.isnan(x)]
-    # SquiglicityA1 = [x for x in SquiglicityA1  if not np.isnan(x)]
-    # SquiglicityA2 = [x for x in SquiglicityA2  if not np.isnan(x)]
+    blob1_energy   = [x for x in blob1_energy   if not np.isnan(x)]
+    blob2_energy   = [x for x in blob2_energy   if not np.isnan(x)]
+    blob1R_energy  = [x for x in blob1R_energy  if not np.isnan(x)]
+    blob2R_energy  = [x for x in blob2R_energy  if not np.isnan(x)]
+    Tortuosity1    = [x for x in Tortuosity1    if not np.isnan(x)]
+    Tortuosity2    = [x for x in Tortuosity2    if not np.isnan(x)]
+    Squiglicity1   = [x for x in Squiglicity1   if not np.isnan(x)]
+    Squiglicity2   = [x for x in Squiglicity2   if not np.isnan(x)]
 
     # Here we need to add an additional check to see which blob energy was greater and then swap the columns accordingly
     blob1_energy_sum = np.float32(sum(blob1_energy))
@@ -1420,12 +1399,8 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
         df.loc[df['primary'] == 1, 'blob2R'] = np.float32(sum(blob2R_energy))
         df.loc[df['primary'] == 1, 'Tortuosity1'] = sum(Tortuosity1)
         df.loc[df['primary'] == 1, 'Tortuosity2'] = sum(Tortuosity2)
-        # df.loc[df['primary'] == 1, 'TortuosityA1'] = sum(TortuosityA1)
-        # df.loc[df['primary'] == 1, 'TortuosityA2'] = sum(TortuosityA2)
         df.loc[df['primary'] == 1, 'Squiglicity1'] = sum(Squiglicity1)
         df.loc[df['primary'] == 1, 'Squiglicity2'] = sum(Squiglicity2)
-        # df.loc[df['primary'] == 1, 'SquiglicityA1'] = sum(SquiglicityA1)
-        # df.loc[df['primary'] == 1, 'SquiglicityA2'] = sum(SquiglicityA2)
     else:
         print("Swapping the blob names")
         df.loc[df['primary'] == 1, 'blob1']  = blob1_energy_sum # these have already been swapped so keep
@@ -1434,18 +1409,33 @@ def UpdateTrackMeta(Track_df, df_angles, distance):
         df.loc[df['primary'] == 1, 'blob2R'] = np.float32(sum(blob1R_energy))
         df.loc[df['primary'] == 1, 'Tortuosity1'] = sum(Tortuosity2) # swap the tortosity
         df.loc[df['primary'] == 1, 'Tortuosity2'] = sum(Tortuosity1)
-        # df.loc[df['primary'] == 1, 'TortuosityA1'] = sum(TortuosityA2) # swap the tortosity
-        # df.loc[df['primary'] == 1, 'TortuosityA2'] = sum(TortuosityA1)
         df.loc[df['primary'] == 1, 'Squiglicity1'] = sum(Squiglicity2) # swap the squiglicity
         df.loc[df['primary'] == 1, 'Squiglicity2'] = sum(Squiglicity1)
-        # df.loc[df['primary'] == 1, 'SquiglicityA1'] = sum(SquiglicityA2) # swap the squiglicity
-        # df.loc[df['primary'] == 1, 'SquiglicityA2'] = sum(SquiglicityA1)
 
         # Swap the ends too
         temp_start = df.loc[df['primary'] == 1, 'start']
         temp_end   = df.loc[df['primary'] == 1, 'end']
         df.loc[df['primary'] == 1, 'start'] = temp_end
         df.loc[df['primary'] == 1, 'end']   = temp_start
+
+    return df
+# ---------------------------------------------------------------------------------------------------
+# Function to swap variables so that var1>var2
+def SwapVariables(df, var1, var2):
+        df[var1], df[var2] = np.where( df[var1] >= df[var2], (df[var1], df[var2]), (df[var2], df[var1]))
+        return df
+# ---------------------------------------------------------------------------------------------------
+# A simpler approach to defining end-point variables
+# All higher variables are organized so that blob1 is the highest and blob2 is the lowest
+# Do keep energies across all separate tracks unique
+def UpdateTrackMeta2(Track_df):
+
+    df = Track_df.copy()
+
+    df = SwapVariables(df, "blob1", "blob2")
+    df = SwapVariables(df, "blob1R", "blob2R")
+    df = SwapVariables(df, "Tortuosity1", "Tortuosity2")
+    df = SwapVariables(df, "Squiglicity1", "Squiglicity2")
 
     return df
 

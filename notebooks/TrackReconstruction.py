@@ -62,8 +62,8 @@ print("Total events to process:", len(hits.event_id.unique()))
 for index, event_num in enumerate(hits.event_id.unique()):
     print("On index, Event:", index, event_num)
 
-    # if (index > 2):
-    #     continue
+    # if (index > 100):
+    #     break
 
     hit = hits[hits.event_id == event_num]
 
@@ -92,11 +92,12 @@ for index, event_num in enumerate(hits.event_id.unique()):
         temp_meta = GetTrackdf(df, Tracks, 500/pressure, 180/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
     
     
-    temp_meta = UpdateTrackMeta(temp_meta, df, 100/pressure) # Merge deltas and brems that are near the blobs in the metadata
+    # temp_meta = UpdateTrackMeta(temp_meta, df, 10/pressure) # Merge deltas and brems that are near the blobs in the metadata
+    temp_meta = UpdateTrackMeta2(temp_meta) # ensure variables are organized so that var 1 > var 2 e.g blob1>blob2
     temp_meta["contained"] = contained
     df_meta.append(temp_meta)
 
-    print("Printing Metadata\n", temp_meta)
+    print("Printing Metadata\n", temp_meta[["event_id", "primary", "length", "energy", "blob1", "blob2", "blob1R", "blob2R", "Tortuosity1", "Tortuosity2", "Squiglicity1", "Squiglicity2", "label", "contained"]])
     print("\n\n")
 
 
