@@ -37,7 +37,7 @@ error  = jobs/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/jobid$(NewProcess)/$(Clus
 output = jobs/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 
 # Transfer input files
-transfer_input_files = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(PRESSURE)/$(DIFF)/$(infile),$(HOME_LOCATION)/notebooks/TrackReconstruction.py,$(HOME_LOCATION)/notebooks/TrackReconstruction_functions.py
+transfer_input_files = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(PRESSURE)/$(DIFF)/$(infile),$(HOME_LOCATION)/scripts/TrackReconstruction.py,$(HOME_LOCATION)/scripts/TrackReconstruction_functions.py
 
 # Transfer output files
 transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/trackreco/$(jobname)/$(PRESSURE)/$(DIFF)/$(jobname)_trackreco_$(Cluster)_$(NewProcess).tar"
