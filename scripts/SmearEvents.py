@@ -5,12 +5,13 @@ import numpy  as np
 import pandas as pd
 from collections import Counter
 import time
+from TrackReconstruction_functions import *
 
 pd.options.mode.chained_assignment = None  # Disable the warning
 
 # USAGE:
-# python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
-# e.g. python3 SmearEvents.py ATPC_0nubb_1bar_Efilt 1 0.1 20 1.0 1 
+# python3 SmearEvents.py <name of nexus input file name (remove .h5 extension)> <Scale Factor> <CO2Percentage> <pressure> <JOBID>
+# e.g. python3 SmearEvents.py ATPC_0nubb_1bar_Efilt 1 0.1 1.0 1 
 
 # Record the start time
 start_time = time.time()
@@ -27,35 +28,44 @@ rng = np.random.default_rng()
 
 percentage =  float(sys.argv[3])
 
-pressure =  float(sys.argv[5])
+pressure =  float(sys.argv[4])
 
 # Diffusion values desired
 
 # Scaling by sqrt pressure is applied to convert to whatever pressure at the same E/P
 if (percentage == 0.0):
+    diffusion = "0.0percent"
     DL = 0.9 / np.sqrt(pressure) # mm / sqrt(cm)
     DT = 3.5 / np.sqrt(pressure) # mm / sqrt(cm)
 elif (percentage == 0.05): # !!HELIUM 10%!!
+    diffusion = "0.05percent"
     DL = 0.75 / np.sqrt(pressure) # mm / sqrt(cm)
     DT = 1.60 / np.sqrt(pressure) # mm / sqrt(cm)
 elif (percentage == 0.1):
+    diffusion = "0.1percent"
     DL = 1.037 / np.sqrt(pressure) # mm / sqrt(cm)
     DT = 0.818 / np.sqrt(pressure) # mm / sqrt(cm)
 elif (percentage == 0.25):
+    diffusion = "0.25percent"
     DL = 0.627 / np.sqrt(pressure) # mm / sqrt(cm)
     DT = 0.463 / np.sqrt(pressure) # mm / sqrt(cm)
 elif (percentage == 5):
+    diffusion = "5percent"
     DL = 0.314 / np.sqrt(pressure) # mm / sqrt(cm)
     DT = 0.300 / np.sqrt(pressure) # mm / sqrt(cm)
 else:
     print("Error CO2 percentage not defined at 60 V/cm/bar field")
 
-
 # This is the scaling amount of diffusion
 # scaling factor is in number of sigma
 diff_scaling = float(sys.argv[2])
-binsize = float(sys.argv[4])
-jobid = int(sys.argv[6])
+jobid = int(sys.argv[5])
+
+if (diff_scaling == 0):
+    diffusion = "nodiff"
+
+# Load in configured params
+_, energy_threshold, _, _, _, _, binsize, det_size = InitializeParams(pressure, diffusion)
 
 print("Scaling Factor: ", diff_scaling)
 print("CO2 Percentage: ", percentage)
@@ -63,13 +73,7 @@ print("Pressure: ", pressure)
 print("DL: ", DL, "mm/sqrt(cm)")
 print("DT: ", DT, "mm/sqrt(cm)")
 print("binsize is: ", binsize, "mm")
-
-# Calculate the detector half-length
-
-density = 5.987*pressure
-M = 1000/0.9
-det_size = 1000*np.cbrt((4 * M) / (np.pi * density))/2.0
-# det_size = int(np.cbrt(6000**3/pressure)/2.0) 
+print("diffusion setting:", diffusion)
 
 # Create the bins ---- 
 xbw=binsize
@@ -127,7 +131,7 @@ def generate_random(row):
         # If we smeared to something negative then apply no diffusion
         # This should only be an edge effted
         if (z < 0):
-            print("Negative z value! This should be uncommon...", z)
+            # print("Negative z value! This should be uncommon...", z)
             z = 0
         
         sigma_DL = diff_scaling * DL * np.sqrt(z / 10.0)  # mm  
@@ -218,117 +222,30 @@ for index, e in enumerate(hits.event_id.unique()):
     electrons_smear = pd.concat([electrons, new_columns], axis=1)
     electrons_smear["energy"] = E_mean # MeV
 
-    # We need to set this to make sure we keep the information about the unbinned positions in the weighting
-    electrons_smear['x'] = electrons_smear['x_smear']
-    electrons_smear['y'] = electrons_smear['y_smear']
-    electrons_smear['z'] = electrons_smear['z_smear']
-
     # Now lets bin the data
-    electrons_smear['x_smear'] = pd.cut(x=electrons_smear['x_smear'], bins=xbins,labels=xbin_c, include_lowest=True)
-    electrons_smear['y_smear'] = pd.cut(x=electrons_smear['y_smear'], bins=ybins,labels=ybin_c, include_lowest=True)
-    electrons_smear['z_smear'] = pd.cut(x=electrons_smear['z_smear'], bins=zbins,labels=zbin_c, include_lowest=True)
+    electrons_smear['x'] = pd.cut(x=electrons_smear['x_smear'], bins=xbins,labels=xbin_c, include_lowest=True)
+    electrons_smear['y'] = pd.cut(x=electrons_smear['y_smear'], bins=ybins,labels=ybin_c, include_lowest=True)
+    electrons_smear['z'] = pd.cut(x=electrons_smear['z_smear'], bins=zbins,labels=zbin_c, include_lowest=True)
 
-    # Loop over the rows in the dataframe and sum the energies of all electrons in a bin. 
-    # Also change the bin center to use the mean x,y,z position
-    x_mean_arr = []
-    y_mean_arr = []
-    z_mean_arr = []
-    energy_mean_arr = []
-    x_mean_arr_temp = np.array([])
-    y_mean_arr_temp = np.array([])
-    z_mean_arr_temp = np.array([])
-    summed_energy = 0
-    event_id = 0
-    energy_temp =electrons_smear.energy.sum()
-
-    counter = 0
-
-    # Sort so all the bin labels are next to one another
-    electrons_smear = electrons_smear.sort_values(by=['x_smear', 'y_smear', 'z_smear'])
-
-    # Loop over all bins and aggregate to get total energy in each bin and their
-    # mean x,y,z position
-    for index, row in electrons_smear.iterrows():
-
-        # First row 
-        if (counter == 0):
-            temp_x = row["x_smear"]
-            temp_y = row["y_smear"]
-            temp_z = row["z_smear"]
-            summed_energy +=row["energy"]
-            event_id = row["event_id"]
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            counter+=1
-            continue
-
-        # Same bin
-        if (row["x_smear"] == temp_x and row["y_smear"] == temp_y and row["z_smear"] == temp_z):
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            summed_energy +=row["energy"]
-
-            # Final row
-            if index == electrons_smear.index[-1]:
-                if (summed_energy != 0): 
-                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                    energy_mean_arr.append(summed_energy)
-
-        # Aggregate and store for next 
-        else:
-            if (summed_energy != 0): 
-                x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                energy_mean_arr.append(summed_energy)
-            
-            temp_x = row["x_smear"]
-            temp_y = row["y_smear"]
-            temp_z = row["z_smear"]
-            summed_energy = 0
-            x_mean_arr_temp = np.array([])
-            y_mean_arr_temp = np.array([])
-            z_mean_arr_temp = np.array([])
-            
-            x_mean_arr_temp = np.append(x_mean_arr_temp, row["x"])
-            y_mean_arr_temp = np.append(y_mean_arr_temp, row["y"])
-            z_mean_arr_temp = np.append(z_mean_arr_temp, row["z"])
-            summed_energy +=row["energy"]
-
-            # Final row
-            if index == electrons_smear.index[-1]:
-                if (summed_energy != 0): 
-                    x_mean_arr = np.append(x_mean_arr,np.mean(x_mean_arr_temp))
-                    y_mean_arr = np.append(y_mean_arr,np.mean(y_mean_arr_temp))
-                    z_mean_arr = np.append(z_mean_arr,np.mean(z_mean_arr_temp))
-                    energy_mean_arr.append(summed_energy)
-
-        counter+=1
-
-    events = np.ones_like(energy_mean_arr)*event_id
-
-    # Make the dataframe again
-    electrons_smear = pd.DataFrame({  "event_id" : events, "x" : x_mean_arr,  "y" : y_mean_arr,  "z" : z_mean_arr,  "energy" : energy_mean_arr  }) 
-
-    rounded_energy_temp = round(energy_temp, 3)
-    rounded_energy_sum = round(sum(energy_mean_arr), 3)
-
-    if rounded_energy_temp != rounded_energy_sum:
-        print(f"Error! Mismatch in the summed energy: {rounded_energy_temp} != {rounded_energy_sum}")
-
-    # File writing
+    electrons_smear = electrons_smear[["event_id", "x", "y", "z", "energy"]]
     electrons_smear = electrons_smear.sort_values(by=['event_id', 'z', 'x', 'y'])
 
     electrons_smear['event_id'] = electrons_smear['event_id'].astype(int)
     electrons_smear['z'] = electrons_smear['z'].astype('float32')
     electrons_smear['x'] = electrons_smear['x'].astype('float32')
     electrons_smear['y'] = electrons_smear['y'].astype('float32')
-    # df['energy'] = df['energy']*1e6
     electrons_smear['energy'] = electrons_smear['energy'].astype('float32')
+
+    # Drop any nan numbers. These happen because the smeared hit goes outside the detector active volume
+    electrons_smear = electrons_smear.dropna()
+
+    electrons_smear = (
+        electrons_smear.groupby(["event_id", "x", "y", "z"], as_index=False, sort=False)
+        .agg({"energy": "sum"})
+    )
+
+    # Reduce dataframe size by redistributing below threshold hits
+    electrons_smear = CutandRedistibuteEnergy(electrons_smear, energy_threshold)
 
     df_smear.append(electrons_smear)
 
