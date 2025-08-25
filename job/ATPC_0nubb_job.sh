@@ -54,13 +54,13 @@ if [ "$MODE" == "1bar" ]; then
     # Get true info about the blobs etc
     python3 GetTrueInfo.py 1 0nubb ${JOBNAME}_1bar_Efilt.h5 ${JOBID}
     
-    # <Scale Factor> <CO2Percentage> <binsize> <pressure> <JOBID>
-    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 0 0.05  5 1.0 ${JOBID} # Just smearing
-    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1 0.05 20 1.0 ${JOBID} # Helium 10%
-    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1  0.1 20 1.0 ${JOBID} # 0.1 % CO2
-    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1 0.25 15 1.0 ${JOBID} # 0.25 % CO2
-    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1    5 10 1.0 ${JOBID} # 5.0 % CO2
-    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1    0 50 1.0 ${JOBID} # Pure Xe
+    # <Scale Factor> <CO2Percentage> <pressure> <JOBID>
+    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 0 0.05 1.0 ${JOBID} # Just smearing
+    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1 0.05 1.0 ${JOBID} # Helium 10%
+    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1  0.1 1.0 ${JOBID} # 0.1 % CO2
+    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1 0.25 1.0 ${JOBID} # 0.25 % CO2
+    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1    5 1.0 ${JOBID} # 5.0 % CO2
+    python3 SmearEvents.py ${JOBNAME}_1bar_Efilt 1    0 1.0 ${JOBID} # Pure Xe
     mv ${JOBNAME}_1bar_Efilt.h5 ${JOBNAME}_1bar_nexus_${JOBID}.h5
     rm ${JOBNAME}_1bar.h5 
 
@@ -88,9 +88,9 @@ elif [ "$MODE" == "5bar" ]; then
     # Get true info about the blobs etc
     python3 GetTrueInfo.py 5 0nubb ${JOBNAME}_5bar_Efilt.h5 ${JOBID}
     
-    python3 SmearEvents.py ${JOBNAME}_5bar_Efilt 0 0.05  5 5.0 ${JOBID} # Just smearing
-    python3 SmearEvents.py ${JOBNAME}_5bar_Efilt 1 0.05 20 5.0 ${JOBID} # Helium 10%
-    python3 SmearEvents.py ${JOBNAME}_5bar_Efilt 1    5 10 5.0 ${JOBID} # 5.0 % CO2
+    python3 SmearEvents.py ${JOBNAME}_5bar_Efilt 0 0.05 5.0 ${JOBID} # Just smearing
+    python3 SmearEvents.py ${JOBNAME}_5bar_Efilt 1 0.05 5.0 ${JOBID} # Helium 10%
+    python3 SmearEvents.py ${JOBNAME}_5bar_Efilt 1    5 5.0 ${JOBID} # 5.0 % CO2
     mv ${JOBNAME}_5bar_Efilt.h5 ${JOBNAME}_5bar_nexus_${JOBID}.h5
     rm ${JOBNAME}_5bar.h5
 
@@ -118,9 +118,9 @@ elif [ "$MODE" == "10bar" ]; then
     # Get true info about the blobs etc
     python3 GetTrueInfo.py 10 0nubb ${JOBNAME}_10bar_Efilt.h5 ${JOBID}
     
-    python3 SmearEvents.py ${JOBNAME}_10bar_Efilt 0 0.05  5 10.0 ${JOBID} # Just smearing
-    python3 SmearEvents.py ${JOBNAME}_10bar_Efilt 1 0.05 20 10.0 ${JOBID} # Helium 10%
-    python3 SmearEvents.py ${JOBNAME}_10bar_Efilt 1    5 10 10.0 ${JOBID} # 5.0 % CO2
+    python3 SmearEvents.py ${JOBNAME}_10bar_Efilt 0 0.05 10.0 ${JOBID} # Just smearing
+    python3 SmearEvents.py ${JOBNAME}_10bar_Efilt 1 0.05 10.0 ${JOBID} # Helium 10%
+    python3 SmearEvents.py ${JOBNAME}_10bar_Efilt 1    5 10.0 ${JOBID} # 5.0 % CO2
     mv ${JOBNAME}_10bar_Efilt.h5 ${JOBNAME}_10bar_nexus_${JOBID}.h5
     rm ${JOBNAME}_10bar.h5
 
@@ -148,9 +148,9 @@ elif [ "$MODE" == "15bar" ]; then
     # Get true info about the blobs etc
     python3 GetTrueInfo.py 15 0nubb ${JOBNAME}_15bar_Efilt.h5 ${JOBID}
     
-    python3 SmearEvents.py ${JOBNAME}_15bar_Efilt 0 0.05  5 15.0 ${JOBID} # Just smearing
-    python3 SmearEvents.py ${JOBNAME}_15bar_Efilt 1 0.05 20 15.0 ${JOBID} # Helium 10%
-    python3 SmearEvents.py ${JOBNAME}_15bar_Efilt 1    5 10 15.0 ${JOBID} # 5.0 % CO2
+    python3 SmearEvents.py ${JOBNAME}_15bar_Efilt 0 0.05 15.0 ${JOBID} # Just smearing
+    python3 SmearEvents.py ${JOBNAME}_15bar_Efilt 1 0.05 15.0 ${JOBID} # Helium 10%
+    python3 SmearEvents.py ${JOBNAME}_15bar_Efilt 1    5 15.0 ${JOBID} # 5.0 % CO2
     mv ${JOBNAME}_15bar_Efilt.h5 ${JOBNAME}_15bar_nexus_${JOBID}.h5
     rm ${JOBNAME}_15bar.h5
 
@@ -178,9 +178,9 @@ elif [ "$MODE" == "25bar" ]; then
     # Get true info about the blobs etc
     python3 GetTrueInfo.py 25 0nubb ${JOBNAME}_25bar_Efilt.h5 ${JOBID}
     
-    python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 0 0.05  5 25.0 ${JOBID} # Just smearing
-    python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 1 0.05 20 25.0 ${JOBID} # Helium 10%
-    python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 1    5 10 25.0 ${JOBID} # 5.0 % CO2
+    python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 0 0.05 25.0 ${JOBID} # Just smearing
+    python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 1 0.05 25.0 ${JOBID} # Helium 10%
+    python3 SmearEvents.py ${JOBNAME}_25bar_Efilt 1    5 25.0 ${JOBID} # 5.0 % CO2
     mv ${JOBNAME}_25bar_Efilt.h5 ${JOBNAME}_25bar_nexus_${JOBID}.h5
     rm ${JOBNAME}_25bar.h5
 fi

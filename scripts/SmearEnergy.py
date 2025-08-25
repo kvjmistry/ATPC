@@ -10,6 +10,8 @@ pd.options.mode.chained_assignment = None  # Disable the warning
 # We keep track of the number of generated events and number of saved events before E res
 # cuts in a metadata table. Only the hits with 1% ROI window are kept
 
+# To run
+# python3 SmearEnergy.py <name without extension>
 
 # Load in the hits
 print("Loading hits")

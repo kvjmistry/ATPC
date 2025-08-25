@@ -74,6 +74,7 @@ print("DL: ", DL, "mm/sqrt(cm)")
 print("DT: ", DT, "mm/sqrt(cm)")
 print("binsize is: ", binsize, "mm")
 print("diffusion setting:", diffusion)
+print("energy threshold is", energy_threshold)
 
 # Create the bins ---- 
 xbw=binsize
