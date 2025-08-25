@@ -3,9 +3,10 @@ import pandas as pd
 import glob
 import sys
 
-mode="0nubb"
-pressure=1
+mode=sys.argv[1]
+pressure=int(sys.argv[2])
 file_path = f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/ATPC_{mode}/{pressure}bar/nexus/"
+print(file_path)
 
 files = sorted(glob.glob(f"{file_path}/*.h5"))
 

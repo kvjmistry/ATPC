@@ -1,12 +1,13 @@
 import pandas as pd
 import glob
+import sys
 
-
-Type="ATPC_Tl"
-P="1bar"
-D="nodiff"
+Type=sys.argv[1]
+P=sys.argv[2]
+D=sys.argv[3]
 
 path = f"{Type}/{P}/{D}/*.h5"
+print(path)
 
 files = glob.glob(path)
 
