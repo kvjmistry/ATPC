@@ -1463,14 +1463,16 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     print("The voxel size is:",           voxel_size)
     print("The det half_length is: ",     det_half_length)
 
-    # If there are overlapping voxels, merge them. Otherwise the energy gets messed up
-    data = (data.groupby(["event_id", "x", "y", "z"], as_index=False)["energy"].sum())
     # display(data)
 
     if ("group_id" in data.columns):
         data = data[['event_id', 'x', 'y', 'z',"energy", "group_id"]]
+        data = (data.groupby(["event_id", "x", "y", "z", "group_id"], as_index=False)["energy"].sum())
     else:
         data = data[['event_id', 'x', 'y', 'z',"energy"]]
+        
+        # If there are overlapping voxels, merge them. Otherwise the energy gets messed up
+        data = (data.groupby(["event_id", "x", "y", "z"], as_index=False)["energy"].sum())
 
 
     # Sort this way as input always
@@ -1588,6 +1590,11 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     # print(GetMedianNodeDist(Tracks, data))
 
     dist_threshold = 4*GetMedianNodeDist(Tracks, data)
+    
+    # Stops code breaking if there are no tracks formed
+    if (np.isnan(dist_threshold)):
+        print("Error distance threshold was zero, tracking algoithm will have undefined behaviour...")
+        dist_threshold = 10
     print("Dist Thresh",dist_threshold)
 
     # Add in any nodes without connections to the tracks as gammas and re-label other tracks as gammas
@@ -1902,105 +1909,96 @@ def InitializeParams(pressure, diffusion):
 
         if (pressure == 1):
             Diff_smear        = 2.0/np.sqrt(pressure)
-            energy_threshold  = 0.0004
+            energy_threshold  = 0.0003
             diff_scale_factor = 5
             radius_sf         = 7
             group_sf          = 3
             Tortuosity_dist   = 0.05*3500/pressure
-            voxel_size        = 20
+            voxel_size        = 29
         elif (pressure == 5):
             Diff_smear        = 2.0/np.sqrt(pressure)
-            energy_threshold  = 0.0006
+            energy_threshold  = 0.0003
             diff_scale_factor = 5
             radius_sf         = 7
             group_sf          = 3
             Tortuosity_dist   = 0.05*3500/pressure
-            voxel_size        = 8
+            voxel_size        = 10
         elif (pressure == 10):
             Diff_smear        = 2.0/np.sqrt(pressure)
-            energy_threshold  = 0.0007
+            energy_threshold  = 0.0003
             diff_scale_factor = 3
             radius_sf         = 7
             group_sf          = 5
             Tortuosity_dist   = 0.05*3500/pressure
-            voxel_size        = 5
+            voxel_size        = 6
         elif (pressure == 15):
             Diff_smear        = 2.0/np.sqrt(pressure)
-            energy_threshold  = 0.001
+            energy_threshold  = 0.0003
+            diff_scale_factor = 3
+            radius_sf         = 7
+            group_sf          = 7
+            Tortuosity_dist   = 0.05*3500/pressure
+            voxel_size        = 5
+        else:
+            Diff_smear        = 2.0/np.sqrt(pressure)
+            energy_threshold  = 0.0003
             diff_scale_factor = 3
             radius_sf         = 7
             group_sf          = 7
             Tortuosity_dist   = 0.05*3500/pressure
             voxel_size        = 3
-        else:
-            Diff_smear        = 2.0/np.sqrt(pressure)
-            energy_threshold  = 0.001
-            diff_scale_factor = 3
-            radius_sf         = 7
-            group_sf          = 7
-            Tortuosity_dist   = 0.05*3500/pressure
-            voxel_size        = 1
     
     elif (diffusion == "nodiff"):
         Diff_smear        = 0.1
-        energy_threshold  = 0.0
         diff_scale_factor = 7
         radius_sf         = 10
         group_sf          = 10
         Tortuosity_dist   = 0.02*3500/pressure
+        voxel_size = 5/np.sqrt(pressure)
+        energy_threshold  = 0.0003
         
-        if (pressure == 1):
-            voxel_size = 3
-        elif (pressure == 5):
-            voxel_size = 1
-        elif (pressure == 10):
-            voxel_size = 0.7
-        elif (pressure == 15):
-            voxel_size = 0.3
-        else:
-            voxel_size = 0.2
     
     elif (diffusion == "0.1percent"):
         Diff_smear        = 1.0
-        energy_threshold  = 0.0005
+        energy_threshold  = 0.0003
         diff_scale_factor = 5
         radius_sf         = 7
         group_sf          = 3
         Tortuosity_dist   = 0.05*3500/pressure
-        voxel_size        = 20
+        voxel_size        = 23
     
     elif (diffusion == "0.25percent"):
         Diff_smear        = 0.703 
-        energy_threshold  = 0.0006
+        energy_threshold  = 0.0003
         diff_scale_factor = 4
         radius_sf         = 7
         group_sf          = 5
         Tortuosity_dist   = 0.03*3500/pressure
-        voxel_size        = 15
+        voxel_size        = 14
     
     elif (diffusion == "0.0percent"):
         Diff_smear        = 2.6
-        energy_threshold  = 0.0005
+        energy_threshold  = 0.0003
         diff_scale_factor = 6
         radius_sf         = 7
         group_sf          = 3
         Tortuosity_dist   = 0.05*3500/pressure
-        voxel_size        = 40
+        voxel_size        = 55
 
     elif (diffusion == "5percent" or diffusion == "5.0percent"): # because I messed up naming conventions
 
         if (pressure == 1):
             Diff_smear        = 0.314/np.sqrt(pressure)
-            energy_threshold  = 0.0005
+            energy_threshold  = 0.0003
             diff_scale_factor = 6
             radius_sf         = 7
             group_sf          = 5
             Tortuosity_dist   = 0.03*3500/pressure
-            voxel_size        = 10
+            voxel_size        = 8
         elif (pressure == 5):
             Diff_smear        = 0.314/np.sqrt(pressure)
             diff_scale_factor = 6
-            energy_threshold  = 0.0005
+            energy_threshold  = 0.0003
             radius_sf         = 7
             group_sf          = 30
             Tortuosity_dist   = 0.1*3500/pressure
@@ -2008,7 +2006,7 @@ def InitializeParams(pressure, diffusion):
         elif (pressure == 10):
             Diff_smear        = 0.314/np.sqrt(pressure)
             diff_scale_factor = 6
-            energy_threshold  = 0.0005
+            energy_threshold  = 0.0003
             radius_sf         = 7
             group_sf          = 30
             Tortuosity_dist   = 0.1*3500/pressure
@@ -2016,7 +2014,7 @@ def InitializeParams(pressure, diffusion):
         elif (pressure == 15):
             Diff_smear        = 0.314/np.sqrt(pressure)
             diff_scale_factor = 6
-            energy_threshold  = 0.0005
+            energy_threshold  = 0.0003
             radius_sf         = 7
             group_sf          = 30
             Tortuosity_dist   = 0.1*3500/pressure
@@ -2024,11 +2022,11 @@ def InitializeParams(pressure, diffusion):
         elif (pressure == 25):
             Diff_smear        = 0.314/np.sqrt(pressure)
             diff_scale_factor = 5
-            energy_threshold  = 0.0005
+            energy_threshold  = 0.0003
             radius_sf         = 30
             group_sf          = 3
             Tortuosity_dist   = 0.1*3500/pressure
-            voxel_size        = 0.8
+            voxel_size        = 1
         else:
             print("Unknown pressure configured")
 
