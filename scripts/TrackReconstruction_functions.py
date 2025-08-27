@@ -669,6 +669,35 @@ def GetMinima(index, all_visited_, input_data, temp_dist_matrix, R):
     return mean_point, all_visited
 
 # ---------------------------------------------------------------------------------------------------
+# Function to get the energy weighted mean of a set of hits within a radius R. 
+# Any hits that are used here will not be used again.
+def GetMinimaWeighted(index, all_visited_, input_data, temp_dist_matrix, R):
+
+
+    distances_from_index = temp_dist_matrix[index] # distances for node to others
+    sorted_indices = np.argsort(distances_from_index) # indexes sorted by smallest distance
+
+    closest_nodes = sorted_indices[distances_from_index[sorted_indices] < R]
+    
+    closest_nodes = list(set(closest_nodes) - set(all_visited_))
+
+    selected_rows = input_data.iloc[closest_nodes] # Df containing the nodes within distance
+
+    energy = selected_rows['energy'].values
+
+    mean_x = np.average(selected_rows['x'].values, weights=energy)
+    mean_y = np.average(selected_rows['y'].values, weights=energy)
+    mean_z = np.average(selected_rows['z'].values, weights=energy)
+
+    energy_sum = energy.sum()
+    group_id   = int(selected_rows["group_id"].iloc[0])
+
+    median_point = np.array([mean_x, mean_y, mean_z, energy_sum, group_id])
+
+    all_visited = all_visited_ + list(closest_nodes)
+
+    return median_point, all_visited
+# ---------------------------------------------------------------------------------------------------
 # Function to apply an energy threshold then redistibute the removed energy proportionally based
 # on the fraction of the energy each hit has of the total remaining energy
 def CutandRedistibuteEnergy(data, energy_threshold):
@@ -1700,7 +1729,7 @@ def Cluster(input_data, R):
 
         # random_index = np.random.choice(filtered_indexes)
         random_index = filtered_indexes[0]
-        median, all_visited = GetMinima(random_index, all_visited, input_data, temp_dist_matrix, R)
+        median, all_visited = GetMinimaWeighted(random_index, all_visited, input_data, temp_dist_matrix, R)
 
         node_centers.append(median)
 
@@ -1711,6 +1740,8 @@ def Cluster(input_data, R):
 
 # ---------------------------------------------------------------------------------------------------
 def RunClustering(node_centers_df, pressure, diffusion):
+
+    print("Clustering Event")
 
     Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_size = InitializeParams(pressure, diffusion)
 
@@ -1728,6 +1759,8 @@ def RunClustering(node_centers_df, pressure, diffusion):
     # Use fixed value since voxels are same size in next1t analysis
     if (diffusion == "next1t"):
         mean_sigma=6
+    elif (diffusion == "nodiff"):
+        mean_sigma=10/np.sqrt(pressure)
 
     print("Mean Sigma is:", mean_sigma)
 
@@ -1739,6 +1772,8 @@ def RunClustering(node_centers_df, pressure, diffusion):
     # Use fixed value since voxels are same size in next1t analysis
     if diffusion == "next1t":
         mean_sigma_group = 10
+    elif (diffusion == "nodiff"):
+        mean_sigma_group=5
 
     df_merged = GroupHits(df_merged, mean_sigma_group)
 
