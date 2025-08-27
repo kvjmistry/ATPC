@@ -36,12 +36,14 @@ print("Pressure:", pressure, "bar")
 diffusion= sys.argv[3]
 print("diffusion:",diffusion)
 
-if (diffusion != "nodiff"):
-    print("Including Clustering!")
-    cluster = 1
-else:
-    print("No Clustering!")
-    cluster = 0
+# if (diffusion != "nodiff"):
+#     print("Including Clustering!")
+#     cluster = 1
+# else:
+#     print("No Clustering!")
+#     cluster = 0
+
+cluster = 1
 
 
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
@@ -128,6 +130,8 @@ if plot:
         # temp_df = temp_df.sort_values(by='id')
         temp_df.index = temp_df.id
 
+        hits_event = hits[hits.event_id == evt]
+
         # print(temp_df)
 
         connected_nodes = connected_nodes_dict[evt]
@@ -138,12 +142,15 @@ if plot:
         fig, axs = plt.subplots(1, 3, figsize=(15, 5))
         # Plot xy projection
         plot_tracks(axs[0], temp_df['x'], temp_df['y'], connection_count, 'X', 'Y', Tracks)
+        axs[0].scatter(hits_event.x, hits_event.y, c="k",s=2)
 
         # Plot xz projection
         plot_tracks(axs[1], temp_df['x'], temp_df['z'], connection_count, 'X', 'Z', Tracks)
+        axs[1].scatter(hits_event.x, hits_event.z, c="k",s=2)
 
         # Plot yz projection
         plot_tracks(axs[2], temp_df['y'], temp_df['z'], connection_count, 'Y', 'Z', Tracks)
+        axs[2].scatter(hits_event.y, hits_event.z, c="k",s=2)
 
         plt.tight_layout()
         dir_path = f"plots/TrackingAlgoOut/{pressure}bar/{diffusion}"
