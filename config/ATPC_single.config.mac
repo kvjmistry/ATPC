@@ -7,9 +7,11 @@
 /process/em/verbose 0
 
 # GENERATION
-/Generator/SingleParticle/particle e-
-/Generator/SingleParticle/min_energy 2.3 MeV
-/Generator/SingleParticle/max_energy 2.6 MeV
+#/Generator/SingleParticle/particle e-
+#/Generator/SingleParticle/min_energy 2.3 MeV
+#/Generator/SingleParticle/max_energy 2.6 MeV
+/Generator/IonGenerator/atomic_number 54
+/Generator/IonGenerator/mass_number 137
 
 
 ##### ACTIONS #####
@@ -28,7 +30,7 @@
 /Geometry/ATPC/max_step_size 1 mm
 
 /Geometry/ATPC/detgeom cylinder
-/Generator/SingleParticle/region CuCylinderActive
+/Generator/IonGenerator/region CuCylinderActive
 
 # PERSISTENCY
 #/nexus/persistency/eventType background
