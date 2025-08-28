@@ -644,6 +644,7 @@ def GetAnglesDF(df, all_visited, primary, trkid):
     return df
 
 # ---------------------------------------------------------------------------------------------------
+# Function not used anymore
 def GetMinima(index, all_visited_, input_data, temp_dist_matrix, R):
 
 
@@ -1467,7 +1468,15 @@ def UpdateTrackMeta2(Track_df):
     df = SwapVariables(df, "Squiglicity1", "Squiglicity2")
 
     return df
+# ---------------------------------------------------------------------------------------------------
+# For two dataframes, get the shortest distance between any point on df1 to df2
+def GetShortestDistTracks(df1, df2):
 
+    coords1 = df1[['x','y','z']].to_numpy()
+    coords2 = df2[['x','y','z']].to_numpy()
+
+    shortest_distance = cdist(coords1, coords2).min()
+    return shortest_distance
 # ---------------------------------------------------------------------------------------------------
 # Master function to run the tracking algorithm
 # the new dataframe will contain the following new columns:
@@ -1620,10 +1629,10 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
     dist_threshold = 4*GetMedianNodeDist(Tracks, data)
     
-    # Stops code breaking if there are no tracks formed
+    # If we get a nan here, something bad happened so return
     if (np.isnan(dist_threshold)):
-        print("Error distance threshold was zero, tracking algoithm will have undefined behaviour...")
-        dist_threshold = 10
+        print("Error distance threshold was zero, tracking algoithm will have undefined behaviour...quitting")
+        return data, Tracks, connected_nodes, connection_count, False, False
     print("Dist Thresh",dist_threshold)
 
     # Add in any nodes without connections to the tracks as gammas and re-label other tracks as gammas
@@ -1696,6 +1705,14 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
             all_visited = all_visited + trk_nodes
             df_angles = pd.concat([df_angles, trk], ignore_index=True)
 
+            # Calculate the distance of any brems to the primary track. 
+            # If the distance of any brem node is too close to the primary track then we may have a reco issue. 
+            # Try again with different sorting of nodes to see if it helps
+            if "Brem" in t["label"]:
+                brem_prim_dist = GetShortestDistTracks(Primary_Track, trk)
+                if (brem_prim_dist < dist_threshold/3.0 and sort_flag != 2):
+                    print("Brem distance failed distance threshold, try re-running to see if helps", brem_prim_dist, "<", dist_threshold/3.0 )
+                    return data, Tracks, connected_nodes, connection_count, False, True
 
     df_angles = CalcAngularVars(df_angles, Tortuosity_dist)  # Add the tortuosity and squiglicity
 
@@ -1766,14 +1783,12 @@ def RunClustering(node_centers_df, pressure, diffusion):
 
     # Apply hit grouping
     mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean())
-    if (mean_sigma_group < 1.5*voxel_size):
-        mean_sigma_group = 1.5*voxel_size
+    if (mean_sigma_group < voxel_size/1.5):
+        mean_sigma_group = voxel_size/1.5
 
     # Use fixed value since voxels are same size in next1t analysis
     if diffusion == "next1t":
         mean_sigma_group = 10
-    elif (diffusion == "nodiff"):
-        mean_sigma_group=5
 
     df_merged = GroupHits(df_merged, mean_sigma_group)
 
@@ -1896,8 +1911,8 @@ def GroupHits(df, threshold):
     df["group_id"] = db.labels_
 
     if (len(df.group_id.unique()) > 8):
-        print("Running grouping again new mean sigma is:", threshold*10)
-        df = GroupHits(df, threshold*10)
+        print("Running grouping again new mean sigma is:", threshold*2)
+        df = GroupHits(df, threshold*2)
 
     return df
 # ---------------------------------------------------------------------------------------------------
@@ -1918,8 +1933,7 @@ def CheckSameGroup(df, node1, node2):
 #         energy_threshold - this removes hits with an energy below this val and redistibutes its
 #                            energy amongst the remaining hits proportationally
 #         diff_scale_factor - This addtional adjustment scales the radius in clustering by this amount
-#         radius_sf - The no diffusion files have a lot of nodes so skew the median node distance.
-#                     factor helps to adjust that
+#         radius_sf - This scales the median distance of nodes used in the first step of the tracking algorithm looping (to define the max distance we can make a connection). 
 #         group_sf -  This scales the distance used to group hit clusters together
 #         Tortuosity_dist - this is the length scale to calculate tortuosity
 #         voxel_size -- the size of binning used in the smear code
@@ -1955,7 +1969,7 @@ def InitializeParams(pressure, diffusion):
             energy_threshold  = 0.0003
             diff_scale_factor = 5
             radius_sf         = 7
-            group_sf          = 3
+            group_sf          = 2
             Tortuosity_dist   = 0.05*3500/pressure
             voxel_size        = 10
         elif (pressure == 10):
@@ -1987,10 +2001,13 @@ def InitializeParams(pressure, diffusion):
         Diff_smear        = 0.1
         diff_scale_factor = 7
         radius_sf         = 10
-        group_sf          = 10
+        group_sf          = 20
         Tortuosity_dist   = 0.02*3500/pressure
         voxel_size = 5/np.sqrt(pressure)
         energy_threshold  = 0.0003
+
+        if pressure >=5:
+            group_sf = 10
         
     
     elif (diffusion == "0.1percent"):
@@ -2035,7 +2052,7 @@ def InitializeParams(pressure, diffusion):
             diff_scale_factor = 6
             energy_threshold  = 0.0003
             radius_sf         = 7
-            group_sf          = 30
+            group_sf          = 1
             Tortuosity_dist   = 0.1*3500/pressure
             voxel_size        = 3
         elif (pressure == 10):
@@ -2043,7 +2060,7 @@ def InitializeParams(pressure, diffusion):
             diff_scale_factor = 6
             energy_threshold  = 0.0003
             radius_sf         = 7
-            group_sf          = 30
+            group_sf          = 5
             Tortuosity_dist   = 0.1*3500/pressure
             voxel_size        = 2
         elif (pressure == 15):
@@ -2051,14 +2068,14 @@ def InitializeParams(pressure, diffusion):
             diff_scale_factor = 6
             energy_threshold  = 0.0003
             radius_sf         = 7
-            group_sf          = 30
+            group_sf          = 5
             Tortuosity_dist   = 0.1*3500/pressure
             voxel_size        = 1
         elif (pressure == 25):
             Diff_smear        = 0.314/np.sqrt(pressure)
             diff_scale_factor = 5
             energy_threshold  = 0.0003
-            radius_sf         = 30
+            radius_sf         = 5
             group_sf          = 3
             Tortuosity_dist   = 0.1*3500/pressure
             voxel_size        = 1
