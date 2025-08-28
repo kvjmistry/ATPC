@@ -72,10 +72,10 @@ for index, event_num in enumerate(hits.event_id.unique()):
     # These different function calls allow for different sorting if there is soeme kind of failure
     df, Tracks, connected_nodes, connection_count, pass_flag, contained     = RunTracking(hit, cluster, pressure, diffusion, 0)
     if (not pass_flag):
-        print("Error in track reco, try resorting hits")
+        print("Error in track reco, try resorting hits\n")
         df, Tracks, connected_nodes, connection_count, pass_flag, contained = RunTracking(hit, cluster, pressure, diffusion, 1)
     if (not pass_flag):
-        print("Error in track reco, try resorting hits")
+        print("Error in track reco, try resorting hits\n")
         df, Tracks, connected_nodes, connection_count, pass_flag, contained = RunTracking(hit, cluster, pressure, diffusion, 2)
 
     if (not pass_flag):
@@ -105,6 +105,13 @@ for index, event_num in enumerate(hits.event_id.unique()):
 
 df = pd.concat(df_list)
 df_meta = pd.concat(df_meta)
+
+# Print the reconstruction efficiency and any events that failed
+Reco_eff = 100*len(df_meta.event_id.unique())/ len(hits.event_id.unique())
+print("Track reconstruction efficiency:", Reco_eff)
+if Reco_eff < 100:
+    missing_events = set(hits.event_id.unique()) - set(df_meta.event_id.unique())
+    print("Events in hits but not in df_meta:", missing_events)
 
 with pd.HDFStore(f"{file_out_seg}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
