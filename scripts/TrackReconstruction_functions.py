@@ -1523,7 +1523,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
             data =  RunClustering(data, pressure, diffusion)
         else:
             print("Skipping Clustering due to not enough points")
-    
+
     # If clustering has not been applied then we assume it was nodiff sample
     # in this case apply grouping to generate the column
     if ("group_id" not in data.columns):
@@ -1551,6 +1551,10 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     # index : [connected node 1, connected node 2,...]
     connected_nodes = {}
     connections = []
+
+    if (len(data) == 1):
+        print("Error only one row in dataframe, cannot build a track from this")
+        return data, [], connected_nodes, connection_count, False, False
 
     # Tunable parameters
     Median_dist = GetMedianNodeDistances(data) # Median distance between nodes
@@ -1975,7 +1979,7 @@ def InitializeParams(pressure, diffusion):
         elif (pressure == 10):
             Diff_smear        = 2.0/np.sqrt(pressure)
             energy_threshold  = 0.0003
-            diff_scale_factor = 3
+            diff_scale_factor = 5
             radius_sf         = 7
             group_sf          = 5
             Tortuosity_dist   = 0.05*3500/pressure
@@ -1983,7 +1987,7 @@ def InitializeParams(pressure, diffusion):
         elif (pressure == 15):
             Diff_smear        = 2.0/np.sqrt(pressure)
             energy_threshold  = 0.0003
-            diff_scale_factor = 3
+            diff_scale_factor = 5
             radius_sf         = 7
             group_sf          = 7
             Tortuosity_dist   = 0.05*3500/pressure
@@ -1991,7 +1995,7 @@ def InitializeParams(pressure, diffusion):
         else:
             Diff_smear        = 2.0/np.sqrt(pressure)
             energy_threshold  = 0.0003
-            diff_scale_factor = 3
+            diff_scale_factor = 5
             radius_sf         = 7
             group_sf          = 7
             Tortuosity_dist   = 0.05*3500/pressure
@@ -2008,12 +2012,13 @@ def InitializeParams(pressure, diffusion):
 
         if pressure >=5:
             group_sf = 10
+            radius_sf = 5
         
     
     elif (diffusion == "0.1percent"):
         Diff_smear        = 1.0
         energy_threshold  = 0.0003
-        diff_scale_factor = 5
+        diff_scale_factor = 7
         radius_sf         = 7
         group_sf          = 3
         Tortuosity_dist   = 0.05*3500/pressure
@@ -2022,8 +2027,8 @@ def InitializeParams(pressure, diffusion):
     elif (diffusion == "0.25percent"):
         Diff_smear        = 0.703 
         energy_threshold  = 0.0003
-        diff_scale_factor = 4
-        radius_sf         = 7
+        diff_scale_factor = 5
+        radius_sf         = 5
         group_sf          = 5
         Tortuosity_dist   = 0.03*3500/pressure
         voxel_size        = 14
@@ -2031,7 +2036,7 @@ def InitializeParams(pressure, diffusion):
     elif (diffusion == "0.0percent"):
         Diff_smear        = 2.6
         energy_threshold  = 0.0003
-        diff_scale_factor = 6
+        diff_scale_factor = 8
         radius_sf         = 7
         group_sf          = 3
         Tortuosity_dist   = 0.05*3500/pressure
@@ -2042,7 +2047,7 @@ def InitializeParams(pressure, diffusion):
         if (pressure == 1):
             Diff_smear        = 0.314/np.sqrt(pressure)
             energy_threshold  = 0.0003
-            diff_scale_factor = 6
+            diff_scale_factor = 4 
             radius_sf         = 7
             group_sf          = 5
             Tortuosity_dist   = 0.03*3500/pressure
@@ -2065,7 +2070,7 @@ def InitializeParams(pressure, diffusion):
             voxel_size        = 2
         elif (pressure == 15):
             Diff_smear        = 0.314/np.sqrt(pressure)
-            diff_scale_factor = 6
+            diff_scale_factor = 4
             energy_threshold  = 0.0003
             radius_sf         = 7
             group_sf          = 5
@@ -2073,7 +2078,7 @@ def InitializeParams(pressure, diffusion):
             voxel_size        = 1
         elif (pressure == 25):
             Diff_smear        = 0.314/np.sqrt(pressure)
-            diff_scale_factor = 5
+            diff_scale_factor = 4
             energy_threshold  = 0.0003
             radius_sf         = 5
             group_sf          = 3
