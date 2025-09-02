@@ -1184,11 +1184,15 @@ def SortEnergy(blob1, blob2):
 # radius_threshold   : the radius of sphere to calculate blob energy
 # T_threshold        : the distance along the track to calculate the tortuosity
 # pressure           : (int) the gas pressure
-def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_threshold, radius_threshold, T_threshold, pressure):
+def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_threshold, radius_threshold, T_threshold, df_angles_nobrem):
 
     # Now Get the energy of the primary end points radius method
     blob1R   = GetBlobEnergyRadius(df, p_start, radius_threshold)
     blob2R   = GetBlobEnergyRadius(df, p_end,   radius_threshold)
+
+    # Now Get the energy of the primary end points radius method, include delta information
+    blob1RTD   = GetBlobEnergyRadius(df_angles_nobrem, p_start, radius_threshold)
+    blob2RTD   = GetBlobEnergyRadius(df_angles_nobrem, p_end,   radius_threshold)
     
     # Now Get the energy of the primary end points length method
     blob1, blob2 = GetBlobEnergyLength(df, distance_threshold) # Uses cumulative distance
@@ -1210,6 +1214,8 @@ def GetTrackProperties(df, trkID, primary, p_start, p_end, eventid, distance_thr
         "blob2"          : [blob2],
         "blob1R"         : [blob1R],
         "blob2R"         : [blob2R],
+        "blob1RTD"       : [blob1RTD],
+        "blob2RTD"       : [blob2RTD],
         "Tortuosity1"    : [T1], 
         "Tortuosity2"    : [T2],
         "Squiglicity1"   : [S1],
@@ -1321,14 +1327,21 @@ def GetBlobEnergyLength(df, distance_threshold):
 # Function call to get the track metadata
 # df_angles          : the dataframe containing track angles
 # RebuiltTrack       : the dict containing overall track infomation
-# distance_threshold : the distance to calculate the blob energy
-# radius_threshold   : the radius of sphere to calculate blob energy
-# T_threshold        : the distance along the track to calculate the tortuosity
+# distance_threshold : the distance walking along track to calculate the blob energy (track lengths > 1e3*pressure only)
+# radius_threshold   : the radius of sphere to calculate blob energy (track lengths > 1e3*pressure only)
+# T_threshold        : the distance walking along the track to calculate the tortuosity (track lengths > 1e3*pressure only)
 # pressure           : (int) the gas pressure
 def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, radius_threshold, T_threshold, pressure):
     Track_df = []
 
     # print("distance_threshold, radius_threshold, T_threshold, pressure: ", distance_threshold, radius_threshold, T_threshold, pressure)
+
+    brem_ids = []
+    # Loop over tracks and keep track of brem ids
+    # we use this to filter from the main df the brems so they dont get included in the blob calculation
+    for t in RebuiltTrack:
+        if ("Brem" in t["label"]):
+            brem_ids.append(t["id"])
     
     # loop over the tracks
     for t in RebuiltTrack:
@@ -1342,13 +1355,19 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, radius_threshold, T_
         eventid = df_angles.event_id.iloc[0]
         primary_id = df_angles[df_angles.trkID == t["id"]]["primary"].iloc[0]
 
-        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], primary_id, p_start, p_end, eventid, distance_threshold, radius_threshold, T_threshold, pressure)
+        # For short tracks, use 10% of the track for calculation of variables
+        if t["length"]*pressure < 1000 and t["length"]*pressure>0:
+            radius_threshold   = t["length"]/10.0
+            distance_threshold = t["length"]/10.0
+            T_threshold        = t["length"]/10.0
+
+        properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], primary_id, p_start, p_end, eventid, distance_threshold, radius_threshold, T_threshold, df_angles[~df_angles["trkID"].isin(brem_ids)])
 
         # Convert to DataFrame
         df = pd.DataFrame([filtered_data])
         df.rename(columns={'id': 'trkID'}, inplace=True)
         df = properties_df.merge(df, on='trkID', how='inner')
-        df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "blob1R", "blob2R", "Tortuosity1", "Tortuosity2", "Squiglicity1","Squiglicity2", "label"]]
+        df = df[["event_id", "trkID","primary", "start", "end", "length", "energy", "blob1", "blob2", "blob1R", "blob2R","blob1RTD", "blob2RTD", "Tortuosity1", "Tortuosity2", "Squiglicity1","Squiglicity2", "label"]]
 
         Track_df.append(df)
 
@@ -1464,6 +1483,7 @@ def UpdateTrackMeta2(Track_df):
 
     df = SwapVariables(df, "blob1", "blob2")
     df = SwapVariables(df, "blob1R", "blob2R")
+    df = SwapVariables(df, "blob1RTD", "blob2RTD")
     df = SwapVariables(df, "Tortuosity1", "Tortuosity2")
     df = SwapVariables(df, "Squiglicity1", "Squiglicity2")
 

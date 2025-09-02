@@ -91,7 +91,7 @@ for index, event_num in enumerate(hits.event_id.unique()):
     if (diffusion == "next1t"):
         temp_meta = GetTrackdf(df, Tracks, 30, 15, 15, pressure)
     else:
-        temp_meta = GetTrackdf(df, Tracks, 500/pressure, 180/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
+        temp_meta = GetTrackdf(df, Tracks, 500/pressure, 225/pressure, 225/pressure, pressure) # scale these params inversely with the pressure
     
     
     # temp_meta = UpdateTrackMeta(temp_meta, df, 10/pressure) # Merge deltas and brems that are near the blobs in the metadata
@@ -100,6 +100,7 @@ for index, event_num in enumerate(hits.event_id.unique()):
     df_meta.append(temp_meta)
 
     print("Printing Metadata\n", temp_meta[["event_id", "primary", "length", "energy", "blob1", "blob2", "blob1R", "blob2R", "Tortuosity1", "Tortuosity2", "Squiglicity1", "Squiglicity2", "label", "contained"]])
+    print(temp_meta[["event_id", "blob1RTD", "blob2RTD"]])
     print("\n\n")
 
 
