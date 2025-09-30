@@ -354,7 +354,8 @@ def Calc_FOM_err(fom, eff, eff_err, bkg, bkg_err):
     return fom*np.sqrt( (eff_err/eff)**2 + 0.25*(bkg_err/bkg)**2)
 
 # ------------------------------------------------------------------------
-def CalcEfficiency(n, N, label, pressure, mass):
+def CalcEfficiency(n, N, label, pressure, mass, applyEResCut):
+    
     efficiency = n/N
     error=np.sqrt( (efficiency/N) * (1-efficiency)  )
     
@@ -366,7 +367,22 @@ def CalcEfficiency(n, N, label, pressure, mass):
 
     return efficiency, error
 # ------------------------------------------------------------------------
+def ApplyAssymEResCut(label, n):
 
+    if (label == "nubb"):
+        return 0.82*n
+    elif (label == "Bkg"):
+        return 0.4*n
+    elif (label == "Bi"):
+        return 0.38*n
+    elif (label =="Tl"):
+        return 0.5*n
+    elif (label == "Single"):
+        return 0.53*n
+    else:
+        return 1.0*n
+
+# ------------------------------------------------------------------------
 # Function to compute count-based ratio per event_id
 def compute_ratio(group):
     # Group 1: Count of Primary + Delta*
