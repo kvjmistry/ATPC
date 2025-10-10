@@ -1,7 +1,8 @@
 # nexus.sub
 
 # The job title here.
-jobname=ATPC_0nubb
+#jobname=ATPC_0nubb
+jobname=ATPC_2nubb
 # jobname=ATPC_single
 # jobname=ATPC_Bi_ion
 # jobname=ATPC_Tl_ion
@@ -11,7 +12,7 @@ INIT=$(jobname).init.mac
 
 # mode=CO2
 # mode=Pressure
-mode=1bar
+mode=25bar
 
 OSDF_LOCATION=osdf:///ospool/ap40/data/krishan.mistry
 HOME_LOCATION=/home/krishan.mistry/code/ATPC/
@@ -31,7 +32,7 @@ output = jobs/$(jobname)/$(mode)/jobid$(NewProcess)/$(Cluster)_$(NewProcess).out
 
 # Transfer input files
 # transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/notebooks/$(script),$(HOME_LOCATION)/notebooks/CompressEvents.py
-transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/config/Bi214.mac,$(HOME_LOCATION)/scripts/GetGammaInfo.py,$(HOME_LOCATION)/scripts/SmearEnergy.py,$(HOME_LOCATION)/scripts/SmearEvents.py,$(HOME_LOCATION)/scripts/GetTrueInfo.py,$(HOME_LOCATION)/scripts/TrackReconstruction_functions.py,$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/config/Xe137.mac
+transfer_input_files = $(HOME_LOCATION)/config/$(INIT),$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/config/Bi214.mac,$(HOME_LOCATION)/scripts/GetGammaInfo.py,$(HOME_LOCATION)/scripts/SmearEnergy.py,$(HOME_LOCATION)/scripts/SmearEnergyScan.py,$(HOME_LOCATION)/scripts/SmearEvents.py,$(HOME_LOCATION)/scripts/GetTrueInfo.py,$(HOME_LOCATION)/scripts/TrackReconstruction_functions.py,$(HOME_LOCATION)/config/$(CONFIG),$(HOME_LOCATION)/config/Xe137.mac
 
 # Transfer output files
 transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/Pressure/$(jobname)/$(jobname)_$(Cluster)_$(NewProcess).tar"
