@@ -141,7 +141,7 @@ elif [ "$MODE" == "25bar" ]; then
     nexus -n $N_EVENTS ${INIT}
     
     # Smear the energy and return only ROI events
-    python3 SmearEnergyScan.py ${JOBNAME}_25bar
+    python3 SmearEnergyScan2nubb.py ${JOBNAME}_25bar
     mv ${JOBNAME}_25bar_Efilt.h5 ${JOBNAME}_25bar_nexus_${JOBID}.h5
     rm ${JOBNAME}_25bar.h5
 fi
