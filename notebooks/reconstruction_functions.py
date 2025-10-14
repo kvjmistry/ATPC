@@ -120,7 +120,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.52) & (df_primary.blob1R > 0.5) & (df_primary.energy > 2.4)
+                cuts = (df_primary.blob2R > 0.52) & (df_primary.energy > 2.4)
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.4) &  (df_primary.blob2 > 0.56) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
@@ -166,7 +166,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.51) & (df_primary.blob2 > 0.5) & (df_primary.blob1R > 0.6) & (df_primary.energy > 2.4) 
+                cuts = (df_primary.blob2R > 0.555) & (df_primary.energy > 2.4) 
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.53) & (df_primary.blob2 > 0.53) &  (df_primary.energy > 2.4)
             elif (mode == "next1t"):
@@ -213,7 +213,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.54) & (df_primary.blob2 > 0.565) & (df_primary.energy > 2.35)
+                cuts = (df_primary.blob2R > 0.6) & (df_primary.energy > 2.37)
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.54) & (df_primary.blob2 > 0.55) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):

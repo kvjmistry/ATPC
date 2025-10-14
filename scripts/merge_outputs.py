@@ -2,6 +2,10 @@ import glob
 import pandas as pd
 import pickle
 import sys
+sys.path.append("../scripts")
+sys.path.append("../notebooks")
+from TrackReconstruction_functions import *
+from reconstruction_functions import *
 
 # Example
 
@@ -12,8 +16,15 @@ mode=sys.argv[1]
 pressure=sys.argv[2]
 diffusion=sys.argv[3]
 
-file_path = f"/ospool/ap40/data/krishan.mistry/job/ATPC/trackreco/{mode}/{pressure}/{diffusion}/"
-file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{diffusion}"
+computer = "osg"
+computer = "argon"
+
+if computer == "osg":
+    file_path = f"/ospool/ap40/data/krishan.mistry/job/ATPC/trackreco/{mode}/{pressure}/{diffusion}/"
+    file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{diffusion}"
+else:
+    file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/{mode}/{pressure}/{diffusion}/"
+    file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}_{diffusion}"
 
 
 files = sorted(glob.glob(f"{file_path}/reco/*.h5"))
@@ -34,23 +45,14 @@ df_meta = pd.concat(df_meta)
 print(df_meta)
 
 # ------------------------------------------------------------------------------------------
-
-# Apply some cuts to remove events
 df_primary = df_meta[ (df_meta.label == "Primary") & (df_meta.primary == 1)]
-cuts = (df_primary.blob2R > 0.4) & \
-       (df_primary.blob2 > 0.4) & \
-       (df_primary.blob1R > 0.4) & \
-       (df_primary.energy > 2.4) & \
-       (df_primary.energy < 2.5) & \
-       (df_primary.Tortuosity2 > 2) & \
-       (df_primary.Squiglicity2 > 1)
+df_meta, df_primary, cuts = ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, 1.0)
 
-df_primary = df_primary[ cuts ]
 filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))].event_id.unique()
 
 # Only filter 100 events for signal
 #if (mode == "ATPC_0nubb"):
-filtered_events = filtered_events[0:100] # for now filter first 100 events for all
+# filtered_events = filtered_events[0:100] # for now filter first 100 events for all
 
 if (len(filtered_events) ==0):
     filtered_events = df_meta.event_id.unique()[0:100]
