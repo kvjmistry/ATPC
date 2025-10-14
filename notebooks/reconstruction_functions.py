@@ -28,11 +28,11 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.25) & (df_primary.blob2 > 0.45) & (df_primary.energy > 2.38)
+                cuts = (df_primary.blob2R > 0.33) & (df_primary.energy > 2.37)
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.44) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.38)
+                cuts = (df_primary.blob2R > 0.0)
             else:
                 print("Unknown cut mode specified")
         # -------------------------------------------------------------------------------------------------------------------------------------
@@ -40,11 +40,11 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
         elif (diffusion == "5percent"):
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.37) & (df_primary.blob2RTD > 0.4) & (df_primary.blob1R > 0.34) &  (df_primary.energy > 2.35) & (df_primary.Tortuosity2 >1.3)
+                cuts = (df_primary.blob2R > 0.33) &  (df_primary.energy > 2.38) 
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.44) & (df_primary.blob2 > 0.45) & (df_primary.blob1R > 0.34) &  (df_primary.energy > 2.35) & (df_primary.Tortuosity2 >1.3)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.4)
+                cuts = (df_primary.blob2R > 0.0)
             else:
                 print("Unknown cut mode specified")
         # -------------------------------------------------------------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.45) & (df_primary.blob2 > 0.54) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.47)
+                cuts = (df_primary.blob2R > 0.35)
             else:
                 print("Unknown cut mode specified")
         # -------------------------------------------------------------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.44) & (df_primary.blob2 > 0.6)  & (df_primary.energy > 2.4) & (df_primary.length > 1000)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.45)
+                cuts = (df_primary.blob2R > 0.35)
             else:
                 print("Unknown cut mode specified")
         # -------------------------------------------------------------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.48) & (df_primary.blob2 > 0.5) & (df_primary.energy > 2.4) & (df_primary.length > 600)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.45)
+                cuts = (df_primary.blob2R > 0.37)
             else:
                 print("Unknown cut mode specified")
         # -------------------------------------------------------------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2 > 0.35) & (df_primary.blob2R > 0.38) &  (df_primary.blob1 > 0.55) &  (df_primary.energy > 2.4) & (df_primary.length > 600)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.33)
+                cuts = (df_primary.blob2R > 0.16)
             else:
                 print("Unknown cut mode specified")
 
@@ -107,11 +107,11 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.42) & (df_primary.blob2 > 0.5) & (df_primary.energy > 2.4)
+                cuts = (df_primary.blob2R > 0.42) & (df_primary.blob2 > 0.495) & (df_primary.energy > 2.4)
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.45) & (df_primary.blob2 > 0.51) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.51)
+                cuts = (df_primary.blob2R > 0.46)
             else:
                 print("Unknown efficiency target specified")
         # -------------------------------------------------------------------------------------------------------------------------------------
@@ -120,11 +120,11 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.48) & (df_primary.blob1R > 0.5) & (df_primary.energy > 2.4) & (df_primary.Tortuosity2 > 1.3)
+                cuts = (df_primary.blob2R > 0.52) & (df_primary.blob1R > 0.5) & (df_primary.energy > 2.4)
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.4) &  (df_primary.blob2 > 0.56) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.51)
+                cuts = (df_primary.blob2R > 0.445)
             else:
                 print("Unknown cut mode specified")
 
@@ -137,7 +137,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2 > 0.71) & (df_primary.energy > 2.4) & (df_primary.length > 200)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.49)
+                cuts = (df_primary.blob2R > 0.42)
             else:
                 print("Unknown cut mode specified")
 
@@ -152,11 +152,11 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
         if (diffusion == "nodiff"):
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.4) & (df_primary.blob2 > 0.575) & (df_primary.energy > 2.4)
+                cuts = (df_primary.blob2R > 0.4) & (df_primary.blob2 > 0.58) & (df_primary.energy > 2.4)
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.5) & (df_primary.blob2 > 0.57) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.56)
+                cuts = (df_primary.blob2R > 0.525)
             else:
                 print("Unknown cut mode specified")
 
@@ -168,9 +168,9 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             if (mode == "enr"):
                 cuts = (df_primary.blob2R > 0.51) & (df_primary.blob2 > 0.5) & (df_primary.blob1R > 0.6) & (df_primary.energy > 2.4) 
             elif (mode == "nat"):
-                cuts = (df_primary.blob2R > 0.52) & (df_primary.blob2 > 0.55) &  (df_primary.energy > 2.4)
+                cuts = (df_primary.blob2R > 0.53) & (df_primary.blob2 > 0.53) &  (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.56)
+                cuts = (df_primary.blob2R > 0.515)
             else:
                 print("Unknown cut mode specified")
 
@@ -183,7 +183,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.45) & (df_primary.blob2 > 0.47) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.5)
+                cuts = (df_primary.blob2R > 0.415)
             else:
                 print("Unknown cut mode specified")
 
@@ -203,7 +203,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.56) & (df_primary.blob2 > 0.58) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.6)
+                cuts = (df_primary.blob2R > 0.562)
             else:
                 print("Unknown cut mode specified")
 
@@ -213,11 +213,11 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.54) & (df_primary.blob2 > 0.56) & (df_primary.blob1 > 0.4) & (df_primary.energy > 2.35)
+                cuts = (df_primary.blob2R > 0.54) & (df_primary.blob2 > 0.565) & (df_primary.energy > 2.35)
             elif (mode == "nat"):
-                cuts = (df_primary.blob2R > 0.53) & (df_primary.blob2 > 0.55) & (df_primary.energy > 2.4)
+                cuts = (df_primary.blob2R > 0.54) & (df_primary.blob2 > 0.55) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.6)
+                cuts = (df_primary.blob2R > 0.56)
             else:
                 print("Unknown cut mode specified")
         # -------------------------------------------------------------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts =  (df_primary.blob2 > 0.75) & (df_primary.energy > 2.42)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.5)
+                cuts = (df_primary.blob2R > 0.41)
             else:
                 print("Unknown cut mode specified")
 
@@ -246,11 +246,11 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
         
             # All cuts
             if (mode == "enr"):
-                cuts = (df_primary.blob2R > 0.56) & (df_primary.blob2 > 0.69) & (df_primary.energy > 2.4)
+                cuts = (df_primary.blob2R > 0.56) & (df_primary.blob2 > 0.695) & (df_primary.energy > 2.4)
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.57) & (df_primary.blob2 > 0.7) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.66)
+                cuts = (df_primary.blob2R > 0.62)
             else:
                 print("Unknown cut mode specified")
 
@@ -264,7 +264,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.45) & (df_primary.blob2 > 0.55) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.62)
+                cuts = (df_primary.blob2R > 0.58)
             else:
                 print("Unknown cut mode specified")
         # -------------------------------------------------------------------------------------------------------------------------------------
@@ -277,7 +277,7 @@ def ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, Eres):
             elif (mode == "nat"):
                 cuts = (df_primary.blob2R > 0.45) & (df_primary.blob2 > 0.5) & (df_primary.energy > 2.4)
             elif (mode == "next1t"):
-                cuts = (df_primary.blob2R > 0.56)
+                cuts = (df_primary.blob2R > 0.44)
             else:
                 print("Unknown cut mode specified")
 
@@ -354,7 +354,7 @@ def Calc_FOM_err(fom, eff, eff_err, bkg, bkg_err):
     return fom*np.sqrt( (eff_err/eff)**2 + 0.25*(bkg_err/bkg)**2)
 
 # ------------------------------------------------------------------------
-def CalcEfficiency(n, N, label, pressure, mass, applyEResCut):
+def CalcEfficiency(n, N, label, pressure, mass):
     
     efficiency = n/N
     error=np.sqrt( (efficiency/N) * (1-efficiency)  )
