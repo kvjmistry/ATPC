@@ -9,23 +9,29 @@ from reconstruction_functions import *
 
 # Example
 
-# python3 merge_outputs.py ATPC_Bi 1bar 5percent
+# python3 merge_outputs.py ATPC_Bi_ion 1 5percent
 
 
 mode=sys.argv[1]
 pressure=sys.argv[2]
 diffusion=sys.argv[3]
 
+print("mode:", mode)
+print("pressure:", pressure, "bar")
+print("diffusion:", diffusion)
+
 computer = "osg"
 computer = "argon"
 
 if computer == "osg":
-    file_path = f"/ospool/ap40/data/krishan.mistry/job/ATPC/trackreco/{mode}/{pressure}/{diffusion}/"
-    file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{diffusion}"
+    file_path = f"/ospool/ap40/data/krishan.mistry/job/ATPC/trackreco/{mode}/{pressure}bar/{diffusion}/"
+    file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}bar_{diffusion}"
 else:
-    file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/{mode}/{pressure}/{diffusion}/"
-    file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}_{diffusion}"
+    file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/{mode}/{pressure}bar/{diffusion}/"
+    file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}bar_{diffusion}"
 
+print("file_path", file_path)
+print("file_out", file_out)
 
 files = sorted(glob.glob(f"{file_path}/reco/*.h5"))
 
