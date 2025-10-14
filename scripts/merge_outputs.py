@@ -13,7 +13,7 @@ from reconstruction_functions import *
 
 
 mode=sys.argv[1]
-pressure=sys.argv[2]
+pressure=int(sys.argv[2])
 diffusion=sys.argv[3]
 
 print("mode:", mode)
