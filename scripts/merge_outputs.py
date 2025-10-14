@@ -52,7 +52,9 @@ print(df_meta)
 
 # ------------------------------------------------------------------------------------------
 df_primary = df_meta[ (df_meta.label == "Primary") & (df_meta.primary == 1)]
-df_meta, df_primary, cuts = ApplyCuts(df_meta, df_primary, pressure, diffusion, mode, 1.0)
+df_meta, df_primary, cuts = ApplyCuts(df_meta, df_primary, pressure, diffusion, "enr", 1.0)
+df_primary = df_primary[ cuts ]
+df_meta = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))]
 
 filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))].event_id.unique()
 
