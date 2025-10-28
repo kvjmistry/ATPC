@@ -3,7 +3,7 @@ import glob
 
 
 pressures = [1,5,10,15,25]
-modes = ["0nubb", "single"]
+modes = ["0nubb", "single", "ATPC_Bi_ion", "ATPC_Tl_ion"]
 
 
 
@@ -17,6 +17,7 @@ for m in modes:
         print("On Pressure:", p)
 
         files = sorted(glob.glob(f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/ATPC_{m}/{p}bar/TrueInfo/*.h5"))
+        # files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/GammaThickness/{modes}/4cm/25bar/enr/**"))
 
         for f in files:
             df = pd.read_hdf(f, "trueinfo")

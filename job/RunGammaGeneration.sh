@@ -42,6 +42,10 @@ if [ "$MODE" = "Bi_ion" ]; then
     cp /home/argon/Projects/Krishan/ATPC/config/Bi214.mac .
 fi
 
+if [ "$MODE" = "single" ]; then
+  cp /home/argon/Projects/Krishan/ATPC/config/Xe137.mac .
+fi
+
 SEED=$((${SLURM_ARRAY_TASK_ID} + 1))
 sed -i "s#.*random_seed.*#/nexus/random_seed ${SEED}#" ${CONFIG}
 sed -i "s#.*gas_pressure.*#/Geometry/ATPC/gas_pressure ${Pressure} bar#" ${CONFIG}
@@ -52,12 +56,12 @@ sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size ${CubeSize} m#" ${CONFIG}
 cat ${CONFIG}
 cat ${INIT}
 
+#nexus ${INIT} -n 10000000
 nexus ${INIT} -n 10000000
-
 
 python3 CompressEvents.py ATPC_${MODE}_${Enrichment}_${Pressure}bar ATPC_${MODE}_${Enrichment}_${Pressure}bar
 
-python3 GetGammaInfo.py  ATPC_${MODE}_${Enrichment}_${Pressure}bar ${SLURM_ARRAY_TASK_ID}
+#python3 GetGammaInfo.py  ATPC_${MODE}_${Enrichment}_${Pressure}bar ${SLURM_ARRAY_TASK_ID}
 
 python3 SmearEnergy.py ATPC_${MODE}_${Enrichment}_${Pressure}bar
 

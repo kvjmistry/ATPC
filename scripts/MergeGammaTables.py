@@ -3,13 +3,20 @@ import pandas as pd
 import pickle
 import sys
 
-mode="Bi_ion"
-pressure=15
-file_path = f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/ATPC_{mode}/{pressure}bar/GammaTable/"
-file_out = f"files/GammaTable_{mode}_{pressure}bar_merged.h5"
+mode="Tl_ion"
+pressure=25
+thick="4cm"
+volume="FIELD_CAGE"
+#file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/GammaThickness/{mode}/{thick}/25bar/enr/*/"
+#file_out = f"merged/GammaTable_{mode}_{pressure}bar_{thick}_merged.h5"
+file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/NEXT1t/{mode}/{volume}/*"
+file_out = f"merged/NextTonne/GammaTable_{mode}_{volume}_merged.h5"
+
+#file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/PTFE/{mode}/*/"
+#file_out = f"merged/NextTonne/GammaTable_ATPC_PTFE_{mode}_merged.h5"
 
 
-files = sorted(glob.glob(f"{file_path}/*.h5"))
+files = sorted(glob.glob(f"{file_path}/*gamma*.h5"))
 
 dfs = []
 df_meta = []

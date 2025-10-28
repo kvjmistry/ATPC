@@ -54,13 +54,14 @@ print(df_meta)
 df_primary = df_meta[ (df_meta.label == "Primary") & (df_meta.primary == 1)]
 df_meta, df_primary, cuts = ApplyCuts(df_meta, df_primary, pressure, diffusion, "enr", 1.0)
 df_primary = df_primary[ cuts ]
+print(len(df_primary))
 df_meta = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))]
 
 filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))].event_id.unique()
 
 # Only filter 100 events for signal
-#if (mode == "ATPC_0nubb"):
-# filtered_events = filtered_events[0:100] # for now filter first 100 events for all
+if (mode == "ATPC_0nubb"):
+    filtered_events = filtered_events[0:100] # for now filter first 100 events
 
 if (len(filtered_events) ==0):
     filtered_events = df_meta.event_id.unique()[0:100]

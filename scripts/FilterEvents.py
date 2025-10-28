@@ -4,7 +4,7 @@ import pickle
 import sys
 
 # Example
-# python3 FilterEvents.py ATPC_Bi 1bar 5percent nexus
+# python3 FilterEvents.py ATPC_Bi_ion 1bar 5percent nexus
 
 
 mode=sys.argv[1]
@@ -12,8 +12,17 @@ pressure=sys.argv[2]
 diffusion=sys.argv[3]
 true_folder=sys.argv[4] # can also set 5percent here to get the diffused track
 
-file_path = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{diffusion}_reco.h5"
-file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{true_folder}_filtered"
+computer = "osg"
+computer = "argon"
+
+if computer == "osg":
+    file_path = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{diffusion}_reco.h5"
+    file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}_{true_folder}_filtered"
+    files = sorted(glob.glob(f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/{mode}/{pressure}/{true_folder}/*.h5"))
+else:
+    file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}_{diffusion}_reco.h5"
+    file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}_{true_folder}_filtered"
+    files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/{mode}/{pressure}/{true_folder}/*.h5"))
 
 hits = pd.read_hdf(f"{file_path}", "data")
 filtered_events = hits.event_id.unique()
@@ -21,9 +30,6 @@ filtered_events = hits.event_id.unique()
 print("Total events to filter:", len(filtered_events))
 
 # ------------------------------------------------------------------------------------------
-
-# Now load in the nexus files
-files = sorted(glob.glob(f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/{mode}/{pressure}/{true_folder}/*.h5"))
 
 df_hits_all = []
 df_parts_all = []
