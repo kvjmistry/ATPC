@@ -2,10 +2,12 @@
 
 # The job title here.
 #jobname=ATPC_0nubb
-jobname=ATPC_2nubb
+# jobname=ATPC_2nubb
 # jobname=ATPC_single
 # jobname=ATPC_Bi_ion
 # jobname=ATPC_Tl_ion
+jobname=ATPC_Bi_ion_cathode
+
 
 CONFIG=$(jobname).config.mac
 INIT=$(jobname).init.mac
@@ -42,7 +44,7 @@ transfer_output_remaps = "$(jobname).tar = $(OSDF_LOCATION)/job/ATPC/Pressure/$(
 #+JobDurationCategory = "Long"
 
 # Use a singularity image to submit the file. The image should be stored in the protected area of your workspace
-container_image = osdf:///ospool/ap40/data/krishan.mistry/containers/docker_nexus_ATPC11.sif
+container_image = osdf:///ospool/ap40/data/krishan.mistry/containers/docker_nexus_ATPC12.sif
 
 
 # Tell HTCondor requirements (e.g., operating system) your job needs, 
@@ -56,4 +58,4 @@ request_disk = 5GB
 max_idle = 2000
 
 # Tell HTCondor the number of instances to run:
-queue 3000
+queue 500
