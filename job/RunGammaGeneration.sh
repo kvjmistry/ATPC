@@ -38,7 +38,7 @@ cp /home/argon/Projects/Krishan/ATPC/scripts/CompressEvents.py .
 cp /home/argon/Projects/Krishan/ATPC/scripts/GetGammaInfo.py .
 
 # Copy the ion generator disrupter file
-if [ "$MODE" = "Bi_ion" ]; then
+if [ "$MODE" = "Bi_ion" ] || [ "$MODE" = "Bi_ion_cathode" ]; then
     cp /home/argon/Projects/Krishan/ATPC/config/Bi214.mac .
 fi
 
@@ -56,7 +56,6 @@ sed -i "s#.*cube_size.*#/Geometry/ATPC/cube_size ${CubeSize} m#" ${CONFIG}
 cat ${CONFIG}
 cat ${INIT}
 
-#nexus ${INIT} -n 10000000
 nexus ${INIT} -n 10000000
 
 python3 CompressEvents.py ATPC_${MODE}_${Enrichment}_${Pressure}bar ATPC_${MODE}_${Enrichment}_${Pressure}bar
