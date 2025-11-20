@@ -21,7 +21,7 @@ if computer == "osg":
     files = sorted(glob.glob(f"/ospool/ap40/data/krishan.mistry/job/ATPC/Pressure/{mode}/{pressure}/{true_folder}/*.h5"))
 else:
     file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}_{diffusion}_reco.h5"
-    file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}_{true_folder}_filtered"
+    file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/filtered/{mode}_{pressure}_{true_folder}_filtered"
     files = sorted(glob.glob(f"/media/argon/HardDrive_8TB/Krishan/ATPC/{mode}/{pressure}/{true_folder}/*.h5"))
 
 hits = pd.read_hdf(f"{file_path}", "data")
