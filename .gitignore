@@ -5,3 +5,5 @@ data
 notebooks/plots
 *.pkl*
 *pycache*
+config/PTFEStudies/
+scripts/plots/
