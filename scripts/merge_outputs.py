@@ -11,6 +11,8 @@ from reconstruction_functions import *
 
 # python3 merge_outputs.py ATPC_Bi_ion 1 5percent
 
+# Set this to true to save the data info to file not just metadata
+save_datainfo = False
 
 mode=sys.argv[1]
 pressure=int(sys.argv[2])
@@ -50,47 +52,49 @@ df_meta = pd.concat(df_meta)
 
 print(df_meta)
 
-# ------------------------------------------------------------------------------------------
-df_primary = df_meta[ (df_meta.label == "Primary") & (df_meta.primary == 1)]
-df_meta, df_primary, cuts = ApplyCuts(df_meta, df_primary, pressure, diffusion, "enr", 1.0)
-df_primary = df_primary[ cuts ]
-print(len(df_primary))
-df_meta = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))]
+if save_datainfo:
+    # ------------------------------------------------------------------------------------------
+    df_primary = df_meta[ (df_meta.label == "Primary") & (df_meta.primary == 1)]
+    df_meta, df_primary, cuts = ApplyCuts(df_meta, df_primary, pressure, diffusion, "enr", 1.0)
+    df_primary = df_primary[ cuts ]
+    print(len(df_primary))
+    df_meta = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))]
 
-filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))].event_id.unique()
+    filtered_events = df_meta[(df_meta.event_id.isin(df_primary.event_id.unique()))].event_id.unique()
 
-# Only filter 100 events for signal
-if (mode == "ATPC_0nubb"):
-    filtered_events = filtered_events[0:100] # for now filter first 100 events
+    # Only filter 100 events for signal
+    if (mode == "ATPC_0nubb"):
+        filtered_events = filtered_events[0:100] # for now filter first 100 events
 
-if (len(filtered_events) ==0):
-    filtered_events = df_meta.event_id.unique()[0:100]
+    if (len(filtered_events) ==0):
+        filtered_events = df_meta.event_id.unique()[0:100]
 
-print("Total events to filter:", len(filtered_events))
+    print("Total events to filter:", len(filtered_events))
 
-# ------------------------------------------------------------------------------------------
-counter = 0
-for i, f in enumerate(files):
-    if i %50 ==0:
-        print(f"{i} /", len(files))
+    # ------------------------------------------------------------------------------------------
+    counter = 0
+    for i, f in enumerate(files):
+        if i %50 ==0:
+            print(f"{i} /", len(files))
 
-    df_hits = pd.read_hdf(f, "data")
-    df_hits = df_hits[df_hits.event_id.isin(filtered_events)]
-    if (len(df_hits) > 0):
-        counter+=len(df_hits.event_id.unique())
-        dfs.append(df_hits)
+        df_hits = pd.read_hdf(f, "data")
+        df_hits = df_hits[df_hits.event_id.isin(filtered_events)]
+        if (len(df_hits) > 0):
+            counter+=len(df_hits.event_id.unique())
+            dfs.append(df_hits)
 
-    if (counter >= len(filtered_events)):
-        break
+        if (counter >= len(filtered_events)):
+            break
 
-dfs = pd.concat(dfs)
+    dfs = pd.concat(dfs)
 
-print(dfs)
-print("Tot saved events:", len(dfs.event_id.unique()))
+    print(dfs)
+    print("Tot saved events:", len(dfs.event_id.unique()))
 
 with pd.HDFStore(f"{file_out}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
-    store.put('data', dfs, format='table')
+    if save_datainfo:
+        store.put('data', dfs, format='table')
     store.put('meta', df_meta, format='table')
 
 # Finished with these dataframes
