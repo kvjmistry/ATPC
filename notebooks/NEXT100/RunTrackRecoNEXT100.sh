@@ -17,13 +17,11 @@ echo "Input File: $input_file"
 
 # Loop over the blob radii from 40 to 150 mm in steps of 10mm
 for BLOBR in $(seq 40 10 150); do
-    mkdir -p /media/argon/HardDrive_8TB/Krishan/ATPC/354015/rebinned/blobR_${BLOBR}
-    cd       /media/argon/HardDrive_8TB/Krishan/ATPC/354015/rebinned/blobR_${BLOBR}
-    cp /home/argon/Projects/Krishan/ATPC/scripts/TrackReconstruction_functions.py .
+    echo "On BLOB R: ${BLOBR}"
+    mkdir -p /media/argon/HardDrive_8TB/Krishan/ATPC/354015/TrackReco/blobR_${BLOBR}
+    cd       /media/argon/HardDrive_8TB/Krishan/ATPC/354015/TrackReco/blobR_${BLOBR}
     
     python /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/TrackReconstructionNEXT100.py $input_file ${BLOBR} ${BLOBR} 0
-
-    rm TrackReconstruction_functions.py
 
 done
 

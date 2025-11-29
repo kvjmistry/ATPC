@@ -10,6 +10,7 @@ import os
 import re
 
 sys.path.append("../../scripts")
+sys.path.append("/home/argon/Projects/Krishan/ATPC/scripts/")
 from TrackReconstruction_functions import *
 
 pd.options.mode.chained_assignment = None  # Disable the warning
@@ -125,14 +126,14 @@ if Reco_eff < 100:
 
 with pd.HDFStore(f"{file_out_seg}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
-    store.put('data', df, format='table')
+    # store.put('data', df, format='table')
     store.put('meta', df_meta, format='table')
 
 
-with open(f"{file_out_seg}_trackinfo.pkl", 'wb') as pickle_file:
-    pickle.dump(Track_dict, pickle_file)
-    pickle.dump(connected_nodes_dict, pickle_file)
-    pickle.dump(connections_count_dict, pickle_file)
+# with open(f"{file_out_seg}_trackinfo.pkl", 'wb') as pickle_file:
+#     pickle.dump(Track_dict, pickle_file)
+#     pickle.dump(connected_nodes_dict, pickle_file)
+#     pickle.dump(connections_count_dict, pickle_file)
 
 
 if plot:
