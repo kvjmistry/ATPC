@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 import os
 import tables as tb
+import glob
+import sys
 os.environ["ICTDIR"] = "~/Packages/IC"
 os.environ["ICDIR"] = "$ICTDIR/invisible_cities"
 
@@ -79,18 +81,20 @@ def read_data(input, run_number):
     return dsts
 
 
-def beershireba(input_directory, output_directory, run_number, rebin_d = [5,5,4], drop_dist = [16, 16, 4], nhits = 3):
+def beershireba(infile, output_directory, run_number, rebin_d = [5,5,4], drop_dist = [16, 16, 4], nhits = 3):
 
     drop_sensors = drop_isolated(drop_dist, ['E'], nhits)
     # extract all files in the input directory
-    files = [f for f in os.listdir(input_directory) if f.endswith('.h5')]
+    #files = [f for f in os.listdir(input_directory) if f.endswith('.h5')]
+    #files = glob.glob(f"{input_directory}/*.h5")
+    files = [infile]
     print("Files:", files)
     for f in files:
         basename = os.path.basename(f)
         basename2 = os.path.splitext(basename)[0]
         output_name = f'{basename2}_beershireba.h5'
         print("Outputname is:", output_name)
-        dsts = read_data(f'{input_directory}{f}', run_number)
+        dsts = read_data(f'{f}', run_number)
         print(dsts["DECO"])
 
         file_data = []
@@ -115,7 +119,8 @@ def beershireba(input_directory, output_directory, run_number, rebin_d = [5,5,4]
         with pd.HDFStore(f'{output_directory}/{output_name}', mode='w', complevel=5, complib='zlib') as store:
             store.put('DECO/Events',new_df,    format='table')
 
+infile=sys.argv[1]
 
 # Load in the data
-beershireba("data/", "data/", 99)
+beershireba(infile, "/media/argon/HardDrive_8TB/Krishan/ATPC/354015/rebinned/", 99)
 
