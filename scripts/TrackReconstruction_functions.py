@@ -1802,6 +1802,8 @@ def RunClustering(node_centers_df, pressure, diffusion):
         mean_sigma=6
     elif (diffusion == "nodiff"):
         mean_sigma=10/np.sqrt(pressure)
+    elif (diffusion == "deconv"):
+        mean_sigma = 25
 
     print("Mean Sigma is:", mean_sigma)
 
@@ -1813,6 +1815,8 @@ def RunClustering(node_centers_df, pressure, diffusion):
     # Use fixed value since voxels are same size in next1t analysis
     if diffusion == "next1t":
         mean_sigma_group = 10
+    elif (diffusion == "deconv"):
+        mean_sigma_group = 20
 
     df_merged = GroupHits(df_merged, mean_sigma_group)
 
@@ -1846,6 +1850,26 @@ def RunClustering(node_centers_df, pressure, diffusion):
     zbw=mean_sigma
     zmin=-det_size + z_shift - mean_sigma/2 
     zmax=det_size + z_shift + mean_sigma/2
+
+    # NEXT100 case use custom binning
+    if (diffusion == "deconv"):
+        # Create the bins ---- 
+        xbw  = mean_sigma
+        xmin = -500
+        xmax = 500
+
+        ybw  = mean_sigma
+        ymin = -500
+        ymax = 500
+
+        # This shifts the z pos of the events so 0 is at anode
+        # can set this to zero
+        # z_shift = det_size
+        z_shift = 0
+
+        zbw=mean_sigma
+        zmin=-1500
+        zmax=3000
 
     # bins for x, y, z
     xbins = np.arange(xmin, xmax+xbw, xbw)
@@ -2033,7 +2057,15 @@ def InitializeParams(pressure, diffusion):
         if pressure >=5:
             group_sf = 10
             radius_sf = 5
-        
+    
+    elif (diffusion == "deconv"):
+        Diff_smear        = 0.1
+        diff_scale_factor = 7
+        radius_sf         = 10
+        group_sf          = 20
+        Tortuosity_dist   = 15
+        voxel_size = 5
+        energy_threshold  = 0.0
     
     elif (diffusion == "0.1percent"):
         Diff_smear        = 1.0

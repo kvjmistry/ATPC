@@ -73,45 +73,10 @@ def read_data(input, run_number):
     dsts['filters'] = pd.read_hdf(input, 'Filters/nohits')
     dsts['runevts'] = pd.read_hdf(input, 'Run/events')
     dsts['runinfo'] = pd.read_hdf(input, 'Run/runInfo')
-    # dsts['conf']    = pd.read_hdf(input, 'config',  'beersheba')
 
-    # load in MC if labelled as an MC run
-    # if int(run_number) <= 0:
-    #     dsts['MC_conf']      = load_dst(input, 'MC', 'configuration')
-    #     dsts['MC_evmp']      = load_dst(input, 'MC', 'event_mapping')
-    #     dsts['MC_hits']      = load_dst(input, 'MC', 'hits')
-    #     dsts['MC_particles'] = load_dst(input, 'MC', 'particles')
-    #     dsts['MC_snspos']    = load_dst(input, 'MC', 'sns_positions')
-    #     dsts['MC_sns_resp']  = load_dst(input, 'MC', 'sns_response')
-    #     dsts['MC_evtmp']     = load_dst(input, 'Run', 'eventMap')
 
    # read out all this madness from a dictionary
     return dsts
-
-
-def save_data(dsts, rebin_df, output_directory, save_file_name, run_number):
-    '''
-    saves individual files
-    '''
-
-    print(f'Saving data to {output_directory}{save_file_name}')
-
-    with tb.open_file(f'{output_directory}{save_file_name}') as h5out:
-        df_writer(h5out, dsts['DST'],      'DST',     'Events')
-        # df_writer(h5out, rebin_df,         'DECO',    'Events')
-        # df_writer(h5out, dsts['filters'],  'Filters', 'nohits')
-        # df_writer(h5out, dsts['runevts'],  'Run',     'events')
-        # df_writer(h5out, dsts['runinfo'],  'Run',     'runInfo')
-        # df_writer(h5out, dsts['conf'],     'config',  'beersheba')
-
-        # if int(run_number) <= 0:
-        #     df_writer(h5out, dsts['MC_conf'],          'MC',  'configuration')
-        #     df_writer(h5out, dsts['MC_evmp'],          'MC',  'event_mapping')
-        #     df_writer(h5out, dsts['MC_hits'],          'MC',  'hits')
-        #     df_writer(h5out, dsts['MC_particles'],     'MC',  'particles')
-        #     df_writer(h5out, dsts['MC_snspos'],        'MC',  'sns_positions')
-        #     df_writer(h5out, dsts['MC_sns_resp'],      'MC',  'sns_response')
-        #     df_writer(h5out, dsts['MC_evtmp'],         'MC',  'eventMap')
 
 
 def beershireba(input_directory, output_directory, run_number, rebin_d = [5,5,4], drop_dist = [16, 16, 4], nhits = 3):
@@ -143,9 +108,12 @@ def beershireba(input_directory, output_directory, run_number, rebin_d = [5,5,4]
 
         new_df = pd.concat(file_data)
 
+        print(new_df)
+
         # save
-        print("Saving data")
-        save_data(dsts, new_df, output_directory, output_name, run_number)
+        print("Saving data to:", f'{output_directory}/{output_name}')
+        with pd.HDFStore(f'{output_directory}/{output_name}', mode='w', complevel=5, complib='zlib') as store:
+            store.put('DECO/Events',new_df,    format='table')
 
 
 # Load in the data
