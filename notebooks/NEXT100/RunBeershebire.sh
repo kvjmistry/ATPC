@@ -18,10 +18,18 @@ echo "The JOBINDEX IS ${JOBINDEX}"
 echo "Setting up IC"
 source /home/argon/Projects/Krishan/IC/setup_IC.sh
 
-input_file=$(sed -n "${JOBINDEX}p" /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/filelist.txt)
-echo "Input File: $input_file"
+# MODE="deconv"
+MODE="sophronia"
 
-python /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/beershebashire.py ${input_file}
+if [[ "$MODE" == "deconv" ]]; then
+    input_file=$(sed -n "${JOBINDEX}p" /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/filelist.txt)
+    echo "Input File: $input_file"
+    python /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/beershebashire.py ${input_file}
+else
+    input_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/filelist_sophronia.txt) # sophronia
+    python /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/drop_hits_sophronia.py ${input_file}
+fi
+
 
 
 echo "FINISHED....EXITING"

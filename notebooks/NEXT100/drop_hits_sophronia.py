@@ -72,5 +72,7 @@ infile=sys.argv[1]
 
 # Load in the data
 # sophronia_hits(infile, "/media/argon/HardDrive_8TB/Krishan/ATPC/354015/rebinned/", 99)
-sophronia_hits(infile, "./data/", 99)
+sophronia_hits(infile, "/media/argon/HardDrive_8TB/Krishan/ATPC/230725/droppedhits/", 99)
+
+
 

@@ -40,7 +40,8 @@ radius_threshold= float(sys.argv[3])
 print("Radius Threshold:", radius_threshold, "mm")
 
 pressure = 5
-diffusion = "deconv"
+# diffusion = "deconv"
+diffusion = "sophronia"
 
 # if (diffusion != "nodiff"):
 #     print("Including Clustering!")
@@ -56,9 +57,15 @@ file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
 plot=int(sys.argv[4])
 print("Plotting mode:", plot)
 
-hits = pd.read_hdf(infile,"DECO/Events")
-hits = hits[["event", "X", "Y", "Z", "E"]]
-hits = hits.rename(columns={"event":"event_id","X": "x", "Y": "y", "Z": "z", "E":"energy"})
+if (diffusion == "deconv"):
+    hits = pd.read_hdf(infile,"DECO/Events")
+    hits = hits[["event", "X", "Y", "Z", "E"]]
+    hits = hits.rename(columns={"event":"event_id","X": "x", "Y": "y", "Z": "z", "E":"energy"})
+else:
+    hits = pd.read_hdf(infile,"RECO/Events")
+    hits = hits[["event", "X", "Y", "Z", "Ec"]]
+    hits = hits.rename(columns={"event":"event_id","X": "x", "Y": "y", "Z": "z", "Ec":"energy"})
+
 # parts = pd.read_hdf(infile,"MC/particles")
 
 Track_dict = {}
@@ -98,7 +105,7 @@ for index, event_num in enumerate(hits.event_id.unique()):
     # Slightly different input params for next1t analysis
     if (diffusion == "next1t"):
         temp_meta = GetTrackdf(df, Tracks, 30, 15, 15, pressure)
-    elif (diffusion == "deconv"):
+    elif (diffusion == "deconv" or diffusion == "sophronia"):
         temp_meta = GetTrackdf(df, Tracks, distance_threshold, radius_threshold, radius_threshold, pressure)
     else:
         temp_meta = GetTrackdf(df, Tracks, 500/pressure, 225/pressure, 225/pressure, pressure) # scale these params inversely with the pressure
@@ -186,20 +193,20 @@ if plot:
             "z": (df_prim.z.min()-20, df_prim.z.max()+20)
         }
 
-        axs[0].set_xlim(*lims["x"])
-        axs[0].set_ylim(*lims["y"])
-        axs[1].set_xlim(*lims["x"])
-        axs[1].set_ylim(*lims["z"])
-        axs[2].set_xlim(*lims["y"])
-        axs[2].set_ylim(*lims["z"])
-        ax_3D.set_xlim(*lims["x"])
-        ax_3D.set_ylim(*lims["y"])
-        ax_3D.set_zlim(*lims["z"])
+        # axs[0].set_xlim(*lims["x"])
+        # axs[0].set_ylim(*lims["y"])
+        # axs[1].set_xlim(*lims["x"])
+        # axs[1].set_ylim(*lims["z"])
+        # axs[2].set_xlim(*lims["y"])
+        # axs[2].set_ylim(*lims["z"])
+        # ax_3D.set_xlim(*lims["x"])
+        # ax_3D.set_ylim(*lims["y"])
+        # ax_3D.set_zlim(*lims["z"])
 
         plt.tight_layout()
-        dir_path = f"plots/TrackingAlgoOut/"
+        dir_path = f"plots/TrackingAlgoOut/{diffusion}/"
         os.makedirs(dir_path, exist_ok=True)
-        plt.savefig(f"plots/TrackingAlgoOut/event_{evt}.pdf")
+        plt.savefig(f"plots/TrackingAlgoOut/{diffusion}/event_{evt}.pdf")
 
 
         plt.close()

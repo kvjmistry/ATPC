@@ -12,14 +12,27 @@ start=`date +%s`
 echo "Setting up env"
 source /home/argon/Projects/Krishan/venv/bin/activate
 
-input_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/filelist_rebinned.txt)
+
+MODE="deconv"
+MODE="sophronia"
+
+if [[ "$MODE" == "deconv" ]]; then
+    echo "Mode is ${MODE}"
+    input_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/filelist_deconv.txt) # decomv
+    infolder=354015
+else
+    echo "Mode is ${MODE}"
+    input_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/filelist_sophronia_dh.txt) # sophronia
+    infolder=230725
+fi
+
 echo "Input File: $input_file"
 
 # Loop over the blob radii from 40 to 150 mm in steps of 10mm
 for BLOBR in $(seq 40 10 150); do
     echo "On BLOB R: ${BLOBR}"
-    mkdir -p /media/argon/HardDrive_8TB/Krishan/ATPC/354015/TrackReco/blobR_${BLOBR}
-    cd       /media/argon/HardDrive_8TB/Krishan/ATPC/354015/TrackReco/blobR_${BLOBR}
+    mkdir -p /media/argon/HardDrive_8TB/Krishan/ATPC/${infolder}/TrackReco/blobR_${BLOBR}
+    cd       /media/argon/HardDrive_8TB/Krishan/ATPC/${infolder}/TrackReco/blobR_${BLOBR}
     
     python /home/argon/Projects/Krishan/ATPC/notebooks/NEXT100/TrackReconstructionNEXT100.py $input_file ${BLOBR} ${BLOBR} 0
 

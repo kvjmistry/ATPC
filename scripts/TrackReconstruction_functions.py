@@ -2066,7 +2066,16 @@ def InitializeParams(pressure, diffusion):
         Tortuosity_dist   = 15
         voxel_size = 5
         energy_threshold  = 0.0
-    
+
+    elif (diffusion == "sophronia"):
+        Diff_smear        = 2.6
+        diff_scale_factor = 2
+        radius_sf         = 5
+        group_sf          = 1.5
+        Tortuosity_dist   = 15
+        voxel_size = 5
+        energy_threshold  = 0.001
+            
     elif (diffusion == "0.1percent"):
         Diff_smear        = 1.0
         energy_threshold  = 0.0003
