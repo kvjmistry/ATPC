@@ -1544,6 +1544,11 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
         else:
             print("Skipping Clustering due to not enough points")
 
+    # Return a error state if the data has been reduced to zero size
+    # This can happen if there was an error in clustering
+    if len(data == 0):
+        return data, _, _, _, False, False
+
     # If clustering has not been applied then we assume it was nodiff sample
     # in this case apply grouping to generate the column
     if ("group_id" not in data.columns):
@@ -1796,6 +1801,11 @@ def RunClustering(node_centers_df, pressure, diffusion):
     mean_sigma = diff_scale_factor*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean())
     if (mean_sigma < 1.5*voxel_size):
         mean_sigma = 1.5*voxel_size
+
+    # Return an empty dataframe if nan value for mean sigma
+    if (np.isnan(mean_sigma)):
+        print("Error mean sigma nan, something wrong with the calculation")
+        return pd.DataFrame()
 
     # Use fixed value since voxels are same size in next1t analysis
     if (diffusion == "next1t"):
