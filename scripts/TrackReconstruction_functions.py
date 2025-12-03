@@ -1547,7 +1547,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     # Return a error state if the data has been reduced to zero size
     # This can happen if there was an error in clustering
     if len(data == 0):
-        return data, _, _, _, False, False
+        return data, 0, 0, 0, False, False
 
     # If clustering has not been applied then we assume it was nodiff sample
     # in this case apply grouping to generate the column
