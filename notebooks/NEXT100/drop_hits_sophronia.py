@@ -55,7 +55,11 @@ def sophronia_hits(infile, output_directory, run_number, drop_dist = [16, 16, 4]
             print(f'event {i}:')
 
             # drop isolated sensors
-            dropped_df  = drop_sensors(df.copy())
+            try:
+                dropped_df = drop_sensors(df.copy())
+            except Exception as e:
+                print(f"Error while dropping sensors: {e}")
+                dropped_df = df.copy()  # fallback to original DataFrame if needed
 
             file_data.append(dropped_df)
 
@@ -73,6 +77,6 @@ infile=sys.argv[1]
 # Load in the data
 # sophronia_hits(infile, "/media/argon/HardDrive_8TB/Krishan/ATPC/354015/rebinned/", 99)
 sophronia_hits(infile, "/media/argon/HardDrive_8TB/Krishan/ATPC/230725/droppedhits/", 99)
-
+# sophronia_hits(infile, "./data/", 99)
 
 
