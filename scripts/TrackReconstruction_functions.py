@@ -1522,6 +1522,10 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     print("The det half_length is: ",     det_half_length)
 
     # display(data)
+    
+    if ((data['z'] < 0).any()):
+        print("Negative z-values in dataframe, masking the negative z hits!!")
+        data = data[data['z'] >= 0]
 
     if ("group_id" in data.columns):
         data = data[['event_id', 'x', 'y', 'z',"energy", "group_id"]]
@@ -1546,7 +1550,8 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
     # Return a error state if the data has been reduced to zero size
     # This can happen if there was an error in clustering
-    if len(data == 0):
+    if len(data) == 0:
+        print("Error data length zero, something bad has happened with this event")
         return data, 0, 0, 0, False, False
 
     # If clustering has not been applied then we assume it was nodiff sample
