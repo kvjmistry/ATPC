@@ -11,8 +11,8 @@ pressure=sys.argv[2]
 diffusion=sys.argv[3]
 
 # Get input and output folders
-base_path = Path(f"/media/argon/HardDrive_8TB/Krishan/ATPC//trackreco/{mode}/{pressure}/reco/")
-input_dir = base_path / diffusion
+base_path = Path(f"/media/argon/HardDrive_8TB/Krishan/ATPC//trackreco/{mode}/{pressure}/{diffusion}/")
+input_dir = base_path / f"reco"
 output_dir = base_path / f"reco_filtered"
 
 output_dir.mkdir(parents=True, exist_ok=True)
