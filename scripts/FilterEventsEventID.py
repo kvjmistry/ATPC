@@ -1,0 +1,57 @@
+import glob
+import pandas as pd
+import sys
+from pathlib import Path
+
+# Example
+# python3 FilterEventsEventID.py ATPC_Bi_ion 1bar 5percent
+
+mode=sys.argv[1]
+pressure=sys.argv[2]
+diffusion=sys.argv[3]
+
+# Get input and output folders
+base_path = Path(f"/media/argon/HardDrive_8TB/Krishan/ATPC/{mode}/{pressure}")
+input_dir = base_path / diffusion
+output_dir = base_path / f"{diffusion}_filtered"
+
+output_dir.mkdir(parents=True, exist_ok=True)
+
+files = sorted(input_dir.glob("*.h5"))
+
+# Load in the event list
+event_list = pd.read_csv("../eventlists/ATPC_{pressure}_{diffusion}.csv");
+event_list = event_list[event_list.Type == mode] # select events 
+
+# ------------------------------------------------------------------------------------------
+
+df_hits_all = []
+df_parts_all = []
+
+counter = 0
+for i, f in enumerate(files):
+    if i %50 ==0:
+        print(f"{i} /", len(files))
+
+    f = Path(f)
+
+    # original filename without suffix
+    stem = f.stem              
+    suffix = f.suffix          # ".h5"
+
+    # new filename: ATPC_0nubb_0_filtered.h5
+    outfile = output_dir / f"{stem}_filtered{suffix}"
+    print(f"{f} → {outfile}")
+
+    df_hits  = pd.read_hdf(f, "MC/hits")
+    df_parts = pd.read_hdf(f, "MC/particles")
+    df_hits  = df_hits[df_hits.event_id.isin(event_list)]
+    df_parts = df_parts[df_parts.event_id.isin(event_list)]
+    counter+=len(df_hits.event_id.unique())
+
+    print("Tot saved events:", len(df_hits.event_id.unique()))
+
+    with pd.HDFStore(outfile, mode='w', complevel=5, complib='zlib') as store:
+        # Write each DataFrame to the file with a unique key
+        store.put('MC/hits', df_hits_all, format='table')
+        store.put('MC/particles', df_parts_all, format='table')
