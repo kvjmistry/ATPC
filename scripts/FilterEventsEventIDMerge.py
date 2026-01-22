@@ -38,7 +38,7 @@ for i, f in enumerate(files):
     df_hits  = df_hits[df_hits.event_id.isin(event_list)]
     counter+=len(df_hits.event_id.unique())
 
-    df_hits_all.appen(df_hits)
+    df_hits_all.append(df_hits)
     print("Tot saved events:", len(df_hits.event_id.unique()), counter)
 
 df_hits_all = pd.concat(df_hits_all)
