@@ -1955,6 +1955,9 @@ def RunClustering(node_centers_df, pressure, diffusion):
 
     databin["event_id"] = databin["event_id"].astype('int')
 
+    # Get rid of the unbinned clustered columns
+    databin = databin[["event_id", "x", "y", "z", "energy", "group_id"]]
+
     return databin
 
 # ---------------------------------------------------------------------------------------------------
@@ -2122,7 +2125,7 @@ def InitializeParams(pressure, diffusion):
 
         if (pressure == 1):
             Diff_smear        = 0.314/np.sqrt(pressure)
-            energy_threshold  = 0.0003
+            energy_threshold  = 0.0002
             diff_scale_factor = 4 
             radius_sf         = 7
             group_sf          = 5
