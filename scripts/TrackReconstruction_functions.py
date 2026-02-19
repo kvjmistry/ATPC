@@ -1759,7 +1759,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     print(df_angles)
     return df_angles, Tracks, connected_nodes, connection_count, pass_flag, contained
 # ---------------------------------------------------------------------------------------------------
-def Cluster(input_data, R):
+def Cluster(input_data, scale_factor, Diff_smear, voxel_size):
 
     node_centers = []
     all_visited = []
@@ -1780,6 +1780,13 @@ def Cluster(input_data, R):
 
         # random_index = np.random.choice(filtered_indexes)
         random_index = filtered_indexes[0]
+
+        # Calculate R based on index position
+        R = scale_factor*Diff_smear*np.sqrt(0.1*input_data.iloc[random_index]["z"].item())
+
+        if (R < voxel_size+4):
+            R = voxel_size+4
+
         median, all_visited = GetMinimaWeighted(random_index, all_visited, input_data, temp_dist_matrix, R)
 
         node_centers.append(median)
@@ -1836,13 +1843,22 @@ def RunClustering(node_centers_df, pressure, diffusion):
     df_merged = GroupHits(df_merged, mean_sigma_group)
 
     # Run the clustering
+    initial_cluster_data = []
     node_centers_df = []
 
     for gid in sorted(df_merged.group_id.unique()):
         temp_df = df_merged[df_merged.group_id == gid]
         temp_df.reset_index(drop=True, inplace=True)
-        node_centers_df.append(Cluster(temp_df, mean_sigma))
+        initial_cluster_data.append(Cluster(temp_df, 2, Diff_smear, voxel_size)) # Apply loose scale factor of 2 for now
 
+    initial_cluster_data = pd.concat(initial_cluster_data, ignore_index=True)
+    
+    # Second clustering which should be a bit more smoother
+    for gid in sorted(initial_cluster_data.group_id.unique()):
+        temp_df = initial_cluster_data[initial_cluster_data.group_id == gid]
+        temp_df.reset_index(drop=True, inplace=True)
+        node_centers_df.append(Cluster(temp_df, diff_scale_factor, Diff_smear, voxel_size)) # Apply loose scale factor of 2 for now
+    
     node_centers_df = pd.concat(node_centers_df, ignore_index=True)
     node_centers_df["event_id"] = event_id
 
