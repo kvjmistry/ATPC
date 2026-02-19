@@ -1558,7 +1558,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     # in this case apply grouping to generate the column
     if ("group_id" not in data.columns):
         print("Grouping has not been applied yet so run grouping function,...")
-        mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*data.z.mean())
+        mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*data.z.median())
         if (mean_sigma_group < 1.5*voxel_size):
             mean_sigma_group = 1.5*voxel_size
         data = GroupHits(data, mean_sigma_group)
@@ -1823,9 +1823,9 @@ def RunClustering(node_centers_df, pressure, diffusion):
     print("Mean Sigma is:", mean_sigma)
 
     # Apply hit grouping
-    mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*node_centers_df.z.mean())
-    if (mean_sigma_group < voxel_size/1.5):
-        mean_sigma_group = voxel_size/1.5
+    mean_sigma_group = group_sf*Diff_smear*np.sqrt(0.1*node_centers_df.z.median())
+    if (mean_sigma_group < voxel_size+4):
+        mean_sigma_group = voxel_size+4
 
     # Use fixed value since voxels are same size in next1t analysis
     if diffusion == "next1t":
@@ -1976,9 +1976,9 @@ def GroupHits(df, threshold):
     # Add group labels to the original DataFrame
     df["group_id"] = db.labels_
 
-    if (len(df.group_id.unique()) > 8):
-        print("Running grouping again new mean sigma is:", threshold*2)
-        df = GroupHits(df, threshold*2)
+    # if (len(df.group_id.unique()) > 8):
+    #     print("Running grouping again new mean sigma is:", threshold*2)
+    #     df = GroupHits(df, threshold*2)
 
     return df
 # ---------------------------------------------------------------------------------------------------
