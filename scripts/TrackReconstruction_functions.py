@@ -1355,11 +1355,11 @@ def GetTrackdf(df_angles, RebuiltTrack, distance_threshold, radius_threshold, T_
         eventid = df_angles.event_id.iloc[0]
         primary_id = df_angles[df_angles.trkID == t["id"]]["primary"].iloc[0]
 
-        # For short tracks, use 10% of the track for calculation of variables
+        # For short tracks, use 25% of the track for calculation of variables
         if t["length"]*pressure < 1000 and t["length"]*pressure>0:
-            radius_threshold   = t["length"]/10.0
-            distance_threshold = t["length"]/10.0
-            T_threshold        = t["length"]/10.0
+            radius_threshold   = t["length"]/25.0
+            distance_threshold = t["length"]/25.0
+            T_threshold        = t["length"]/25.0
 
         properties_df = GetTrackProperties(df_angles[df_angles.trkID == t["id"]], t["id"], primary_id, p_start, p_end, eventid, distance_threshold, radius_threshold, T_threshold, df_angles[~df_angles["trkID"].isin(brem_ids)])
 
@@ -1849,7 +1849,7 @@ def RunClustering(node_centers_df, pressure, diffusion):
     for gid in sorted(df_merged.group_id.unique()):
         temp_df = df_merged[df_merged.group_id == gid]
         temp_df.reset_index(drop=True, inplace=True)
-        initial_cluster_data.append(Cluster(temp_df, 2, Diff_smear, voxel_size)) # Apply loose scale factor of 2 for now
+        initial_cluster_data.append(Cluster(temp_df, 2, Diff_smear, voxel_size)) # Apply loose scale factor of 2 first
 
     initial_cluster_data = pd.concat(initial_cluster_data, ignore_index=True)
     
@@ -1857,7 +1857,7 @@ def RunClustering(node_centers_df, pressure, diffusion):
     for gid in sorted(initial_cluster_data.group_id.unique()):
         temp_df = initial_cluster_data[initial_cluster_data.group_id == gid]
         temp_df.reset_index(drop=True, inplace=True)
-        node_centers_df.append(Cluster(temp_df, diff_scale_factor, Diff_smear, voxel_size)) # Apply loose scale factor of 2 for now
+        node_centers_df.append(Cluster(temp_df, diff_scale_factor, Diff_smear, voxel_size))
     
     node_centers_df = pd.concat(node_centers_df, ignore_index=True)
     node_centers_df["event_id"] = event_id
