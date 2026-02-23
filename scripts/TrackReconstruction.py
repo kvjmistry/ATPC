@@ -95,7 +95,7 @@ for index, event_num in enumerate(hits.event_id.unique()):
 
         # Allow scan of various parameters for the track reconstruction
         if (tr_opt == 0):
-            temp_meta = GetTrackdf(df, Tracks, 500/pressure, 225/pressure, 225/pressure, pressure) # scale these params inversely with the pressure
+            temp_meta = GetTrackdf(df, Tracks, 400/pressure, 100/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
         elif (tr_opt == 1):
             temp_meta = GetTrackdf(df, Tracks, 100/pressure, 100/pressure, 100/pressure, pressure)
         elif (tr_opt == 2):
