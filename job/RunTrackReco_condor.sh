@@ -27,13 +27,13 @@ start=`date +%s`
 
 ls -ltrh
 
-# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 0 0
-python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 1 0
-python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 2 0
-python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 3 0
-python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 4 0
-python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 5 0
-python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 6 0
+python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 0 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 1 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 2 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 3 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 4 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 5 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 6 0
 
 rm TrackReconstruction_functions.py
 rm ${input_file}

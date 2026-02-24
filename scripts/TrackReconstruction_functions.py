@@ -1826,10 +1826,9 @@ def Cluster(input_data, scale_factor, Diff_smear, DL, DT, voxel_size):
 
         # Apply sorting so that highest energy nodes are sampled first
         # This should help center the sphere/ellipsoid on the trunk of the track
-        filtered_data = input_data[input_data.index.isin(filtered_indexes)]
-        sorted_df = filtered_data.sort_values(by='energy')
-        filtered_indexes = list(sorted_df.index.values)
-
+        # filtered_data = input_data[input_data.index.isin(filtered_indexes)]
+        # sorted_df = filtered_data.sort_values(by='energy')
+        # filtered_indexes = list(sorted_df.index.values)
 
         # random_index = np.random.choice(filtered_indexes)
         random_index = filtered_indexes[0]
@@ -1846,17 +1845,14 @@ def Cluster(input_data, scale_factor, Diff_smear, DL, DT, voxel_size):
         if (R < voxel_size+4):
             R = voxel_size+4
 
-        if (R_xy < voxel_size+4):
-            R_xy = voxel_size+4
+        # if (R_xy < voxel_size+4):
+        #     R_xy = voxel_size+4
 
-        if (R_z < voxel_size+4):
-            R_z = voxel_size+4
+        # if (R_z < voxel_size+4):
+        #     R_z = voxel_size+4
 
-        if (R < voxel_size+4):
-            R = voxel_size+4
-
-        # median, all_visited = GetMinimaWeighted(random_index, all_visited, input_data, temp_dist_matrix, R)
-        median, all_visited = GetMinimaWeightedEllipsoid(random_index, all_visited, input_data, [R_xy, R_xy, R_z])
+        median, all_visited = GetMinimaWeighted(random_index, all_visited, input_data, temp_dist_matrix, R)
+        # median, all_visited = GetMinimaWeightedEllipsoid(random_index, all_visited, input_data, [R_xy, R_xy, R_z])
 
         node_centers.append(median)
 
