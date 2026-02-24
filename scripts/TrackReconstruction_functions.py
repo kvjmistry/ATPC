@@ -699,6 +699,52 @@ def GetMinimaWeighted(index, all_visited_, input_data, temp_dist_matrix, R):
 
     return median_point, all_visited
 # ---------------------------------------------------------------------------------------------------
+# Function to get the energy weighted mean of a set of hits within a an ellipsoid that describes the
+# expected diffusion. # Rxyz = (Rx, Ry, Rz)  # semi-axis lengths
+# Any hits that are used here will not be used again.
+def GetMinimaWeightedEllipsoid(index, all_visited_, input_data, Rxyz):
+    
+    Rx, Ry, Rz = Rxyz
+
+    # Center point
+    x0 = input_data.iloc[index]['x']
+    y0 = input_data.iloc[index]['y']
+    z0 = input_data.iloc[index]['z']
+
+    # Coordinate differences
+    dx = input_data['x'].values - x0
+    dy = input_data['y'].values - y0
+    dz = input_data['z'].values - z0
+
+    # Ellipsoidal condition
+    ellipsoid_value = (
+        (dx**2) / Rx**2 +
+        (dy**2) / Ry**2 +
+        (dz**2) / Rz**2
+    )
+
+    closest_nodes = np.where(ellipsoid_value < 1.0)[0]
+
+    # Remove already used nodes
+    closest_nodes = list(set(closest_nodes) - set(all_visited_))
+
+    selected_rows = input_data.iloc[closest_nodes]
+
+    energy = selected_rows['energy'].values
+
+    mean_x = np.average(selected_rows['x'].values, weights=energy)
+    mean_y = np.average(selected_rows['y'].values, weights=energy)
+    mean_z = np.average(selected_rows['z'].values, weights=energy)
+
+    energy_sum = energy.sum()
+    group_id = int(selected_rows["group_id"].iloc[0])
+
+    median_point = np.array([mean_x, mean_y, mean_z, energy_sum, group_id])
+
+    all_visited = all_visited_ + list(closest_nodes)
+
+    return median_point, all_visited
+# ---------------------------------------------------------------------------------------------------
 # Function to apply an energy threshold then redistibute the removed energy proportionally based
 # on the fraction of the energy each hit has of the total remaining energy
 def CutandRedistibuteEnergy(data, energy_threshold):
@@ -1511,7 +1557,7 @@ def GetShortestDistTracks(df1, df2):
 #            which will help the algorithm converge better
 def RunTracking(data, cluster, pressure, diffusion, sort_flag):
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_half_length = InitializeParams(pressure, diffusion)
+    Diff_smear, DL, DT, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_half_length = InitializeParams(pressure, diffusion)
     print("Diffussion smear is: ",        Diff_smear,            "mm/sqrt(cm)")
     print("Energy threshold is: ",        1000*energy_threshold, "keV")
     print("diffision scale factor is: ",  diff_scale_factor)
@@ -1759,7 +1805,7 @@ def RunTracking(data, cluster, pressure, diffusion, sort_flag):
     print(df_angles)
     return df_angles, Tracks, connected_nodes, connection_count, pass_flag, contained
 # ---------------------------------------------------------------------------------------------------
-def Cluster(input_data, scale_factor, Diff_smear, voxel_size):
+def Cluster(input_data, scale_factor, Diff_smear, DL, DT, voxel_size):
 
     node_centers = []
     all_visited = []
@@ -1778,16 +1824,39 @@ def Cluster(input_data, scale_factor, Diff_smear, voxel_size):
         if not filtered_indexes:
             break
 
+        # Apply sorting so that highest energy nodes are sampled first
+        # This should help center the sphere/ellipsoid on the trunk of the track
+        filtered_data = input_data[input_data.index.isin(filtered_indexes)]
+        sorted_df = filtered_data.sort_values(by='energy')
+        filtered_indexes = list(sorted_df.index.values)
+
+
         # random_index = np.random.choice(filtered_indexes)
         random_index = filtered_indexes[0]
 
         # Calculate R based on index position
         R = scale_factor*Diff_smear*np.sqrt(0.1*input_data.iloc[random_index]["z"].item())
 
+        # Define R for an ellipsoid
+        R_xy = scale_factor*DT*np.sqrt(0.1*input_data.iloc[random_index]["z"].item())
+        R_z  = scale_factor*DL*np.sqrt(0.1*input_data.iloc[random_index]["z"].item())
+
+        # print(R_xy, R_z, R)
+
         if (R < voxel_size+4):
             R = voxel_size+4
 
-        median, all_visited = GetMinimaWeighted(random_index, all_visited, input_data, temp_dist_matrix, R)
+        if (R_xy < voxel_size+4):
+            R_xy = voxel_size+4
+
+        if (R_z < voxel_size+4):
+            R_z = voxel_size+4
+
+        if (R < voxel_size+4):
+            R = voxel_size+4
+
+        # median, all_visited = GetMinimaWeighted(random_index, all_visited, input_data, temp_dist_matrix, R)
+        median, all_visited = GetMinimaWeightedEllipsoid(random_index, all_visited, input_data, [R_xy, R_xy, R_z])
 
         node_centers.append(median)
 
@@ -1801,7 +1870,7 @@ def RunClustering(node_centers_df, pressure, diffusion):
 
     print("Clustering Event")
 
-    Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_size = InitializeParams(pressure, diffusion)
+    Diff_smear, DL, DT, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_size = InitializeParams(pressure, diffusion)
 
     event_id = node_centers_df.event_id.iloc[0]
 
@@ -1849,7 +1918,7 @@ def RunClustering(node_centers_df, pressure, diffusion):
     for gid in sorted(df_merged.group_id.unique()):
         temp_df = df_merged[df_merged.group_id == gid]
         temp_df.reset_index(drop=True, inplace=True)
-        initial_cluster_data.append(Cluster(temp_df, 2, Diff_smear, voxel_size)) # Apply loose scale factor of 2 first
+        initial_cluster_data.append(Cluster(temp_df, 2, Diff_smear, DL, DT, voxel_size)) # Apply loose scale factor of 2 first
 
     initial_cluster_data = pd.concat(initial_cluster_data, ignore_index=True)
     
@@ -1857,7 +1926,7 @@ def RunClustering(node_centers_df, pressure, diffusion):
     for gid in sorted(initial_cluster_data.group_id.unique()):
         temp_df = initial_cluster_data[initial_cluster_data.group_id == gid]
         temp_df.reset_index(drop=True, inplace=True)
-        node_centers_df.append(Cluster(temp_df, diff_scale_factor, Diff_smear, voxel_size))
+        node_centers_df.append(Cluster(temp_df, diff_scale_factor, Diff_smear, DL, DT, voxel_size))
     
     node_centers_df = pd.concat(node_centers_df, ignore_index=True)
     node_centers_df["event_id"] = event_id
@@ -2012,6 +2081,7 @@ def CheckSameGroup(df, node1, node2):
 # inputs: pressure and diffusion amount
 # outputs: Diff_smear - The amont of diffusion that was applied for given pressure/CO2 mix
 #                       this is used to calculate clustering size estimation
+#         DL/DT - The longitudinal and transverse diffusion. 
 #         energy_threshold - this removes hits with an energy below this val and redistibutes its
 #                            energy amongst the remaining hits proportationally
 #         diff_scale_factor - This addtional adjustment scales the radius in clustering by this amount
@@ -2023,6 +2093,8 @@ def CheckSameGroup(df, node1, node2):
 def InitializeParams(pressure, diffusion):
 
     Diff_smear        = 0.0 # mm / sqrt(cm)
+    DL                = 0.1 # mm / sqrt(cm)
+    DT                = 0.1 # mm / sqrt(cm)
     energy_threshold  = 0   # MeV
     diff_scale_factor = 7
     radius_sf         = 7 
@@ -2037,6 +2109,9 @@ def InitializeParams(pressure, diffusion):
 
     # This is acutally 10 % Helium
     if (diffusion == "0.05percent"):
+
+        DL = 0.75 / np.sqrt(pressure) # mm / sqrt(cm)
+        DT = 1.60 / np.sqrt(pressure) # mm / sqrt(cm)
 
         if (pressure == 1):
             Diff_smear        = 2.0/np.sqrt(pressure)
@@ -2081,6 +2156,8 @@ def InitializeParams(pressure, diffusion):
     
     elif (diffusion == "nodiff"):
         Diff_smear        = 0.1
+        DL = 0.1
+        DT = 0.1
         diff_scale_factor = 7
         radius_sf         = 10
         group_sf          = 20
@@ -2094,6 +2171,8 @@ def InitializeParams(pressure, diffusion):
     
     elif (diffusion == "deconv"):
         Diff_smear        = 0.1
+        DL = 0.1
+        DT = 0.1
         diff_scale_factor = 7
         radius_sf         = 10
         group_sf          = 20
@@ -2103,6 +2182,8 @@ def InitializeParams(pressure, diffusion):
 
     elif (diffusion == "sophronia"):
         Diff_smear        = 2.6
+        DL = 0.9
+        DT = 3.5
         diff_scale_factor = 2
         radius_sf         = 5
         group_sf          = 1.5
@@ -2111,7 +2192,9 @@ def InitializeParams(pressure, diffusion):
         energy_threshold  = 0.001
             
     elif (diffusion == "0.1percent"):
-        Diff_smear        = 1.0
+        Diff_smear        = 1.0/np.sqrt(pressure)
+        DL = 1.037 / np.sqrt(pressure)
+        DT = 0.818 / np.sqrt(pressure)
         energy_threshold  = 0.0003
         diff_scale_factor = 7
         radius_sf         = 7
@@ -2120,7 +2203,9 @@ def InitializeParams(pressure, diffusion):
         voxel_size        = 23
     
     elif (diffusion == "0.25percent"):
-        Diff_smear        = 0.703 
+        Diff_smear        = 0.703 /np.sqrt(pressure)
+        DL = 0.627 / np.sqrt(pressure)
+        DT = 0.463 / np.sqrt(pressure)
         energy_threshold  = 0.0003
         diff_scale_factor = 5
         radius_sf         = 5
@@ -2129,7 +2214,9 @@ def InitializeParams(pressure, diffusion):
         voxel_size        = 14
     
     elif (diffusion == "0.0percent"):
-        Diff_smear        = 2.6
+        Diff_smear        = 2.6/np.sqrt(pressure)
+        DL = 0.9 / np.sqrt(pressure)
+        DT = 3.5 / np.sqrt(pressure)
         energy_threshold  = 0.0003
         diff_scale_factor = 8
         radius_sf         = 7
@@ -2138,6 +2225,9 @@ def InitializeParams(pressure, diffusion):
         voxel_size        = 55
 
     elif (diffusion == "5percent" or diffusion == "5.0percent"): # because I messed up naming conventions
+
+        DL = 0.314 / np.sqrt(pressure)
+        DT = 0.300 / np.sqrt(pressure)
 
         if (pressure == 1):
             Diff_smear        = 0.314/np.sqrt(pressure)
@@ -2184,6 +2274,8 @@ def InitializeParams(pressure, diffusion):
 
     elif (diffusion == "next1t"): # this configures 15 bar fixed 3mm voxels for NEXT1t analysis
         Diff_smear        = 0.314/np.sqrt(pressure)
+        DL = 0.314 / np.sqrt(pressure)
+        DT = 0.300 / np.sqrt(pressure)
         diff_scale_factor = 4
         energy_threshold  = 0.001
         radius_sf         = 7
@@ -2193,7 +2285,7 @@ def InitializeParams(pressure, diffusion):
     else:
         print("Error gas percentage not defined at 60 V/cm/bar field")
 
-    return Diff_smear, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_half_length
+    return Diff_smear, DL, DT, energy_threshold, diff_scale_factor, radius_sf, group_sf, Tortuosity_dist, voxel_size, det_half_length
 # ---------------------------------------------------------------------------------------------------
 # Function to check if any hit is outside a desired volume in cylinder geometry
 # Returns False if the event is considered to be contained and True if contained
