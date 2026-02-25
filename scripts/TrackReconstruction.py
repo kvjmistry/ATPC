@@ -13,8 +13,15 @@ import re
 pd.options.mode.chained_assignment = None  # Disable the warning
 
 
-# USAGE: python TrackReconstruction.py <infile> <pressure> <diffusion amount> <plot>
-# python TrackReconstruction.py "ATPC_0nubb_15bar_smear_144.h5" 1 "nodiff" 0
+# USAGE: python TrackReconstruction.py <infile> <pressure> <diffusion amount> <track_option> <plot> 
+# python TrackReconstruction.py "ATPC_0nubb_15bar_smear_144.h5" 1 "nodiff" 1 0
+
+# Tracks Options
+# 0: distance_threshold = 500/p, radius_threshold = 225/p, tortuoisty threshold = 225/p
+# 1: distance_threshold = 100/p, radius_threshold = 100/p, tortuoisty threshold = 100/p
+# 2: distance_threshold = 200/p, radius_threshold = 200/p, tortuoisty threshold = 200/p
+# ...
+
 
 # Input file
 infile     = sys.argv[1]
@@ -35,19 +42,13 @@ pressure = int(sys.argv[2])
 print("Pressure:", pressure, "bar")
 diffusion= sys.argv[3]
 print("diffusion:",diffusion)
-
-# if (diffusion != "nodiff"):
-#     print("Including Clustering!")
-#     cluster = 1
-# else:
-#     print("No Clustering!")
-#     cluster = 0
-
 cluster = 1
 
+tr_opt = int(sys.argv[4])
+print("tr_opt:",tr_opt)
 
 file_out_seg = os.path.basename(infile.rsplit('.', 1)[0])
-plot=int(sys.argv[4])
+plot=int(sys.argv[5])
 print("Plotting mode:", plot)
 
 hits = pd.read_hdf(infile,"MC/hits")
@@ -64,7 +65,7 @@ print("Total events to process:", len(hits.event_id.unique()))
 for index, event_num in enumerate(hits.event_id.unique()):
     print("On index, Event:", index, event_num)
 
-    # if (index > 100):
+    # if (index > 50):
     #     break
 
     hit = hits[hits.event_id == event_num]
@@ -91,7 +92,22 @@ for index, event_num in enumerate(hits.event_id.unique()):
     if (diffusion == "next1t"):
         temp_meta = GetTrackdf(df, Tracks, 30, 15, 15, pressure)
     else:
-        temp_meta = GetTrackdf(df, Tracks, 500/pressure, 225/pressure, 225/pressure, pressure) # scale these params inversely with the pressure
+
+        # Allow scan of various parameters for the track reconstruction
+        if (tr_opt == 0):
+            temp_meta = GetTrackdf(df, Tracks, 400/pressure, 100/pressure, 200/pressure, pressure) # scale these params inversely with the pressure
+        elif (tr_opt == 1):
+            temp_meta = GetTrackdf(df, Tracks, 100/pressure, 100/pressure, 100/pressure, pressure)
+        elif (tr_opt == 2):
+            temp_meta = GetTrackdf(df, Tracks, 200/pressure, 200/pressure, 200/pressure, pressure)
+        elif (tr_opt == 3):
+            temp_meta = GetTrackdf(df, Tracks, 300/pressure, 300/pressure, 300/pressure, pressure)
+        elif (tr_opt == 4):
+            temp_meta = GetTrackdf(df, Tracks, 400/pressure, 400/pressure, 400/pressure, pressure)
+        elif (tr_opt == 5):
+            temp_meta = GetTrackdf(df, Tracks, 500/pressure, 500/pressure, 500/pressure, pressure)
+        elif (tr_opt == 6):
+            temp_meta = GetTrackdf(df, Tracks, 600/pressure, 600/pressure, 600/pressure, pressure)
     
     
     # temp_meta = UpdateTrackMeta(temp_meta, df, 10/pressure) # Merge deltas and brems that are near the blobs in the metadata
@@ -114,13 +130,13 @@ if Reco_eff < 100:
     missing_events = set(hits.event_id.unique()) - set(df_meta.event_id.unique())
     print("Events in hits but not in df_meta:", missing_events)
 
-with pd.HDFStore(f"{file_out_seg}_reco.h5", mode='w', complevel=5, complib='zlib') as store:
+with pd.HDFStore(f"{file_out_seg}_reco_{tr_opt}.h5", mode='w', complevel=5, complib='zlib') as store:
     # Write each DataFrame to the file with a unique key
     store.put('data', df, format='table')
     store.put('meta', df_meta, format='table')
 
 
-with open(f"{file_out_seg}_trackinfo.pkl", 'wb') as pickle_file:
+with open(f"{file_out_seg}_trackinfo_{tr_opt}.pkl", 'wb') as pickle_file:
     pickle.dump(Track_dict, pickle_file)
     pickle.dump(connected_nodes_dict, pickle_file)
     pickle.dump(connections_count_dict, pickle_file)

@@ -27,7 +27,13 @@ start=`date +%s`
 
 ls -ltrh
 
-python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 0
+python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 0 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 1 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 2 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 3 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 4 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 5 0
+# python3 TrackReconstruction.py $input_file ${PRESS} ${Diff} 6 0
 
 rm TrackReconstruction_functions.py
 rm ${input_file}
@@ -46,3 +52,4 @@ let deltatime=end-start
 let hours=deltatime/3600
 let minutes=(deltatime/60)%60
 let seconds=deltatime%60
+printf "Time spent: %d:%02d:%02d\n" $hours $minutes $seconds 
