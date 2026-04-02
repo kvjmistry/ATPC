@@ -70,19 +70,21 @@ def voxelize_event(event_df, VOXEL_SIZE):
     event_df['x_int'] = np.floor(event_df['x'] / VOXEL_SIZE).astype(np.int32)
 
     # In case of duplicates, we need to aggregrate them
-    voxel_df = event_df.groupby(['z_int', 'y_int', 'x_int']).agg({'energy': 'sum' }).reset_index()
-
-    # Shift to start at 0
-    coords = voxel_df[['z_int', 'y_int', 'x_int']].values
-    # coords -= coords.min(axis=0)
+    voxel_df = event_df.groupby(['z_int', 'y_int', 'x_int']).agg(
+        {'energy': 'sum',
+         'Type' : 'first',
+         "subType": "first",
+         "event_id":"first",
+         "label" : "first"
+        }).reset_index()
     
-    # Spconv needs first column to be the batch index
-    batch_indices = np.full((len(voxel_df), 1), 0, dtype=np.int32)
-    spconv_coords = np.hstack([batch_indices, coords])
+    voxel_df["energy"] = voxel_df["energy"].astype(np.float32)
     
-    features = voxel_df[['energy']].values.astype(np.float32)
+    # Rename 
+    voxel_df.rename(columns={"z_int":"z", "y_int":"y", "x_int":"x"}, inplace=True)
+    voxel_df = voxel_df[["event_id", "z", "y", "x", "energy", "Type", "subType", "label"]]
 
-    return spconv_coords, features
+    return voxel_df
 # ------------------------------------------------------------------------------
 # Creates a list of dataframes, one for each event, baed on test-train split
 def make_event_df_list(df, event_ids):
@@ -226,6 +228,11 @@ input_data_shape = GetSpatialShape(df, VOXEL_SIZE)
 # Type: "0nubb" or "Bkg"
 df['label'] = (df['Type'] == "0nubb").astype(int)
 
+# Apply a voxelization
+df = voxelize_event(df, VOXEL_SIZE)
+print("Voxelized Dataframe")
+print(df)
+
 # Event-level labels
 event_labels = df.groupby('event_id')['label'].first()
 event_ids    = event_labels.index.values
@@ -240,11 +247,11 @@ train_events_df_list, train_labels = make_event_df_list(df, ev_train)
 val_events_df_list,   val_labels   = make_event_df_list(df, ev_val)
 test_events_df_list,  test_labels  = make_event_df_list(df, ev_test)
 
-train_dataset = EventDataset(train_events_df_list, train_labels, VOXEL_SIZE, input_data_shape)
-val_dataset   = EventDataset(val_events_df_list,   val_labels,   VOXEL_SIZE, input_data_shape)
-test_dataset  = EventDataset(test_events_df_list,  test_labels,  VOXEL_SIZE, input_data_shape)
+print("\nTrain Events:", len(train_events_df_list))
+print("Val Events:  ", len(val_events_df_list))
+print("Test Events: ", len(test_events_df_list), "\n")
 
 print("Saving dataset to ", f'{basepath}/CNN_files/ATPC_CNN_chunk_[train/val/test]_{jobid}.pt')
-torch.save(train_dataset,   f'{basepath}/CNN_files/ATPC_CNN_chunk_train_{jobid}.pt')
-torch.save(val_dataset,     f'{basepath}/CNN_files/ATPC_CNN_chunk_val_{jobid}.pt')
-torch.save(test_dataset,    f'{basepath}/CNN_files/ATPC_CNN_chunk_test_{jobid}.pt')
+torch.save(train_events_df_list,   f'{basepath}/CNN_files/ATPC_CNN_chunk_train_{jobid}.pt')
+torch.save(val_events_df_list,     f'{basepath}/CNN_files/ATPC_CNN_chunk_val_{jobid}.pt')
+torch.save(test_events_df_list,    f'{basepath}/CNN_files/ATPC_CNN_chunk_test_{jobid}.pt')

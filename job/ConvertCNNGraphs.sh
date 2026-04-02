@@ -7,7 +7,7 @@
 #SBATCH -e log/CNN_%A_%a.err # Standard error
 
 # to run:
-# sbatch --array=1-100%5 ConvertCNNGraphs.sh
+# sbatch --array=1-100%1 ConvertCNNGraphs.sh
 
 start=`date +%s`
 
