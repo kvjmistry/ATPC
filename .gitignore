@@ -7,3 +7,14 @@ notebooks/plots
 *pycache*
 config/PTFEStudies/
 scripts/plots/
+CNN_files/
+GNN_files/
+eventlists/
+job/ATPC_PTFE/
+job/TonneScripts/
+job/log/
+notebooks/*.lmdb
+notebooks/*.json
+notebooks/NEXT100/*.txt
+notebooks/NEXT100/log/
+

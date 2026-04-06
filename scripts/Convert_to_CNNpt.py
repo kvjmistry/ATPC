@@ -59,30 +59,31 @@ class EventDataset(Dataset):
         return len(self.event_dfs_list)
 # ------------------------------------------------------------------------------
 # Function to voxelize the event
-# always set idx = 0, as collate_fn will overwrite this with the local batch
 # voxel size in mm
 def voxelize_event(event_df, VOXEL_SIZE):
     
     # Convert the coorinates into integers
-    event_df = event_df.copy()
-    event_df['z_int'] = np.floor(event_df['z'] / VOXEL_SIZE).astype(np.int32)
-    event_df['y_int'] = np.floor(event_df['y'] / VOXEL_SIZE).astype(np.int32)
-    event_df['x_int'] = np.floor(event_df['x'] / VOXEL_SIZE).astype(np.int32)
+    z_int = (event_df['z'].values // VOXEL_SIZE).astype(np.int32)
+    y_int = (event_df['y'].values // VOXEL_SIZE).astype(np.int32)
+    x_int = (event_df['x'].values // VOXEL_SIZE).astype(np.int32)
 
-    # In case of duplicates, we need to aggregrate them
-    voxel_df = event_df.groupby(['z_int', 'y_int', 'x_int']).agg(
-        {'energy': 'sum',
-         'Type' : 'first',
-         "subType": "first",
-         "event_id":"first",
-         "label" : "first"
-        }).reset_index()
+    group_df = pd.DataFrame({
+        'event_id': event_df['event_id'].values,
+        'z': z_int,
+        'y': y_int,
+        'x': x_int,
+        'energy': event_df['energy'].values.astype(np.float32),
+        'Type': event_df['Type'].values,
+        'subType': event_df['subType'].values,
+        'label': event_df['label'].values
+    })
     
-    voxel_df["energy"] = voxel_df["energy"].astype(np.float32)
-    
-    # Rename 
-    voxel_df.rename(columns={"z_int":"z", "y_int":"y", "x_int":"x"}, inplace=True)
-    voxel_df = voxel_df[["event_id", "z", "y", "x", "energy", "Type", "subType", "label"]]
+    voxel_df = group_df.groupby(['event_id', 'z', 'y', 'x'], as_index=False, sort=False).agg({
+        'energy': 'sum',
+        'Type': 'first',
+        'subType': 'first',
+        'label': 'first'
+    })
 
     return voxel_df
 # ------------------------------------------------------------------------------
@@ -173,19 +174,17 @@ def LoadData(f_nubb, f_Bi, f_Tl, f_single):
 
     Bi = LoadFilesParallel(f_Bi)
     Bi["subType"] = "Bi"
+    Bi["Type"] = "Bkg"
 
     Tl = LoadFilesParallel(f_Tl)
     Tl["subType"] = "Tl"
+    Tl["Type"] = "Bkg"
 
     single = LoadFilesParallel(f_single)
     single["subType"] = "single"
+    single["Type"] = "Bkg"
 
-    Bkg = pd.concat([Bi, Tl, single])
-    Bkg["Type"] = "Bkg"
-
-
-    df = pd.concat([nubb, Bkg])
-    df = df.reset_index(drop=True)
+    df = pd.concat([nubb, Bi, Tl, single], ignore_index=True)
 
     df = df[["event_id", "x", "y", "z", "energy", "Type", "subType"]]
     return df
@@ -221,6 +220,8 @@ print(df)
 
 # Apply scaling
 df = ApplyScaling(df)
+print("df after scaling")
+print(df)
 
 # Get the spatial shape
 input_data_shape = GetSpatialShape(df, VOXEL_SIZE)
