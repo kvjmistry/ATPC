@@ -8,7 +8,7 @@
 
 
 # to run:
-# sbatch --array=1-98 ConvertGNNGraphs.sh
+# sbatch --array=1-98%15 ConvertGNNGraphs.sh
 
 start=`date +%s`
 
@@ -17,17 +17,10 @@ echo "Setting up environment"
 source /home/argon/Projects/Krishan/venv/bin/activate
 
 
-# MODE=0nubb
-# MODE=single
-# MODE=Bi
-MODE=Tl
-
 BATCH_SIZE=100
 
-echo "Mode is: ${MODE}"
-
-echo "python3 /home/argon/Projects/Krishan/ATPC/scripts/Convert_to_Graph.py ${SLURM_ARRAY_TASK_ID} ${BATCH_SIZE} ${MODE}"
-python3 /home/argon/Projects/Krishan/ATPC/scripts/Convert_to_Graph.py ${SLURM_ARRAY_TASK_ID} ${BATCH_SIZE} ${MODE}
+echo "python3 /home/argon/Projects/Krishan/ATPC/scripts/Convert_to_Graph.py ${SLURM_ARRAY_TASK_ID} ${BATCH_SIZE}"
+python3 /home/argon/Projects/Krishan/ATPC/scripts/Convert_to_Graph.py ${SLURM_ARRAY_TASK_ID} ${BATCH_SIZE}
 
 echo "FINISHED....EXITING"
 

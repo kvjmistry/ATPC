@@ -12,6 +12,7 @@ import glob
 import sys
 import torch
 from torch_geometric.data import Data
+from sklearn.model_selection import train_test_split
 
 # ------------------------------------------------------------------------------
 # Get a subset of the total files to iterate over
@@ -152,17 +153,23 @@ def normalize_group(group):
 def NormlizeDataFrame(df):
 
     # Normalize the columns
-    xyz_mean = df[["x", "y", "z"]].mean()
-    xyz_std  = df[["x", "y", "z"]].std()
-    df[["x", "y", "z"]] = 0.5*(df[["x", "y", "z"]] - xyz_mean) / xyz_std
+    # xyz_mean = df[["x", "y", "z"]].mean()
+    # xyz_std  = df[["x", "y", "z"]].std()
+    # df[["x", "y", "z"]] = 0.5*(df[["x", "y", "z"]] - xyz_mean) / xyz_std
+    
+    # Normalize so that x,y,z are between 0 and 1
+    df["z"] = df["z"]/6180.
+    df["x"] = (df["x"]+6180./2.0)/6180.
+    df["y"] = (df["y"]+6180./2.0)/6180.
 
     # Apply clipping to the energy
     df['energy'] = df['energy'].clip(upper=0.4)
     df['Tortuosity'] = df['Tortuosity'].clip(upper=5)
-
-    df = MinMaxScale(df, "energy", 0, 0.4) # 0, 0.4
-    df = MinMaxScale(df, "Tortuosity", 1, 5) # 1, 4
-    df = MinMaxScale(df, "angle", 0, 180) # 0, 180
+    
+                                             # Min/Max
+    df = MinMaxScale(df, "energy", 0, 0.4)   # 0, 0.4
+    df = MinMaxScale(df, "Tortuosity", 1, 5) # 1, 5
+    df = MinMaxScale(df, "angle", 0, 180)    # 0, 180
 
     # Normalize the cumulative distance per event and track id
     df['cum_dist_norm'] = df.groupby(['event_id','trkID'])['cumulative_distance'].transform(normalize_group)
@@ -171,46 +178,43 @@ def NormlizeDataFrame(df):
 # ------------------------------------------------------------------------------
 def AddCategories(df):
 
-  # Convert the label category to a trainable parameter
-  df['label_cat'] = (
-      df['label']
+    # Convert the label category to a trainable parameter
+    df['label_cat'] = (
+        df['label']
         .str.replace(r'^Delta\d+$', 'Delta', regex=True)
         .str.replace(r'^BremDelta\d+$', 'BremDelta', regex=True)
-  )
+    )
 
-  df['label_cat'] = df['label_cat'].astype('category')
-  df['label_cat'] = df['label_cat'].cat.set_categories(['Primary', 'Delta', 'Brem', 'BremDelta'],ordered=False )
+    df['label_cat'] = df['label_cat'].astype('category')
+    df['label_cat'] = df['label_cat'].cat.set_categories(['Primary', 'Delta', 'Brem', 'BremDelta'], ordered=False )
 
-  df['SubType'] = df['subType'].astype('category')
-  df['SubType'] = df['SubType'].cat.set_categories(['0nubb', 'Bi', 'Tl', 'single'],ordered=False )
+    df['SubType'] = df['subType'].astype('category')
+    df['SubType'] = df['SubType'].cat.set_categories(['0nubb', 'Bi', 'Tl', 'single'], ordered=False )
 
-  # Integer encoding for training
-  df['label_id'] = df['label_cat'].cat.codes
-  df['SubType_cat'] = df['SubType'].cat.codes
+    # Integer encoding for training
+    df['label_id'] = df['label_cat'].cat.codes
+    df['SubType_cat'] = df['SubType'].cat.codes
 
-  label_map = {"0nubb": 1, "Bkg": 0}
-  df["label"] = (df["Type"] == "0nubb").astype(int)
-  
-  return df
+    # Signal or background
+    df["label"] = (df["Type"] == "0nubb").astype(int)
+
+    return df
 # ------------------------------------------------------------------------------
 def event_to_track_graph(event_df, Track):
     
     # Reset the index
     event_df = event_df.reset_index(drop=True)
     
-    pos = torch.tensor(
-        event_df[["x", "y", "z"]].values,
-        dtype=torch.float32
-    ) # N rows of [x,y,z]
+    pos = torch.tensor( event_df[["x", "y", "z"]].values, dtype=torch.float32 ) # N rows of [x,y,z]
     
-    x = torch.tensor(event_df[["z", "energy", "Tortuosity", "cum_dist_norm", "label_id"]].values, dtype=torch.float32) # (N,5): N rows of these features
+    x = torch.tensor(event_df[["x", "y", "z", "energy", "Tortuosity", "cum_dist_norm", "label_id"]].values, dtype=torch.float32) # (N,5): N rows of these features
     event_id = torch.tensor(event_df["event_id"].iloc[0])
     subType = torch.tensor(event_df["SubType_cat"].iloc[0])
 
     # Build the track
     edge_index, edge_attr = build_track_edges_with_attr(event_df, Track, pos)
     
-    y = torch.tensor([event_df["label"].iloc[0]],dtype=torch.long)
+    y = torch.tensor([event_df["label"].iloc[0]], dtype=torch.long)
     
     return Data(x=x, pos=pos, edge_index=edge_index, edge_attr=edge_attr, y=y, event_id=event_id, subType=subType)
 # ------------------------------------------------------------------------------
@@ -218,7 +222,6 @@ def build_track_edges_with_attr(event_df, tracks, pos):
     src = []
     dst = []
     edge_attr = []
-    prev_dir = None  # for angle computation
 
     for t in tracks:
         nodes = t['nodes']
@@ -226,32 +229,19 @@ def build_track_edges_with_attr(event_df, tracks, pos):
             u = nodes[i]
             v = nodes[i + 1]
 
-            # displacement vector
+            # Distance between nodes
             d = pos[v] - pos[u]      # (dx, dy, dz)
-            d_norm = d / 10.         # Divide by 10 to get a scale closer to ~1
-            dist = torch.norm(d)     # |d|
-
-            # direction / angle
-            direction = d / (dist + 1e-8)
-            
-            # angle wrt previous segment
-            if prev_dir is None:
-                theta_norm = torch.tensor(0.0)
-            else:
-                cos_theta = torch.dot(prev_dir, direction)
-                cos_theta = torch.clamp(cos_theta, -1.0, 1.0)
-                theta = torch.acos(cos_theta)
-                theta_norm = theta / math.pi # normalize angle
-            
-            prev_dir = direction
+            d_norm = torch.linalg.vector_norm(d)
+            d_norm = torch.clamp(d_norm, max=0.2) # 0.2 comes from looking at the distribution
+            d_norm = d_norm / 0.2
 
             src.append(u)
             dst.append(v)
             
-            # Third column is flag to tell if we added a brem connection or not
-            edge_attr.append(torch.tensor([dist, 0.0], dtype=torch.float))
+            # Second column is flag to tell if we added a brem connection or not
+            edge_attr.append(torch.tensor([d_norm, 0.0], dtype=torch.float))
     
-    # Map the nodes "id" to index in the dataframe
+    # Map the nodes id to a squential index in the dataframe
     id_map = {original_id: i for i, original_id in enumerate(event_df['id'])}
     src_indices = [id_map[id] for id in src]
     dst_indices = [id_map[id] for id in dst]
@@ -260,7 +250,6 @@ def build_track_edges_with_attr(event_df, tracks, pos):
     # Uses sequential index from df, no need to remap these indices
     src_indices, dst_indices, edge_attr = AddBremConnection(event_df, tracks, src_indices, dst_indices, edge_attr)
 
-    # edge_index = torch.tensor([src, dst], dtype=torch.long)
     edge_index = torch.tensor([src_indices, dst_indices], dtype=torch.long)
     edge_attr = torch.stack(edge_attr)
 
@@ -285,12 +274,18 @@ def AddBremConnection(event_df, tracks, src_indices, dst_indices, edge_attr):
         A = df_track[["x", "y", "z"]].to_numpy()
         B = df_primary[["x", "y", "z"]].to_numpy()
 
+        # All distances of each hits to track A to track B
+        # A[:, None, :] expands A to (N,1,3)
+        # B[None, :, :] expands B to (1,M,3)
+        # Subtraction broadcasts them to a N x M x 3 matrix. 
+        # Each cell (i,j) in this tensor contains the vector displacement (Δx,Δy,Δz)
+        # between the i-th hit of Track A and the j-th hit of Track B.
         dist = np.linalg.norm(A[:, None, :] - B[None, :, :], axis=2)
 
-        # index of global minimum
+        # The index of global minimum
         iA, iB = np.unravel_index(dist.argmin(), dist.shape)
 
-        # actual DataFrame indices
+        # The actual DataFrame indices
         idx_A = df_track.index[iA]
         idx_B = df_primary.index[iB]
         min_distance = dist[iA, iB]
@@ -298,14 +293,13 @@ def AddBremConnection(event_df, tracks, src_indices, dst_indices, edge_attr):
         # Add bi-direction to these connections and angle of zero
         src_indices.append(idx_A)
         dst_indices.append(idx_B)
+        src_indices.append(idx_B)
+        dst_indices.append(idx_A)
         
-        # Third column is flag to tell if we added a brem connection or not. Set to 1 here
+        # Second column is flag to tell if we added a brem connection or not. Set to 1 here
+        # Adding twice since we are doing bi-directional connection
         edge_attr.append(torch.tensor([min_distance, 1.0], dtype=torch.float))
-
-        src_indices.append(idx_A)
-        dst_indices.append(idx_B)
         edge_attr.append(torch.tensor([min_distance, 1.0], dtype=torch.float))
-        
     
     return src_indices, dst_indices, edge_attr
 # ------------------------------------------------------------------------------
@@ -316,37 +310,89 @@ def build_graph_dataset(df, Tracks):
         graphs.append(event_to_track_graph(df[df.event_id == ev_id], Tracks[ev_id])) # Track connections
     return graphs
 # ------------------------------------------------------------------------------
-def GetGraphs(event_list, mode, jobid, splitsize):
-    print("Getting Graphs for:", mode)
+def GetGraphs(event_list, jobid, splitsize):
     
-    tot_events = 0
+    tot_sig_events    = 0
+    tot_Bi_events     = 0
+    tot_Tl_events     = 0
+    tot_single_events = 0
     
-    if mode == "Bi" or mode == "Tl":
-        basepath = f"/media/argon/HardDrive_8TB/Krishan/ATPC/ML_samples/ATPC_{mode}_ion/1bar/5percent/"
-    else:
-        basepath = f"/media/argon/HardDrive_8TB/Krishan/ATPC/ML_samples/ATPC_{mode}/1bar/5percent/"
-        
-    num_events, data     = LoadData(f"{basepath}/reco/*.h5", mode,  event_list, splitsize, jobid)
-    Tracks,  connections,  connection_counts  = LoadPickle(f"{basepath}/pkl/*.pkl", mode,  event_list, splitsize, jobid)
+    basepath = "/media/argon/HardDrive_8TB/Krishan/ATPC/ML_samples/"
     
-    tot_events+=num_events
-        
+    num_events_nubb, data_nubb = LoadData(f"{basepath}/ATPC_0nubb/1bar/5percent/reco/*.h5",   "0nubb",  event_list, splitsize, jobid)
+    Tracks_nubb,  _,  _        = LoadPickle(f"{basepath}/ATPC_0nubb/1bar/5percent/pkl/*.pkl", "0nubb",  event_list, splitsize, jobid)
+    
+    num_events_Bi, data_Bi = LoadData(f"{basepath}/ATPC_Bi_ion/1bar/5percent/reco/*.h5",   "Bi",  event_list, splitsize, jobid)
+    Tracks_Bi,  _,  _      = LoadPickle(f"{basepath}/ATPC_Bi_ion/1bar/5percent/pkl/*.pkl", "Bi",  event_list, splitsize, jobid)
+    
+    num_events_Tl, data_Tl = LoadData(f"{basepath}/ATPC_Tl_ion/1bar/5percent/reco/*.h5",   "Tl",  event_list, splitsize, jobid)
+    Tracks_Tl,  _,  _      = LoadPickle(f"{basepath}/ATPC_Tl_ion/1bar/5percent/pkl/*.pkl", "Tl",  event_list, splitsize, jobid)
+    
+    num_events_single, data_single = LoadData(f"{basepath}/ATPC_single/1bar/5percent/reco/*.h5",   "single",  event_list, splitsize, jobid)
+    Tracks_single,  _,  _          = LoadPickle(f"{basepath}/ATPC_single/1bar/5percent/pkl/*.pkl", "single",  event_list, splitsize, jobid)
+    
+    tot_sig_events+=num_events_nubb
+    tot_Bi_events+=num_events_Bi
+    tot_Tl_events+=num_events_Tl
+    tot_single_events+=num_events_single
+    
     print("Adding Track Info for chunk:", jobid)
-    df_merged = AddTrackInfo(data, Tracks)
-    df_merged = NormlizeDataFrame(df_merged)
-    df_merged = AddCategories(df_merged)
-    print("Building Graph for chunk:", jobid)
-    graphs = build_graph_dataset(df_merged, Tracks)
-    print("Saving graph to ", f'{basepath}/GNN_files/ATPC_GNN_{mode}_chunk_{jobid}.pt')
-    torch.save(graphs, f'{basepath}/GNN_files/ATPC_GNN_{mode}_chunk_{jobid}.pt')
+    data_track_nubb   = AddTrackInfo(data_nubb, Tracks_nubb)
+    data_track_Bi     = AddTrackInfo(data_Bi, Tracks_Bi)
+    data_track_Tl     = AddTrackInfo(data_Tl, Tracks_Tl)
+    data_track_single = AddTrackInfo(data_single, Tracks_single)
+    
+    # Normalize
+    print("Normalizing Data")
+    data_track_nubb   = NormlizeDataFrame(data_track_nubb)
+    data_track_Bi     = NormlizeDataFrame(data_track_Bi)
+    data_track_Tl     = NormlizeDataFrame(data_track_Tl)
+    data_track_single = NormlizeDataFrame(data_track_single)
+    
+    print("Adding Categorical data")
+    data_track_nubb   = AddCategories(data_track_nubb)
+    data_track_Bi     = AddCategories(data_track_Bi)
+    data_track_Tl     = AddCategories(data_track_Tl)
+    data_track_single = AddCategories(data_track_single)
+    
+    print("Building Graphs for chunk:", jobid)
+    graphs_nubb   = build_graph_dataset(data_track_nubb, Tracks_nubb)
+    graphs_Bi     = build_graph_dataset(data_track_Bi, Tracks_Bi)
+    graphs_Tl     = build_graph_dataset(data_track_Tl, Tracks_Tl)
+    graphs_single = build_graph_dataset(data_track_single, Tracks_single)
+    
+    # Combine all the graphs together
+    all_graphs = graphs_nubb + graphs_Bi + graphs_Tl + graphs_single
+    
+    # Get the label to split events up with 
+    subtype_lists = []
+    for g in all_graphs:
+        subtype_lists.append(g.subType.item())
+
+    # Split the graphs up
+    print("Splitting the graphs up")
+    graphs_tmp, graphs_test, subtype_tmp, subtype_test   = train_test_split(all_graphs, subtype_lists, test_size=0.10, stratify=subtype_lists, random_state=jobid)
+    graphs_train, graphs_val, subtype_train, subtype_val = train_test_split(graphs_tmp, subtype_tmp, test_size=2/9,   stratify=subtype_tmp,   random_state=jobid)
+
+    if (len(event_list) != 0):
+        print("Saving graph to ", f'{basepath}/GNN_files_MLP/ATPC_GNN_chunk_[train/val/test]_{jobid}.pt')
+        torch.save(graphs_test,   f'{basepath}/GNN_files_MLP/ATPC_GNN_chunk_test_{jobid}.pt')
+        torch.save(graphs_val,    f'{basepath}/GNN_files_MLP/ATPC_GNN_chunk_val_{jobid}.pt')
+        torch.save(graphs_train,  f'{basepath}/GNN_files_MLP/ATPC_GNN_chunk_train_{jobid}.pt')
         
-    print("tot_events saved:", tot_events)
+    else:
+        print("Saving graph to ", f'{basepath}/GNN_files/ATPC_GNN_chunk_[train/val/test]_{jobid}.pt')
+        torch.save(graphs_test,   f'{basepath}/GNN_files/ATPC_GNN_chunk_test_{jobid}.pt')
+        torch.save(graphs_val,    f'{basepath}/GNN_files/ATPC_GNN_chunk_val_{jobid}.pt')
+        torch.save(graphs_train,  f'{basepath}/GNN_files/ATPC_GNN_chunk_train_{jobid}.pt')
+        
+    print("tot_sig_events saved:", tot_sig_events)
+    print("tot_bkg_events saved:", tot_Bi_events + tot_Tl_events + tot_single_events)
+    print("-------")
+    print("tot_Bi_events saved:", tot_Bi_events)
+    print("tot_Tl_events saved:", tot_Tl_events)
+    print("tot_single_events saved:", tot_single_events)
 # ------------------------------------------------------------------------------
-
-
-# We have ~5k files in a set, use 40 nodes at a time
-
-basepath = "/media/argon/HardDrive_8TB/Krishan/ATPC/ML_samples/"
 
 listin=f"../eventlists/ATPC_1bar_5percent_highstats.csv"
 
@@ -357,16 +403,12 @@ jobid = int(sys.argv[1])
 splitsize=int(sys.argv[2])
 filter_events=False
 
-# options are 0nubb, Bi, Tl, single
-mode = sys.argv[3]
-
-
 print("JobID/splitsize:", jobid, "/", splitsize)
-print("Mode:", mode)
 
 event_list = []
 
 if filter_events:
     event_list = pd.read_csv(listin);
 
-GetGraphs(event_list, mode, jobid, splitsize)
+
+GetGraphs(event_list, jobid, splitsize)
