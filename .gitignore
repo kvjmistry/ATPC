@@ -9,6 +9,7 @@ config/PTFEStudies/
 scripts/plots/
 CNN_files/
 GNN_files/
+GNN_files_MLP/
 eventlists/
 job/ATPC_PTFE/
 job/TonneScripts/
@@ -17,4 +18,6 @@ notebooks/*.lmdb
 notebooks/*.json
 notebooks/NEXT100/*.txt
 notebooks/NEXT100/log/
-
+notebooks/**.nsys-rep
+notebooks/**.qdstrm
+**sqlite
