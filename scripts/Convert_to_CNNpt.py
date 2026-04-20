@@ -12,6 +12,7 @@ import torch
 from joblib import Parallel, delayed
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
+from sklearn.cluster import DBSCAN
 
 # ------------------------------------------------------------------------------
 # Get a subset of the total files to iterate over
@@ -60,6 +61,49 @@ class EventDataset(Dataset):
 # ------------------------------------------------------------------------------
 # Function to voxelize the event
 # voxel size in mm
+def process_voxel_event(event_df, voxel_size):
+
+    # Convert the coorinates into integers
+    z_int = (event_df['z'].values // voxel_size).astype(np.int32)
+    y_int = (event_df['y'].values // voxel_size).astype(np.int32)
+    x_int = (event_df['x'].values // voxel_size).astype(np.int32)
+
+    group_df = pd.DataFrame({
+        'event_id': event_df['event_id'].values,
+        'z': z_int,
+        'y': y_int,
+        'x': x_int,
+        'energy': event_df['energy'].values.astype(np.float32),
+        'group_id': event_df['group_id'].values,
+        'Type': event_df['Type'].values,
+        'subType': event_df['subType'].values,
+        'label': event_df['label'].values
+    })
+    
+    voxel_event = group_df.groupby(['group_id', 'event_id', 'z', 'y', 'x'], as_index=False, sort=False).agg({
+        'energy': 'sum',
+        'Type': 'first',
+        'subType': 'first',
+        'label': 'first'
+    })
+
+    
+    return voxel_event
+# ------------------------------------------------------------------------------
+def VoxelizeEventParallel(df, voxel_size, n_jobs=60):
+    # Split by event_id - this is the unit of parallelization
+    event_groups = df.groupby("event_id")
+    
+    # Process events in parallel across 60 cores
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(process_voxel_event)(group, voxel_size) 
+        for _, group in event_groups
+    )
+    
+    # Recombine
+    return pd.concat(results, ignore_index=True)
+
+# ------------------------------------------------------------------------------
 def voxelize_event(event_df, VOXEL_SIZE):
     
     # Convert the coorinates into integers
@@ -73,12 +117,13 @@ def voxelize_event(event_df, VOXEL_SIZE):
         'y': y_int,
         'x': x_int,
         'energy': event_df['energy'].values.astype(np.float32),
+        'group_id': event_df['group_id'].values,
         'Type': event_df['Type'].values,
         'subType': event_df['subType'].values,
         'label': event_df['label'].values
     })
     
-    voxel_df = group_df.groupby(['event_id', 'z', 'y', 'x'], as_index=False, sort=False).agg({
+    voxel_df = group_df.groupby(['group_id', 'event_id', 'z', 'y', 'x'], as_index=False, sort=False).agg({
         'energy': 'sum',
         'Type': 'first',
         'subType': 'first',
@@ -152,7 +197,7 @@ def LoadFilesParallel(files):
     
     # n_jobs=-1 uses all available cores (all 60)
     # prefer="threads" is good for I/O, but "processes" is better for pandas filtering
-    results = Parallel(n_jobs=-1, verbose=10)(
+    results = Parallel(n_jobs=-1)(
         delayed(process_single_file)(f) for f in files
     )
     
@@ -189,6 +234,54 @@ def LoadData(f_nubb, f_Bi, f_Tl, f_single):
     df = df[["event_id", "x", "y", "z", "energy", "Type", "subType"]]
     return df
 # ------------------------------------------------------------------------------
+def GroupHits_single_event(event_id, event_df):
+
+    threshold = 2 * 0.314 * np.sqrt(0.1 * event_df.z.median())
+    
+    if (threshold < 12):
+        threshold = 12
+    
+    coords = event_df[["x", "y", "z"]].values
+    
+    # Apply DBSCAN
+    db = DBSCAN(eps=threshold, min_samples=1).fit(coords)
+    
+    # We return the original DF with the new labels
+    event_df = event_df.copy()
+    event_df["group_id"] = db.labels_.astype(int)
+    
+    return event_df
+# ------------------------------------------------------------------------------
+# Since DB Scan can be slow, we can paralellize it across many CPUs
+def GroupHitsParallel(df, n_jobs=60):
+
+    # Split the dataframe by event_id
+    event_groups = df.groupby("event_id")
+    
+    # Parallelize the DBSCAN
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(GroupHits_single_event)(eid, group) for eid, group in event_groups
+    )
+    
+    # Recombine into a single DataFrame
+    return pd.concat(results, ignore_index=True)
+# ------------------------------------------------------------------------------
+# This function adds a column for the group id that is  unique across events
+def MakeGlobalGroupIDs(df):
+
+    # Get the max group ID of each event, shift them, and cumulative sum.
+    event_maxes = df.groupby('event_id', sort=False)['group_id'].max() + 1
+    event_offsets = event_maxes.shift(1, fill_value=0).cumsum()
+    
+    # Map those offsets back to the main dataframe
+    df['group_id_offset'] = df['event_id'].map(event_offsets)
+    
+    # Create the final unique ID
+    df['unique_group_id'] = df['group_id'] + df['group_id_offset']
+    
+    return df.drop(columns=['group_id_offset'])
+# ------------------------------------------------------------------------------
+
 
 basepath = "/media/argon/HardDrive_8TB/Krishan/ATPC/ML_samples/"
 
@@ -214,6 +307,8 @@ print("f_Bi", len(f_Bi))
 print("f_Tl", len(f_Tl))
 print("f_single", len(f_single))
 
+print("Loading data")
+
 # Load the data
 df = LoadData(f_nubb, f_Bi, f_Tl, f_single)
 print(df)
@@ -229,9 +324,16 @@ input_data_shape = GetSpatialShape(df, VOXEL_SIZE)
 # Type: "0nubb" or "Bkg"
 df['label'] = (df['Type'] == "0nubb").astype(int)
 
+# Apply grouping
+print("Grouping Dataframe")
+df = GroupHitsParallel(df)
+
 # Apply a voxelization
-df = voxelize_event(df, VOXEL_SIZE)
-print("Voxelized Dataframe")
+print("Voxelizing Dataframe")
+df = VoxelizeEventParallel(df, VOXEL_SIZE)
+
+print("Making Global Group IDs")
+df = MakeGlobalGroupIDs(df)
 print(df)
 
 # Event-level labels
