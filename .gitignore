@@ -21,3 +21,4 @@ notebooks/NEXT100/log/
 notebooks/**.nsys-rep
 notebooks/**.qdstrm
 **sqlite
+CNN_files_zpos/
