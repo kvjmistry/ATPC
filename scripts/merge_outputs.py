@@ -29,8 +29,10 @@ if computer == "osg":
     file_path = f"/ospool/ap40/data/krishan.mistry/job/ATPC/trackreco/{mode}/{pressure}bar/{diffusion}/"
     file_out = f"/home/krishan.mistry/code/ATPC/merged/{mode}_{pressure}bar_{diffusion}"
 else:
-    file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/{mode}/{pressure}bar/{diffusion}/"
-    file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}bar_{diffusion}"
+    # file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/{mode}/{pressure}bar/{diffusion}/"
+    # file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/trackreco/merged/{mode}_{pressure}bar_{diffusion}"
+    file_path = f"/media/argon/HardDrive_8TB/Krishan/ATPC/ML_samples//{mode}/{pressure}bar/{diffusion}/"
+    file_out = f"/media/argon/HardDrive_8TB/Krishan/ATPC/ML_samples/merged/{mode}_{pressure}bar_{diffusion}"
 
 print("file_path", file_path)
 print("file_out", file_out)
@@ -103,47 +105,49 @@ del df_meta
 
 # ------------------------------------------------------------------------------------------
 
-Tracks = []
-connections = []
-connection_counts = []
+if save_datainfo:
 
-files = sorted(glob.glob(f"{file_path}/pkl/*.pkl"))
+    Tracks = []
+    connections = []
+    connection_counts = []
 
-counter = 0
-for index, f in enumerate(files):
+    files = sorted(glob.glob(f"{file_path}/pkl/*.pkl"))
 
-    if index %50 ==0:
-        print(f"{index} /", len(files))
+    counter = 0
+    for index, f in enumerate(files):
 
-    with open(f, 'rb') as pickle_file:  # Use 'rb' for reading in binary
+        if index %50 ==0:
+            print(f"{index} /", len(files))
 
-        # Load data from file
-        track_data = pickle.load(pickle_file)
-        conn_data = pickle.load(pickle_file)
-        conn_count_data = pickle.load(pickle_file)
+        with open(f, 'rb') as pickle_file:  # Use 'rb' for reading in binary
 
-        # Filter during loading
-        track_data = {k: v for k, v in track_data.items() if k in filtered_events}
-        conn_data = {k: v for k, v in conn_data.items() if k in filtered_events}
-        conn_count_data = {k: v for k, v in conn_count_data.items() if k in filtered_events}
-        counter+=len(track_data)
+            # Load data from file
+            track_data = pickle.load(pickle_file)
+            conn_data = pickle.load(pickle_file)
+            conn_count_data = pickle.load(pickle_file)
 
-        # Initialize or update dictionaries
-        if index == 0:
-            Tracks = track_data
-            connections = conn_data
-            connection_counts = conn_count_data
-        else:
-            Tracks.update(track_data)
-            connections.update(conn_data)
-            connection_counts.update(conn_count_data)
+            # Filter during loading
+            track_data = {k: v for k, v in track_data.items() if k in filtered_events}
+            conn_data = {k: v for k, v in conn_data.items() if k in filtered_events}
+            conn_count_data = {k: v for k, v in conn_count_data.items() if k in filtered_events}
+            counter+=len(track_data)
 
-        if (counter >= len(filtered_events)):
-            break
+            # Initialize or update dictionaries
+            if index == 0:
+                Tracks = track_data
+                connections = conn_data
+                connection_counts = conn_count_data
+            else:
+                Tracks.update(track_data)
+                connections.update(conn_data)
+                connection_counts.update(conn_count_data)
 
-print("Tot saved events:", counter)
+            if (counter >= len(filtered_events)):
+                break
 
-with open(f"{file_out}_trackreco.pkl", 'wb') as pickle_file:
-    pickle.dump(Tracks, pickle_file)
-    pickle.dump(connections, pickle_file)
-    pickle.dump(connection_counts, pickle_file)
+    print("Tot saved events:", counter)
+
+    with open(f"{file_out}_trackreco.pkl", 'wb') as pickle_file:
+        pickle.dump(Tracks, pickle_file)
+        pickle.dump(connections, pickle_file)
+        pickle.dump(connection_counts, pickle_file)
