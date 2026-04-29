@@ -13,6 +13,8 @@ import sys
 import torch
 from torch_geometric.data import Data
 from sklearn.model_selection import train_test_split
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 # ------------------------------------------------------------------------------
 # Get a subset of the total files to iterate over
@@ -205,23 +207,22 @@ def event_to_track_graph(event_df, Track):
     # Reset the index
     event_df = event_df.reset_index(drop=True)
     
-    pos = torch.tensor( event_df[["x", "y", "z"]].values, dtype=torch.float32 ) # N rows of [x,y,z]
-    
-    x = torch.tensor(event_df[["x", "y", "z", "energy", "Tortuosity", "cum_dist_norm", "label_id"]].values, dtype=torch.float32) # (N,5): N rows of these features
+    x = torch.tensor(event_df[["x", "y", "z", "energy", "Tortuosity", "angle", "cum_dist_norm", "label_id"]].values, dtype=torch.float32) # (N,8): N rows of these features
     event_id = torch.tensor(event_df["event_id"].iloc[0])
     subType = torch.tensor(event_df["SubType_cat"].iloc[0])
 
     # Build the track
-    edge_index, edge_attr = build_track_edges_with_attr(event_df, Track, pos)
+    edge_index, edge_attr = build_track_edges_with_attr(event_df, Track)
     
     y = torch.tensor([event_df["label"].iloc[0]], dtype=torch.long)
     
-    return Data(x=x, pos=pos, edge_index=edge_index, edge_attr=edge_attr, y=y, event_id=event_id, subType=subType)
+    return Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y, event_id=event_id, subType=subType)
 # ------------------------------------------------------------------------------
-def build_track_edges_with_attr(event_df, tracks, pos):
+def build_track_edges_with_attr(event_df, tracks):
     src = []
     dst = []
     edge_attr = []
+    
 
     for t in tracks:
         nodes = t['nodes']
@@ -230,7 +231,9 @@ def build_track_edges_with_attr(event_df, tracks, pos):
             v = nodes[i + 1]
 
             # Distance between nodes
-            d = pos[v] - pos[u]      # (dx, dy, dz)
+            v_pos = torch.tensor( event_df[event_df.id == v][["x", "y", "z"]].values[0], dtype=torch.float32 )
+            u_pos = torch.tensor( event_df[event_df.id == u][["x", "y", "z"]].values[0], dtype=torch.float32 )
+            d = v_pos - u_pos      # (dx, dy, dz)
             d_norm = torch.linalg.vector_norm(d)
             d_norm = torch.clamp(d_norm, max=0.2) # 0.2 comes from looking at the distribution
             d_norm = d_norm / 0.2
@@ -290,6 +293,9 @@ def AddBremConnection(event_df, tracks, src_indices, dst_indices, edge_attr):
         idx_B = df_primary.index[iB]
         min_distance = dist[iA, iB]
         
+        min_distance = np.clip(min_distance, a_min = 0, a_max=0.2)
+        min_distance = min_distance/0.2
+        
         # Add bi-direction to these connections and angle of zero
         src_indices.append(idx_A)
         dst_indices.append(idx_B)
@@ -303,11 +309,26 @@ def AddBremConnection(event_df, tracks, src_indices, dst_indices, edge_attr):
     
     return src_indices, dst_indices, edge_attr
 # ------------------------------------------------------------------------------
-def build_graph_dataset(df, Tracks):
-    graphs = []
+# def build_graph_dataset(df, Tracks):
+#     graphs = []
 
-    for ev_id in df.event_id.unique():
-        graphs.append(event_to_track_graph(df[df.event_id == ev_id], Tracks[ev_id])) # Track connections
+#     for i, ev_id in enumerate(df.event_id.unique()):
+#         if (i % 100 == 0):
+#             print("On event", i, "/", len(df.event_id.unique()))
+#         graphs.append(event_to_track_graph(df[df.event_id == ev_id], Tracks[ev_id])) # Track connections
+#     return graphs
+def build_graph_dataset(df, Tracks, n_jobs=60):
+    unique_event_ids = df.event_id.unique()
+    
+    # We wrap the function call in delayed()
+    graphs = Parallel(n_jobs=n_jobs, backend="loky")(
+        delayed(event_to_track_graph)(
+            df[df.event_id == ev_id], 
+            Tracks[ev_id]
+        ) 
+        for ev_id in tqdm(unique_event_ids, desc="Processing Events")
+    )
+    
     return graphs
 # ------------------------------------------------------------------------------
 def GetGraphs(event_list, jobid, splitsize):
