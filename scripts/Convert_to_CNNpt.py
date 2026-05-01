@@ -184,10 +184,22 @@ def ApplyScaling(df):
 # ------------------------------------------------------------------------------
 # Load in the MC true for all events
 def process_single_file(f):
-    """Worker function for one file"""
+    
+    filter_events = False
+    if (len(event_list) != 0):
+        filter_events = True
+        
+    # This is a list of selected events
+    if (filter_events):
+        event_list_values = event_list.event_id.values
+    
     try:
         hits = pd.read_hdf(f, "MC/hits")
         # hits = pd.read_hdf(f, "data")
+        
+        if (filter_events):
+            hits  = hits[hits.event_id.isin(event_list_values)] # filter events
+        
         return hits
     except Exception as e:
         print(f"Error in {f}: {e}")
@@ -216,18 +228,22 @@ def LoadData(f_nubb, f_Bi, f_Tl, f_single):
     nubb = LoadFilesParallel(f_nubb)
     nubb["Type"] = "0nubb"
     nubb["subType"] = "0nubb"
+    print("nubb:", len(nubb.event_id.unique()))
 
     Bi = LoadFilesParallel(f_Bi)
     Bi["subType"] = "Bi"
     Bi["Type"] = "Bkg"
+    print("Bi:", len(Bi.event_id.unique()))
 
     Tl = LoadFilesParallel(f_Tl)
     Tl["subType"] = "Tl"
     Tl["Type"] = "Bkg"
+    print("Tl:", len(Tl.event_id.unique()))
 
     single = LoadFilesParallel(f_single)
     single["subType"] = "single"
     single["Type"] = "Bkg"
+    print("Single:", len(single.event_id.unique()))
 
     df = pd.concat([nubb, Bi, Tl, single], ignore_index=True)
 
@@ -284,6 +300,7 @@ def MakeGlobalGroupIDs(df):
 
 
 basepath = "/media/argon/HardDrive_8TB/Krishan/ATPC/ML_samples/"
+listin=f"../eventlists/ATPC_1bar_5percent_highstats.csv"
 
 VOXEL_SIZE=8.0
 
@@ -294,6 +311,14 @@ jobid = int(sys.argv[1])
 splitsize=int(sys.argv[2])
 
 print("JobID/splitsize:", jobid, "/", splitsize)
+
+
+filter_events=True
+
+event_list = []
+
+if filter_events:
+    event_list = pd.read_csv(listin);
 
 
 # Get all file names for each event category
@@ -354,7 +379,17 @@ print("\nTrain Events:", len(train_events_df_list))
 print("Val Events:  ", len(val_events_df_list))
 print("Test Events: ", len(test_events_df_list), "\n")
 
-print("Saving dataset to ", f'{basepath}/CNN_files/ATPC_CNN_chunk_[train/val/test]_{jobid}.pt')
-torch.save(train_events_df_list,   f'{basepath}/CNN_files/ATPC_CNN_chunk_train_{jobid}.pt')
-torch.save(val_events_df_list,     f'{basepath}/CNN_files/ATPC_CNN_chunk_val_{jobid}.pt')
-torch.save(test_events_df_list,    f'{basepath}/CNN_files/ATPC_CNN_chunk_test_{jobid}.pt')
+if (len(event_list) != 0):
+        print("Saving graph to ", f'{basepath}/CNN_files_MLP/ATPC_CNN_chunk_[train/val/test]_{jobid}.pt')
+        torch.save(train_events_df_list,   f'{basepath}/CNN_files_MLP/ATPC_CNN_chunk_train_{jobid}.pt')
+        torch.save(val_events_df_list,     f'{basepath}/CNN_files_MLP/ATPC_CNN_chunk_val_{jobid}.pt')
+        torch.save(test_events_df_list,    f'{basepath}/CNN_files_MLP/ATPC_CNN_chunk_test_{jobid}.pt')
+        
+else:
+    print("Saving dataset to ", f'{basepath}/CNN_files/ATPC_CNN_chunk_[train/val/test]_{jobid}.pt')
+    torch.save(train_events_df_list,   f'{basepath}/CNN_files/ATPC_CNN_chunk_train_{jobid}.pt')
+    torch.save(val_events_df_list,     f'{basepath}/CNN_files/ATPC_CNN_chunk_val_{jobid}.pt')
+    torch.save(test_events_df_list,    f'{basepath}/CNN_files/ATPC_CNN_chunk_test_{jobid}.pt')
+
+
+
