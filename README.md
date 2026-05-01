@@ -1,2 +1,2 @@
 # ATPC
-A repository for analysis with an atmospheric TPC
+A repository for ML analysis with an atmospheric TPC
