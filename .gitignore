@@ -24,3 +24,4 @@ notebooks/**.qdstrm
 CNN_files_zpos/
 .vscode
 notebooks/NEXT100/plots/
+CNN_files_MLP
