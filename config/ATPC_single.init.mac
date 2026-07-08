@@ -15,7 +15,7 @@
 
 /nexus/RegisterGeometry ATPC
 
-/nexus/RegisterGenerator IonGenerator
+/nexus/RegisterGenerator SingleParticleGenerator
 
 /nexus/RegisterPersistencyManager PersistencyManager
 

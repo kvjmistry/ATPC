@@ -65,7 +65,9 @@ if (diff_scaling == 0):
     diffusion = "nodiff"
 
 # Load in configured params
-_, energy_threshold, _, _, _, _, binsize, det_size = InitializeParams(pressure, diffusion)
+_, _, _, energy_threshold, _, _, _, _, binsize, det_size = InitializeParams(pressure, diffusion)
+det_size=10
+energy_threshold=0
 
 print("Scaling Factor: ", diff_scaling)
 print("CO2 Percentage: ", percentage)
@@ -166,6 +168,10 @@ for index, e in enumerate(hits.event_id.unique()):
     # Select the event
     event = hits[hits.event_id == e]
     event_part = parts[parts.event_id == e]
+
+    # Add the n to the column
+    if "n" not in event.columns:
+        event["n"] = (event["energy"] / E_mean).round()
     
     # Shift z-values so 0 is at the anode
     event.z = event.z+z_shift
