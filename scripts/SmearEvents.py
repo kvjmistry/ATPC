@@ -66,7 +66,7 @@ if (diff_scaling == 0):
 
 # Load in configured params
 _, _, _, energy_threshold, _, _, _, _, binsize, det_size = InitializeParams(pressure, diffusion)
-det_size=10
+det_size=5000
 energy_threshold=0
 
 print("Scaling Factor: ", diff_scaling)
@@ -253,6 +253,8 @@ for index, e in enumerate(hits.event_id.unique()):
 
     # Reduce dataframe size by redistributing below threshold hits
     electrons_smear = CutandRedistibuteEnergy(electrons_smear, energy_threshold)
+
+    print(electrons_smear)
 
     df_smear.append(electrons_smear)
 
