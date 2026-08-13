@@ -66,8 +66,8 @@ if (diff_scaling == 0):
 
 # Load in configured params
 _, _, _, energy_threshold, _, _, _, _, binsize, det_size = InitializeParams(pressure, diffusion)
-det_size=5000
-energy_threshold=0
+# det_size=5000
+# energy_threshold=0
 
 print("Scaling Factor: ", diff_scaling)
 print("CO2 Percentage: ", percentage)
